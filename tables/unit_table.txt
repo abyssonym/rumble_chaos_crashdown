@@ -1,0 +1,32 @@
+# 40 bytes, starts at 75e0800, 640 bytes (16 units) per battle
+graphic,1
+misc1,bit:save_formation test_teta hidden_stats load_formation join_after_event monster female male
+name,1
+level,1
+month,1
+day,1
+brave,1
+faith,1
+unlocked,1
+unlocked_level,1
+job,1
+secondary,1
+reaction,2
+support,2
+movement,2
+head,1
+body,1
+accessory,1
+righthand,1
+lefthand,1
+palette,1
+misc2,bit:z1 z2 immortal control team1 z3 randomly_present always_present
+x,1
+y,1
+unknown2,3
+trophy,1
+gil,1
+unit_id,1
+unknown3,3
+target_id,1
+unknown4,3

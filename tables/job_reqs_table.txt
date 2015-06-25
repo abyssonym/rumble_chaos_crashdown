@@ -1,0 +1,12 @@
+# 10 bytes, starts at 628c4, 190 bytes in table (19 jobs not including Squire)
+# Job level JP requirements at 62984, 2 bytes per job level, 16 bytes total
+squche,1
+kniarc,1
+monpri,1
+wiztim,1
+sumthi,1
+medora,1
+geolan,1
+samnin,1
+calbar,1
+danmim,1
