@@ -68,8 +68,9 @@ class TableObject(object):
     @property
     def description(self):
         classname = self.__class__.__name__
-        desc = "{0} {1:02x} {2:x} {3}".format(
-            classname, self.index, self.pointer, self.display_name)
+        pointer = "%x" % self.pointer if self.pointer else "None"
+        desc = "{0} {1:02x} {2} {3}".format(
+            classname, self.index, pointer, self.display_name)
         return desc
 
     @property

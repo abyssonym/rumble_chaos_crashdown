@@ -21,6 +21,8 @@ JOBLEVEL_JP = [100, 200, 350, 550, 800, 1150, 1550, 2100]
 
 mapsprite_restrictions = {}
 mapsprite_selection = {}
+named_jobs = {}
+named_map_jobs = {}
 
 
 def calculate_jp_total(joblevels):
@@ -45,6 +47,14 @@ class UnitObject(TableObject):
         return self.index >> 4
 
     @property
+    def has_special_graphic(self):
+        return self.graphic not in [0x80, 0x81, 0x82]
+
+    @property
+    def named(self):
+        return bool(self.name != 0xFF)
+
+    @property
     def jp_total(self):
         if self.job in jobreq_indexdict:
             base_job = jobreq_indexdict[self.job]
@@ -67,8 +77,8 @@ class UnitObject(TableObject):
         if self.job not in jobreq_indexdict:
             return False
 
-        if self.name != 0xFF:
-            preserve_gender=True
+        if self.named:
+            preserve_gender = True
 
         jp_remaining = self.jp_total
         jp_remaining = random.randint(jp_remaining,
@@ -81,51 +91,97 @@ class UnitObject(TableObject):
         male_sel = [(j, g) for (j, g) in selection if g == "male"]
         female_sel = [(j, g) for (j, g) in selection if g == "female"]
         genders = []
+        if len(male_sel) < male_r:
+            genders.append("male")
+        if len(female_sel) < female_r:
+            genders.append("female")
+
         if preserve_gender:
             if self.get_bit("male"):
                 gender = "male"
-                if len(male_sel) < male_r:
-                    genders.append("male")
             elif self.get_bit("female"):
                 gender = "female"
-                if len(female_sel) < female_r:
-                    genders.append("female")
             else:
                 raise Exception("No gender.")
             selection = [(j, g) for (j, g) in selection if g == gender]
+            if self.has_special_graphic:
+                genders = [gender]
+            else:
+                genders = [g for g in genders if g == gender]
             if not selection and not genders:
                 print "WARNING: Gender not preserved."
                 selection = mapsprite_selection[self.map_id]
-        else:
-            if len(male_sel) < male_r:
-                genders.append("male")
-            if len(female_sel) < female_r:
-                genders.append("female")
 
         jobs = jobreq_namedict.values()
         jobs = [j for j in jobs if j.required_unlock_jp < jp_remaining]
-        if genders:
+        base_job = None
+        if self.named and not self.has_special_graphic:
+            if not self.has_special_graphic:
+                if self.named and (self.name, self.job) in named_jobs:
+                    base_job = named_jobs[(self.name, self.job)]
+                elif self.named and (self.map_id, self.job) in named_map_jobs:
+                    base_job = named_map_jobs[(self.map_id, self.job, gender)]
+                elif self.named and len(selection) > 1:
+                    base_job, gen = random.choice(selection)
+                    assert gen == gender
+
+        if base_job is None and genders:
             gender = random.choice(genders)
             cands = [j for j in jobs if j not in done_jobs]
             if not cands:
                 cands = jobs
+
+            if gender == "male":
+                cands = [c for c in cands if c.name != "dancer"]
+            elif gender == "female":
+                cands = [c for c in cands if c.name != "bard"]
+
             if cands:
                 cands = sorted(cands, key=lambda j: j.required_unlock_jp)
                 if random.choice([True, False]):
                     cands = cands[len(cands)/2:]
                 base_job = random.choice(cands)
-                jobs.remove(base_job)
-                #base_name = base_job.name
-                #jobs = [j for j in jobs if getattr(j, base_name) > 0
-                #        or getattr(base_job, j.name) > 0
-                #        or j.name in ["squire", "chemist"]]
+                if random.randint(1, 5) != 5:
+                    base_name = base_job.name
+                    jobs = [j for j in jobs if getattr(j, base_name) > 0
+                            or j == base_job]
                 random.shuffle(jobs)
             else:
                 base_job = jobreq_namedict['squire']
-        elif not genders:
-            base_job, gender = random.choice(selection)
 
-        mapsprite_selection[self.map_id].add((base_job, gender))
+        if base_job is None:
+            if self.named:
+                cands1 = [(j, g) for (j, g) in selection if g == gender]
+                if not cands1:
+                    print "WARNING: Named unit can't keep their gender."
+                    cands1 = selection
+                if (self.name, self.job) in named_jobs:
+                    job = named_jobs[(self.name, self.job)]
+                    cands2 = [(j, g) for (j, g) in cands1 if j == job]
+                    if not cands2:
+                        print "WARNING: Named unit can't keep their job."
+                        base_job, gender = random.choice(cands1)
+                        import pdb; pdb.set_trace()
+                    else:
+                        base_job, gender = cands2[0]
+                else:
+                    base_job, gender = random.choice(cands1)
+            else:
+                base_job, gender = random.choice(selection)
+
+        assert base_job is not None
+
+        if not self.has_special_graphic:
+            named_jobs[(self.name, self.job)] = base_job
+            named_map_jobs[(self.map_id, self.job, gender)] = base_job
+            mapsprite_selection[self.map_id].add((base_job, gender))
+
+        try:
+            assert (len(mapsprite_selection[self.map_id]) <=
+                    sum(mapsprite_restrictions[self.map_id]))
+        except Exception:
+            print "ERROR: Sprite limit."
+            import pdb; pdb.set_trace()
 
         while True:
             if not jobs:
@@ -146,7 +202,7 @@ class UnitObject(TableObject):
                 break
 
         jp_remaining -= required_jp
-        if genders:
+        if genders and not self.named:
             assert jp_remaining >= 0
         unlocked_level = len([j for j in JOBLEVEL_JP if j <= jp_remaining])
         if random.choice([True, False]):
@@ -159,10 +215,11 @@ class UnitObject(TableObject):
         self.unlocked = unlocked_job.otherindex
         self.unlocked_level = unlocked_level
 
-        if unlocked_job != base_job and random.randint(1, 3) != 3:
+        if (unlocked_job != base_job and unlocked_level > 1
+                and random.randint(1, 3) != 3):
             self.secondary = unlocked_job.otherindex + 5
         elif self.secondary != 0 or random.choice([True, False]):
-                self.secondary = 0xFE
+            self.secondary = 0xFE
 
         for attr in ["reaction", "support", "movement"]:
             if random.choice([True, False]):
@@ -286,6 +343,8 @@ if __name__ == "__main__":
 
     units = get_units(TEMPFILE)
     jobreqs = get_jobreqs(TEMPFILE)
+    for j in jobreqs:
+        print j
 
     ''' Unlock all jobs (lowers overall enemy JP)
     for j in jobreqs:
@@ -305,19 +364,38 @@ if __name__ == "__main__":
         female = len([_ for (g, _) in value if g == 0x81])
         monster = len([_ for (g, _) in value if g == 0x82])
 
-        #swap = random.randint(-1, abs(male - female)) == -1
         while random.choice([True, False]):
-            if male > 1 and random.choice([True, False]):
+            if male > 1 and female > 0 and random.choice([True, False]):
                 female += 1
                 male -= 1
-            if female > 1 and random.choice([True, False]):
+            if female > 1 and male > 0 and random.choice([True, False]):
                 male += 1
                 female -= 1
 
         mapsprite_restrictions[key] = (male, female, monster)
         mapsprite_selection[key] = set([])
 
+    random.shuffle(units)
+    named_units = {}
     for u in units:
+        if u.named and not u.has_special_graphic:
+            if u.map_id not in named_units:
+                named_units[u.map_id] = []
+            named_units[u.map_id].append(u)
+
+    map_ids = sorted(named_units, key=lambda m: len(named_units[m]))
+    map_ids = reversed(map_ids)
+    for m in map_ids:
+        nus = named_units[m]
+        random.shuffle(nus)
+        for u in nus:
+            assert not u.has_special_graphic
+            success = u.mutate_job()
+            u.job_mutated = True
+            if success:
+                u.write_data()
+
+    for u in [u for u in units if u.has_special_graphic or not u.named]:
         success = u.mutate_job()
         if success:
             u.write_data()
