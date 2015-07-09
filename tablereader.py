@@ -95,8 +95,11 @@ class TableObject(object):
                     continue
 
             value = getattr(self, attr)
-            if isinstance(value, dict) or isinstance(value, list):
+            if isinstance(value, dict):
                 continue
+
+            if isinstance(value, list):
+                value = " ".join(["%x" % v for v in value])
 
             if isinstance(value, int):
                 value = "%x" % value
@@ -122,6 +125,9 @@ class TableObject(object):
                 value = read_multi(f, length=size)
             elif other == "str":
                 value = f.read(size)
+            elif other == "list":
+                value = f.read(size)
+                value = map(ord, value)
             setattr(self, name, value)
         f.close()
 
@@ -148,6 +154,9 @@ class TableObject(object):
             elif other == "str":
                 assert len(value) == size
                 f.write(value)
+            elif other == "list":
+                for v in value:
+                    f.write(chr(v))
         f.close()
 
 

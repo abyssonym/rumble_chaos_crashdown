@@ -9,6 +9,7 @@ from uniso import remove_sector_metadata, inject_logical_sectors
 unit_specs = TableSpecs(TABLE_SPECS['unit'])
 job_specs = TableSpecs(TABLE_SPECS['job'])
 job_reqs_specs = TableSpecs(TABLE_SPECS['job_reqs'])
+ss_specs = TableSpecs(TABLE_SPECS['skillset'])
 
 
 jobreq_namedict = {}
@@ -39,6 +40,12 @@ def calculate_jp_total(joblevels):
 
 
 TEMPFILE = "_fftrandom.tmp"
+
+
+class SkillsetObject(TableObject):
+    specs = ss_specs.specs
+    bitnames = ss_specs.bitnames
+    total_size = ss_specs.total_size
 
 
 class JobObject(TableObject):
@@ -160,7 +167,7 @@ class UnitObject(TableObject):
             self.secondary = candidates[index]
         elif (unlocked_job != base_job and unlocked_level > 1
                 and random.randint(1, 3) != 3):
-            assert unlocked_job.otherindex in range(0x4A, 0x5E)
+            assert unlocked_job.otherindex in range(0x14)
             self.secondary = unlocked_job.otherindex + 5
         elif self.secondary != 0 or random.choice([True, False]):
             self.secondary = 0xFE
@@ -368,6 +375,13 @@ def get_units(filename=None):
 
 def get_unit(index):
     return [u for u in get_units() if u.index == index][0]
+
+
+def get_skillsets(filename=None):
+    skillsets = get_table_objects(SkillsetObject, 0x61505, 171, filename)
+    for ss in skillsets:
+        ss.index = ss.index + 5
+    return skillsets
 
 
 def get_jobs(filename=None):
@@ -659,9 +673,10 @@ if __name__ == "__main__":
     units = get_units(TEMPFILE)
     jobs = get_jobs(TEMPFILE)
     jobreqs = get_jobreqs(TEMPFILE)
+    skillsets = get_skillsets(TEMPFILE)
 
-    for j in jobs[0x4A:0x5A]:
-        print j.long_description
+    for ss in skillsets[:10]:
+        print ss.long_description
         print
 
     ''' Unlock all jobs (lowers overall enemy JP)

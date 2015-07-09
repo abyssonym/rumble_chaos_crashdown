@@ -9,7 +9,7 @@ except ImportError:
 
 
 TABLE_SPECS = {}
-for table_type in ["unit", "job_reqs", "job"]:
+for table_type in ["unit", "job_reqs", "job", "skillset"]:
     TABLE_SPECS[table_type] = path.join(tblpath, "%s_table.txt" % table_type)
 
 
