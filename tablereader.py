@@ -122,6 +122,8 @@ class TableObject(object):
 
     def copy_data(self, another):
         for name, _, _ in self.specs:
+            if name in ["filename", "pointer", "index"]:
+                continue
             value = getattr(another, name)
             setattr(self, name, value)
 
