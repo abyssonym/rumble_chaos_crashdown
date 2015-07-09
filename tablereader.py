@@ -36,6 +36,11 @@ class TableObject(object):
         if filename:
             self.read_data(filename, pointer)
 
+    def set_specs(self, specs):
+        self.specs = specs.specs
+        self.bitnames = specs.bitnames
+        self.total_size = specs.total_size
+
     def get_bit(self, bitname):
         for key, value in sorted(self.bitnames.items()):
             if bitname in value:

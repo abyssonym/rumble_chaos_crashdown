@@ -7,6 +7,7 @@ from tablereader import TableSpecs, TableObject, get_table_objects
 from uniso import remove_sector_metadata, inject_logical_sectors
 
 unit_specs = TableSpecs(TABLE_SPECS['unit'])
+job_specs = TableSpecs(TABLE_SPECS['job'])
 job_reqs_specs = TableSpecs(TABLE_SPECS['job_reqs'])
 
 
@@ -37,6 +38,12 @@ def calculate_jp_total(joblevels):
 
 
 TEMPFILE = "_fftrandom.tmp"
+
+
+class JobObject(TableObject):
+    specs = job_specs.specs
+    bitnames = job_specs.bitnames
+    total_size = job_specs.total_size
 
 
 class UnitObject(TableObject):
@@ -143,6 +150,7 @@ class UnitObject(TableObject):
             self.secondary = random.randint(0x19, 0xDF)
         elif (unlocked_job != base_job and unlocked_level > 1
                 and random.randint(1, 3) != 3):
+            assert unlocked_job.otherindex in range(0x4A, 0x5E)
             self.secondary = unlocked_job.otherindex + 5
         elif self.secondary != 0 or random.choice([True, False]):
             self.secondary = 0xFE
@@ -350,6 +358,16 @@ def get_units(filename=None):
 
 def get_unit(index):
     return [u for u in get_units() if u.index == index][0]
+
+
+def get_jobs(filename=None):
+    jobs = get_table_objects(JobObject, 0x5d8b8, 160, filename)
+    for j in jobs:
+        if j.index in range(0x4A, 0x5E):
+            j.name = JOBNAMES[j.index - 0x4A]
+        else:
+            j.name = "%x" % j.index
+    return jobs
 
 
 def get_jobreqs(filename=None):
@@ -595,7 +613,12 @@ if __name__ == "__main__":
     remove_sector_metadata(sourcefile, TEMPFILE)
 
     units = get_units(TEMPFILE)
+    jobs = get_jobs(TEMPFILE)
     jobreqs = get_jobreqs(TEMPFILE)
+
+    for j in jobs[:10]:
+        print j.long_description
+        print
 
     ''' Unlock all jobs (lowers overall enemy JP)
     for j in jobreqs:
