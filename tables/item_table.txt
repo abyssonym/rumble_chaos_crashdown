@@ -1,0 +1,12 @@
+#12 bytes, starts at 0x5f6b8, 254 total
+palette,1
+graphic,1
+enemy_level,1
+misc1,bit:unk0 rare unk1 accessory body head shield weapon
+second_table,1
+itemtype,1
+always_zero1,1
+attributes,1
+price,2
+time_available,1
+always_zero2,1

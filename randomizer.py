@@ -10,6 +10,7 @@ unit_specs = TableSpecs(TABLE_SPECS['unit'])
 job_specs = TableSpecs(TABLE_SPECS['job'])
 job_reqs_specs = TableSpecs(TABLE_SPECS['job_reqs'])
 ss_specs = TableSpecs(TABLE_SPECS['skillset'])
+item_specs = TableSpecs(TABLE_SPECS['item'])
 
 
 jobreq_namedict = {}
@@ -40,6 +41,12 @@ def calculate_jp_total(joblevels):
 
 
 TEMPFILE = "_fftrandom.tmp"
+
+
+class ItemObject(TableObject):
+    specs = item_specs.specs
+    bitnames = item_specs.bitnames
+    total_size = item_specs.total_size
 
 
 class SkillsetObject(TableObject):
@@ -384,6 +391,11 @@ def get_skillsets(filename=None):
     return skillsets
 
 
+def get_items(filename=None):
+    items = get_table_objects(ItemObject, 0x5f6b8, 254, filename)
+    return items
+
+
 def get_jobs(filename=None):
     jobs = get_table_objects(JobObject, 0x5d8b8, 160, filename)
     for j in jobs:
@@ -674,10 +686,11 @@ if __name__ == "__main__":
     jobs = get_jobs(TEMPFILE)
     jobreqs = get_jobreqs(TEMPFILE)
     skillsets = get_skillsets(TEMPFILE)
+    items = get_items(TEMPFILE)
 
-    for ss in skillsets[:10]:
-        print ss.long_description
-        print
+    for i in items:
+        if i.time_available == 20:
+            print i.index, i.get_bit("rare")
 
     ''' Unlock all jobs (lowers overall enemy JP)
     for j in jobreqs:
