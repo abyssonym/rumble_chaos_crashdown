@@ -2,7 +2,7 @@ from shutil import copyfile
 from os import remove
 from sys import argv
 
-from utils import TABLE_SPECS, utilrandom as random
+from utils import TABLE_SPECS, mutate_index, utilrandom as random
 from tablereader import TableSpecs, TableObject, get_table_objects
 from uniso import remove_sector_metadata, inject_logical_sectors
 
@@ -26,6 +26,7 @@ mapunits = {}
 mapsprites = {}
 named_jobs = {}
 named_map_jobs = {}
+rankdict = None
 
 
 def calculate_jp_total(joblevels):
@@ -143,11 +144,20 @@ class UnitObject(TableObject):
         self.unlocked = unlocked_job.otherindex
         self.unlocked_level = unlocked_level
 
-        if self.secondary > 0x18:
-            return
+        #if self.secondary > 0x18:
+        #    return
 
-        if random.randint(1, 50) == 50 or True:
-            self.secondary = random.randint(0x19, 0xDF)
+        if random.randint(1, 10) == 10:
+            candidates = get_ranked("secondary")
+            base = get_job(self.job).skillset
+            if self.secondary in candidates:
+                base = random.choice([base, self.secondary])
+            index = candidates.index(base)
+            candidates.remove(base)
+            index = max(index-1, 0)
+            index = mutate_index(index, len(candidates), [True, False],
+                                 (-4, 5), (-2, 3))
+            self.secondary = candidates[index]
         elif (unlocked_job != base_job and unlocked_level > 1
                 and random.randint(1, 3) != 3):
             assert unlocked_job.otherindex in range(0x4A, 0x5E)
@@ -370,6 +380,10 @@ def get_jobs(filename=None):
     return jobs
 
 
+def get_job(index):
+    return [j for j in get_jobs() if j.index == index][0]
+
+
 def get_jobreqs(filename=None):
     jobreqs = get_table_objects(JobReqObject, 0x628c4, 19, filename)
     for j, jobname in zip(jobreqs, JOBNAMES[1:]):
@@ -400,7 +414,11 @@ def unlock_jobs(outfile):
     f.close()
 
 
-def get_rankings():
+def make_rankings():
+    global rankdict
+    if rankdict is not None:
+        return rankdict
+
     print "Analyzing and ranking unit data..."
     units = get_units()
     units = [u for u in units if u.graphic != 0]
@@ -457,14 +475,40 @@ def get_rankings():
                 rank = float(sum(ranks)) / len(ranks)
                 rankdict[key] = rank
 
-        codestring = "".join([chr(int(u.rank)) for u in units
+        codestring = "".join([chr(int(round(u.rank))) for u in units
                               if u.rank is not None])
         #if len(codestring) == len(oldstring):
         if codestring == oldstring:
             break
         oldstring = codestring
 
-    return rankdict
+    jobs = get_jobs()
+    for j in jobs:
+        if j.index in range(0x4A, 0x5E):
+            if ("job", j.index) not in rankdict:
+                rankdict["job", j.index] = 24 + (0.001 * j.index)
+
+        key = ("secondary", j.skillset)
+        if key not in rankdict:
+            key2 = ("job", j.index)
+            if key2 in rankdict:
+                rankdict[key] = rankdict[key2]
+            else:
+                rankdict["secondary", j.skillset] = 24 + (0.001 * j.index)
+
+    return make_rankings()
+
+
+def get_ranked(category):
+    make_rankings()
+    ranked = []
+    for key in rankdict:
+        cat, value = key
+        if cat == category:
+            ranked.append((rankdict[key], value))
+    ranked = sorted(ranked)
+    ranked = [b for (a, b) in ranked]
+    return ranked
 
 
 def sort_mapunits():
@@ -500,7 +544,7 @@ def mutate_units():
                 named_units[u.map_id] = []
             named_units[u.map_id].append(u)
 
-    get_rankings()
+    make_rankings()
 
     map_ids = sorted(named_units, key=lambda m: len(named_units[m]))
     map_ids = reversed(map_ids)
@@ -616,7 +660,7 @@ if __name__ == "__main__":
     jobs = get_jobs(TEMPFILE)
     jobreqs = get_jobreqs(TEMPFILE)
 
-    for j in jobs[:10]:
+    for j in jobs[0x4A:0x5A]:
         print j.long_description
         print
 
