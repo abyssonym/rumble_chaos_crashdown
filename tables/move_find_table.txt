@@ -1,0 +1,5 @@
+# 4 bytes, four per map, 128 maps, 512 total, starts at 0x282e74
+coordinates,1
+misc1,bit:degenerator deathtrap sleeping_gas steel_needle disable_trap always_trap unk no_activation
+rare,1
+common,1

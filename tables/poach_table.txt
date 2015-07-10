@@ -1,0 +1,3 @@
+# 2 bytes, starts at 0x62864, 48 entries
+common,1
+rare,1

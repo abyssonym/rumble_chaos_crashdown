@@ -11,6 +11,9 @@ job_specs = TableSpecs(TABLE_SPECS['job'])
 job_reqs_specs = TableSpecs(TABLE_SPECS['job_reqs'])
 ss_specs = TableSpecs(TABLE_SPECS['skillset'])
 item_specs = TableSpecs(TABLE_SPECS['item'])
+monster_skills_specs = TableSpecs(TABLE_SPECS['monster_skills'])
+move_find_specs = TableSpecs(TABLE_SPECS['move_find'])
+poach_specs = TableSpecs(TABLE_SPECS['poach'])
 
 
 jobreq_namedict = {}
@@ -43,28 +46,70 @@ def calculate_jp_total(joblevels):
 TEMPFILE = "_fftrandom.tmp"
 
 
+class MonsterSkillsObject(TableObject):
+    specs = monster_skills_specs
+
+    @property
+    def actual_attacks(self):
+        actuals = []
+        for i, attack in enumerate(self.attacks):
+            highbit = (self.highbits >> (7-i)) & 1
+            if highbit:
+                attack |= 0x100
+            actuals.append(attack)
+        return actuals
+
+
+class MoveFindObject(TableObject):
+    specs = move_find_specs
+
+    @property
+    def x(self):
+        return self.coordinates >> 4
+
+    @property
+    def y(self):
+        return self.coordinates & 0xF
+
+
+class PoachObject(TableObject):
+    specs = poach_specs
+
+
 class ItemObject(TableObject):
-    specs = item_specs.specs
-    bitnames = item_specs.bitnames
-    total_size = item_specs.total_size
+    specs = item_specs
 
 
 class SkillsetObject(TableObject):
-    specs = ss_specs.specs
-    bitnames = ss_specs.bitnames
-    total_size = ss_specs.total_size
+    specs = ss_specs
+
+    @property
+    def actual_actions(self):
+        actuals = []
+        for i, action in enumerate(self.actions):
+            highbit = (self.actionbits >> (15-i)) & 1
+            if highbit:
+                action |= 0x100
+            actuals.append(action)
+        return actuals
+
+    @property
+    def actual_rsms(self):
+        actuals = []
+        for i, rsm in enumerate(self.rsms):
+            highbit = (self.rsmbits >> (7-i)) & 1
+            if highbit:
+                rsm |= 0x100
+            actuals.append(rsm)
+        return actuals
 
 
 class JobObject(TableObject):
-    specs = job_specs.specs
-    bitnames = job_specs.bitnames
-    total_size = job_specs.total_size
+    specs = job_specs
 
 
 class UnitObject(TableObject):
-    specs = unit_specs.specs
-    bitnames = unit_specs.bitnames
-    total_size = unit_specs.total_size
+    specs = unit_specs
 
     @property
     def map_id(self):
@@ -312,9 +357,7 @@ class UnitObject(TableObject):
 
 
 class JobReqObject(TableObject):
-    specs = job_reqs_specs.specs
-    bitnames = job_reqs_specs.bitnames
-    total_size = job_reqs_specs.total_size
+    specs = job_reqs_specs
 
     @property
     def required_unlock_jp(self):
@@ -385,7 +428,7 @@ def get_unit(index):
 
 
 def get_skillsets(filename=None):
-    skillsets = get_table_objects(SkillsetObject, 0x61505, 171, filename)
+    skillsets = get_table_objects(SkillsetObject, 0x61311, 171, filename)
     for ss in skillsets:
         ss.index = ss.index + 5
     return skillsets
@@ -394,6 +437,18 @@ def get_skillsets(filename=None):
 def get_items(filename=None):
     items = get_table_objects(ItemObject, 0x5f6b8, 254, filename)
     return items
+
+
+def get_monster_skills(filename=None):
+    return get_table_objects(MonsterSkillsObject, 0x623c4, 48, filename)
+
+
+def get_move_finds(filename=None):
+    return get_table_objects(MoveFindObject, 0x282e74, 512, filename)
+
+
+def get_poaches(filename=None):
+    return get_table_objects(PoachObject, 0x62864, 48, filename)
 
 
 def get_jobs(filename=None):
@@ -687,10 +742,17 @@ if __name__ == "__main__":
     jobreqs = get_jobreqs(TEMPFILE)
     skillsets = get_skillsets(TEMPFILE)
     items = get_items(TEMPFILE)
+    monster_skills = get_monster_skills(TEMPFILE)
+    move_finds = get_move_finds(TEMPFILE)
+    poaches = get_poaches(TEMPFILE)
 
-    for i in items:
-        if i.time_available == 20:
-            print i.index, i.get_bit("rare")
+    print monster_skills[0].long_description
+    print ["%x" % a for a in monster_skills[0].actual_attacks]
+    print skillsets[0].long_description
+    print skillsets[0].index, ["%x" % a for a in skillsets[0].actual_actions]
+    print skillsets[0].index, ["%x" % a for a in skillsets[0].actual_rsms]
+    print move_finds[4].long_description
+    print poaches[0].long_description
 
     ''' Unlock all jobs (lowers overall enemy JP)
     for j in jobreqs:

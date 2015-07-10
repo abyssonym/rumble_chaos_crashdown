@@ -3,7 +3,7 @@ from utils import read_multi, write_multi
 
 class TableSpecs:
     def __init__(self, specfile):
-        self.specs = []
+        self.attributes = []
         self.bitnames = {}
         self.total_size = 0
         for line in open(specfile):
@@ -23,23 +23,30 @@ class TableSpecs:
                 self.bitnames[name] = bitnames
 
             size = int(size)
-            self.specs.append((name, size, other))
+            self.attributes.append((name, size, other))
             self.total_size += size
 
 
 class TableObject(object):
     def __init__(self, filename=None, pointer=None):
         assert hasattr(self, "specs")
-        assert hasattr(self, "total_size")
+        assert self.total_size
         self.filename = filename
         self.pointer = pointer
         if filename:
             self.read_data(filename, pointer)
 
-    def set_specs(self, specs):
-        self.specs = specs.specs
-        self.bitnames = specs.bitnames
-        self.total_size = specs.total_size
+    @property
+    def specattrs(self):
+        return self.specs.attributes
+
+    @property
+    def bitnames(self):
+        return self.specs.bitnames
+
+    @property
+    def total_size(self):
+        return self.specs.total_size
 
     def get_bit(self, bitname):
         for key, value in sorted(self.bitnames.items()):
@@ -120,7 +127,7 @@ class TableObject(object):
             return
         f = open(filename, 'r+b')
         f.seek(pointer)
-        for name, size, other in self.specs:
+        for name, size, other in self.specattrs:
             if other in [None, "int"]:
                 value = read_multi(f, length=size)
             elif other == "str":
@@ -132,7 +139,7 @@ class TableObject(object):
         f.close()
 
     def copy_data(self, another):
-        for name, _, _ in self.specs:
+        for name, _, _ in self.specattrs:
             if name in ["filename", "pointer", "index"]:
                 continue
             value = getattr(another, name)
@@ -147,7 +154,7 @@ class TableObject(object):
             return
         f = open(filename, 'r+b')
         f.seek(pointer)
-        for name, size, other in self.specs:
+        for name, size, other in self.specattrs:
             value = getattr(self, name)
             if other in [None, "int"]:
                 write_multi(f, value, length=size)
