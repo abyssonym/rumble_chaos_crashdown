@@ -32,6 +32,8 @@ def inject_logical_sectors(sourcefile, outfile):
     print "REINJECTING LOGICAL SECTORS TO ORIGINAL ISO"
     f = open(sourcefile, 'r+b')
     g = open(outfile, 'r+b')
+    minpointer, maxpointer = None, None
+    num_changed_sectors = 0
     while True:
         pointer_source = f.tell()
         pointer_dest = g.tell()
@@ -51,11 +53,21 @@ def inject_logical_sectors(sourcefile, outfile):
         if data_source == data_dest:
             continue
         else:
-            print "%x %x CHANGED" % (pointer_source, pointer_dest)
+            #print "%x %x CHANGED" % (pointer_source, pointer_dest)
+            if minpointer is None:
+                minpointer = pointer_dest
+            maxpointer = max(pointer_dest + 0x800, maxpointer)
+            num_changed_sectors += 1
             g.seek(pointer_dest)
             g.write(header)
             g.write(data_source)
             g.write("".join([chr(0) for _ in range(0x118)]))
+
+    if minpointer is not None and maxpointer is not None:
+        print "%s SECTORS CHANGED IN RANGE %x-%x" % (
+            num_changed_sectors, minpointer, maxpointer)
+    else:
+        print "NO CHANGES MADE TO ISO"
 
 
 if __name__ == "__main__":

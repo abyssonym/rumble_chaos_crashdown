@@ -1,6 +1,8 @@
 from shutil import copyfile
 from os import remove
 from sys import argv
+from time import time
+from string import lowercase
 
 from utils import TABLE_SPECS, mutate_index, utilrandom as random
 from tablereader import TableSpecs, TableObject, get_table_objects
@@ -500,7 +502,7 @@ def make_rankings():
     if rankdict is not None:
         return rankdict
 
-    print "Analyzing and ranking unit data..."
+    print "Analyzing and ranking unit data."
     units = get_units()
     units = [u for u in units if u.graphic != 0]
     units = [u for u in units
@@ -627,6 +629,7 @@ def mutate_units():
 
     make_rankings()
 
+    print "Mutating unit data."
     map_ids = sorted(named_units, key=lambda m: len(named_units[m]))
     map_ids = reversed(map_ids)
     for m in map_ids:
@@ -730,7 +733,36 @@ def setup_fiesta(filename):
 
 
 if __name__ == "__main__":
-    sourcefile = argv[1]
+    flags, seed = None, None
+    if len(argv) >= 2:
+        sourcefile = argv[1]
+        if len(argv) >= 3:
+            if '.' in argv[2]:
+                flags, seed = argv[2].split('.')
+            else:
+                try:
+                    seed = int(argv[2])
+                except ValueError:
+                    flags = argv[2]
+
+    if len(argv) <= 2:
+        if len(argv) <= 1:
+            sourcefile = raw_input("Filename? ").strip()
+        flags = raw_input("Flags? ").strip()
+        seed = raw_input("Seed? ").strip()
+
+    if not flags:
+        flags = lowercase
+
+    if seed:
+        seed = int(seed)
+    else:
+        seed = int(time())
+    seed = seed % (10**10)
+    print seed
+    random.seed(seed)
+
+    print "COPYING ROM IMAGE"
     newsource = "out.img"
     copyfile(sourcefile, newsource)
     sourcefile = newsource
@@ -746,14 +778,6 @@ if __name__ == "__main__":
     move_finds = get_move_finds(TEMPFILE)
     poaches = get_poaches(TEMPFILE)
 
-    print monster_skills[0].long_description
-    print ["%x" % a for a in monster_skills[0].actual_attacks]
-    print skillsets[0].long_description
-    print skillsets[0].index, ["%x" % a for a in skillsets[0].actual_actions]
-    print skillsets[0].index, ["%x" % a for a in skillsets[0].actual_rsms]
-    print move_finds[4].long_description
-    print poaches[0].long_description
-
     ''' Unlock all jobs (lowers overall enemy JP)
     for j in jobreqs:
         j.set_zero()
@@ -767,7 +791,8 @@ if __name__ == "__main__":
             u.write_data()
     '''
 
-    mutate_units()
+    if 'u' in flags:
+        mutate_units()
 
     #setup_fiesta(TEMPFILE)
     #unlock_jobs(TEMPFILE)
