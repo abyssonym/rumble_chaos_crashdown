@@ -16,6 +16,7 @@ item_specs = TableSpecs(TABLE_SPECS['item'])
 monster_skills_specs = TableSpecs(TABLE_SPECS['monster_skills'])
 move_find_specs = TableSpecs(TABLE_SPECS['move_find'])
 poach_specs = TableSpecs(TABLE_SPECS['poach'])
+ability_specs = TableSpecs(TABLE_SPECS['ability'])
 
 
 jobreq_namedict = {}
@@ -77,6 +78,14 @@ class MoveFindObject(TableObject):
 
 class PoachObject(TableObject):
     specs = poach_specs
+
+
+class AbilityObject(TableObject):
+    specs = ability_specs
+
+    @property
+    def ability_type(self):
+        return self.misc_type & 0xF
 
 
 class ItemObject(TableObject):
@@ -496,6 +505,10 @@ def get_poaches(filename=None):
     return get_table_objects(PoachObject, 0x62864, 48, filename)
 
 
+def get_abilities(filename=None):
+    return get_table_objects(AbilityObject, 0x5b3f0, 512, filename)
+
+
 def get_jobs(filename=None):
     jobs = get_table_objects(JobObject, 0x5d8b8, 160, filename)
     for j in jobs:
@@ -821,6 +834,10 @@ if __name__ == "__main__":
     monster_skills = get_monster_skills(TEMPFILE)
     move_finds = get_move_finds(TEMPFILE)
     poaches = get_poaches(TEMPFILE)
+    abilities = get_abilities(TEMPFILE)
+
+    for a in abilities[:10]:
+        print a.long_description
 
     ''' Unlock all jobs (lowers overall enemy JP)
     for j in jobreqs:
