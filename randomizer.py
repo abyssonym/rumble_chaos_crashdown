@@ -29,6 +29,7 @@ JOBLEVEL_JP = [100, 200, 350, 550, 800, 1150, 1550, 2100]
 
 mapsprite_restrictions = {}
 mapsprite_selection = {}
+monster_selection = {}
 mapunits = {}
 mapsprites = {}
 named_jobs = {}
@@ -228,7 +229,49 @@ class UnitObject(TableObject):
 
         return True
 
+    def mutate_monster_job(self):
+        ranked_monster_jobs = [get_job(m) for m in get_ranked("job")
+                               if m >= 0x5E]
+        if self.map_id not in monster_selection:
+            monster_jobs = [get_job(m.job) for m in mapunits[self.map_id]
+                            if m.job >= 0x5E]
+            monster_sprites = set([m.monster_graphic for m in monster_jobs])
+            ranked_monster_sprites = []
+            for m in ranked_monster_jobs:
+                if m.monster_graphic not in ranked_monster_sprites:
+                    ranked_monster_sprites.append(m.monster_graphic)
+            selected_sprites = []
+            for s in sorted(monster_sprites):
+                temp_sprites = [t for t in ranked_monster_sprites
+                                if t not in selected_sprites or t == s]
+                index = temp_sprites.index(s)
+                if s in selected_sprites:
+                    temp_sprites.remove(s)
+                index = mutate_index(index, len(temp_sprites), [True, False],
+                                     (-2, 3), (-1, 1))
+                selected = temp_sprites[index]
+                selected_sprites.append(selected)
+            selected_monsters = [m for m in ranked_monster_jobs
+                                 if m.monster_graphic in selected_sprites]
+            monster_selection[self.map_id] = selected_monsters
+
+        selection = monster_selection[self.map_id]
+        myjob = get_job(self.job)
+        ranked_selection = [m for m in ranked_monster_jobs
+                            if m in selection or m == myjob]
+        index = ranked_selection.index(myjob)
+        if myjob not in selection:
+            ranked_selection.remove(myjob)
+        index = mutate_index(index, len(ranked_selection), [True, False],
+                             (-1, 2), (-1, 1))
+        newjob = ranked_selection[index]
+        self.job = newjob.index
+        return True
+
     def mutate_job(self, boost_factor=1.2, preserve_gender=False):
+        if self.job >= 0x5E:
+            return self.mutate_monster_job()
+
         if self.job not in jobreq_indexdict:
             success = self.mutate_secondary()
             return success
@@ -565,6 +608,7 @@ def make_rankings():
             break
         oldstring = codestring
 
+    rankdict["job", 0x7B] = 30 + (0.001 * 0x7B)  # wildbow
     jobs = get_jobs()
     for j in jobs:
         if j.index in range(0x4A, 0x5E):
