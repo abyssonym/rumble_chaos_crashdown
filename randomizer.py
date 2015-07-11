@@ -5,6 +5,7 @@ from time import time
 from string import lowercase
 
 from utils import (TABLE_SPECS, mutate_index, mutate_normal, mutate_bits,
+                   write_multi,
                    utilrandom as random)
 from tablereader import TableSpecs, TableObject, get_table_objects
 from uniso import remove_sector_metadata, inject_logical_sectors
@@ -767,7 +768,7 @@ def get_jobs_kind(kind):
     return jobs
 
 
-def mutate_job_requirements():
+def mutate_job_requirements(filename):
     print "Mutating job requirements."
     reqs = get_jobreqs()
     done = [r for r in reqs if r.name == "squire"]
@@ -837,6 +838,25 @@ def mutate_job_requirements():
 
     for req in reqs:
         req.write_data()
+
+    global JOBLEVEL_JP
+    jp_per_level = []
+    for (a, b) in zip([0] + JOBLEVEL_JP, JOBLEVEL_JP):
+        difference = b - a
+        jp_per_level.append(difference)
+
+    new_joblevel_jp = [0]
+    for diff in jp_per_level:
+        diff = randint(diff, int(diff*1.5))
+        diff = mutate_normal(diff, maximum=800, smart=True)
+        diff = int(round(diff*2, -2)) / 2
+        new_joblevel_jp.append(new_joblevel_jp[-1] + diff)
+    JOBLEVEL_JP = new_joblevel_jp[1:]
+    f = open(filename, 'r+b')
+    f.seek(0x62984)
+    for j in JOBLEVEL_JP:
+        write_multi(f, j, length=2)
+    f.close()
 
 
 def mutate_job_stats():
@@ -1068,7 +1088,7 @@ if __name__ == "__main__":
     if 'r' in flags:
         for u in units:
             u.set_backup_jp_total()
-        mutate_job_requirements()
+        mutate_job_requirements(TEMPFILE)
 
     for req in jobreqs:
         req.set_required_unlock_jp()
