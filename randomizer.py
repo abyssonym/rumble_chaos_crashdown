@@ -9,6 +9,7 @@ from utils import (TABLE_SPECS, mutate_index, mutate_normal, mutate_bits,
 from tablereader import TableSpecs, TableObject, get_table_objects
 from uniso import remove_sector_metadata, inject_logical_sectors
 
+randint = random.randint
 unit_specs = TableSpecs(TABLE_SPECS['unit'])
 job_specs = TableSpecs(TABLE_SPECS['job'])
 job_reqs_specs = TableSpecs(TABLE_SPECS['job_reqs'])
@@ -39,6 +40,7 @@ mapunits = {}
 mapsprites = {}
 named_jobs = {}
 named_map_jobs = {}
+backup_jobreqs = None
 rankdict = None
 
 
@@ -129,7 +131,7 @@ class JobObject(TableObject):
                      "move", "jump", "evade"]:
             value = getattr(self, attr)
             if self.index not in range(0xE) + range(0x4A, 0x5E):
-                value = random.randint(value, int(value * boost_factor))
+                value = randint(value, int(value * boost_factor))
             setattr(self, attr, mutate_normal(value, smart=True))
 
         return True
@@ -146,7 +148,7 @@ class JobObject(TableObject):
             vulnerable = 0xFF ^ (self.nullify_elem | self.resist_elem)
             self.weak_elem = mutate_bits(self.weak_elem) & vulnerable
 
-        if self.index in [0x4A, 0x4B]:
+        if self.index in [0x4A]:
             return True
 
         if random.choice([True, False]):
@@ -154,7 +156,7 @@ class JobObject(TableObject):
             for i in range(40):
                 mask = (1 << i)
                 if mask & immune:
-                    if random.randint(1, 50) == 50:
+                    if randint(1, 50) == 50:
                         self.immune_status ^= mask
                     else:
                         self.immune_status |= mask
@@ -184,12 +186,12 @@ class JobObject(TableObject):
             innates = []
             for attr in innate_attrs:
                 value = getattr(self, attr)
-                if random.randint(1, 10) == 10:
+                if randint(1, 10) == 10:
                     index = None
                     if value:
                         assert value in innate_cands
                         index = innate_cands.index(value)
-                    if not value and random.randint(1, 2) == 2:
+                    if not value and randint(1, 2) == 2:
                         ranked_jobs = get_ranked("job")
                         if self.index not in ranked_jobs:
                             continue
@@ -227,8 +229,14 @@ class UnitObject(TableObject):
     def level_normalized(self):
         return self.level >= 100 or self.level == 0
 
+    def set_backup_jp_total(self):
+        self.backup_jp_total = self.jp_total
+
     @property
     def jp_total(self):
+        if hasattr(self, "backup_jp_total"):
+            return self.backup_jp_total
+
         if self.job in jobreq_indexdict:
             base_job = jobreq_indexdict[self.job]
         else:
@@ -257,13 +265,13 @@ class UnitObject(TableObject):
 
         if jp_remaining is None:
             jp_remaining = self.jp_total
-            jp_remaining = random.randint(jp_remaining,
-                                          int(jp_remaining * boost_factor))
+            jp_remaining = randint(jp_remaining,
+                                   int(jp_remaining * boost_factor))
 
         jobs = jobreq_namedict.values()
         jobs = [j for j in jobs if j.required_unlock_jp <= jp_remaining]
         if base_job is not None:
-            if (random.randint(1, 5) != 5 and base_job.otherindex > 0):
+            if (randint(1, 5) != 5 and base_job.otherindex > 0):
                 base_name = base_job.name
                 jobs = [j for j in jobs if getattr(j, base_name) > 0
                         or j == base_job]
@@ -296,7 +304,7 @@ class UnitObject(TableObject):
         unlocked_level = len([j for j in JOBLEVEL_JP if j <= jp_remaining])
         if random.choice([True, False]):
             unlocked_level += 1
-        while random.randint(1, 7) == 7:
+        while randint(1, 7) == 7:
             unlocked_level += 1
 
         unlocked_level = min(unlocked_level, 8)
@@ -306,8 +314,9 @@ class UnitObject(TableObject):
         #if self.secondary > 0x18:
         #    return
 
-        if random.randint(1, 10) == 10:
+        if randint(1, 10) == 10:
             candidates = get_ranked("secondary")
+            candidates = [c for c in candidates if c < 0xb0]
             base = get_job(self.job).skillset
             if self.secondary in candidates:
                 base = random.choice([base, self.secondary])
@@ -318,7 +327,7 @@ class UnitObject(TableObject):
                                  (-4, 5), (-2, 3))
             self.secondary = candidates[index]
         elif (unlocked_job != base_job and unlocked_level > 1
-                and random.randint(1, 3) != 3):
+                and randint(1, 3) != 3):
             assert unlocked_job.otherindex in range(0x14)
             self.secondary = unlocked_job.otherindex + 5
         elif self.secondary != 0 or random.choice([True, False]):
@@ -374,8 +383,7 @@ class UnitObject(TableObject):
             return success
 
         jp_remaining = self.jp_total
-        jp_remaining = random.randint(jp_remaining,
-                                      int(jp_remaining * boost_factor))
+        jp_remaining = randint(jp_remaining, int(jp_remaining * boost_factor))
 
         generic_r, monster_r, other_r = mapsprite_restrictions[self.map_id]
         selection = sorted(mapsprite_selection[self.map_id],
@@ -495,8 +503,7 @@ class UnitObject(TableObject):
 class JobReqObject(TableObject):
     specs = job_reqs_specs
 
-    @property
-    def required_unlock_jp(self):
+    def set_required_unlock_jp(self):
         self.remax_jobreqs()
 
         joblevels = []
@@ -506,7 +513,7 @@ class JobReqObject(TableObject):
                 joblevels.append(level)
         total = calculate_jp_total(joblevels)
 
-        return total
+        self.required_unlock_jp = total
 
     def remax_jobreqs(self):
         for name in JOBNAMES:
@@ -606,6 +613,10 @@ def get_job(index):
 
 
 def get_jobreqs(filename=None):
+    global backup_jobreqs
+    if backup_jobreqs is not None:
+        return backup_jobreqs
+
     jobreqs = get_table_objects(JobReqObject, 0x628c4, 19, filename)
     for j, jobname in zip(jobreqs, JOBNAMES[1:]):
         j.name = jobname
@@ -625,7 +636,9 @@ def get_jobreqs(filename=None):
         assert j.otherindex not in jobreq_indexdict
     for j in jobreqs:
         j.remax_jobreqs()
-    return jobreqs
+
+    backup_jobreqs = jobreqs
+    return get_jobreqs()
 
 
 def unlock_jobs(outfile):
@@ -754,7 +767,80 @@ def get_jobs_kind(kind):
     return jobs
 
 
+def mutate_job_requirements():
+    print "Mutating job requirements."
+    reqs = get_jobreqs()
+    done = [r for r in reqs if r.name == "squire"]
+    levels = ([randint(0, 1)] +
+              [randint(2, 3) for _ in range(4)] +
+              [randint(3, 5) for _ in range(4)] +
+              [randint(5, 8) for _ in range(4)] +
+              [randint(8, 13) + randint(0, 8) for _ in range(3)] +
+              [randint(13, 21) + randint(0, 13) for _ in range(2)] +
+              [randint(34, 55)])
+    assert len(levels) == 19
+    random.shuffle(reqs)
+    for req, numlevels in zip(reqs, levels):
+        if req.name == "squire":
+            continue
+        assert req not in done
+
+        req.set_zero()
+        prereqs = []
+        sublevels = []
+        candidates = [c for c in done if c.name not in ["dancer", "bard"]]
+        while numlevels > 1:
+            sublevel = randint(2, 3) + randint(0, 1)
+            sublevel = min(sublevel, numlevels)
+            if len(sublevels) == 14 or len(sublevels) == len(candidates):
+                index = randint(0, len(sublevels)-1)
+                sublevels[index] = min(sublevels[index] + sublevel, 8)
+            else:
+                sublevels.append(sublevel)
+            numlevels -= sublevel
+
+        if numlevels == 1:
+            if sublevels:
+                index = randint(0, len(sublevels)-1)
+                sublevels[index] = min(sublevels[index] + 1, 8)
+            else:
+                sublevels = [1]
+
+        assert len(sublevels) <= len(candidates)
+        assert len(sublevels) <= 14
+
+        prereqs = []
+        for _ in range(len(sublevels)):
+            tempcands = list(candidates)
+            for c in candidates:
+                for pr in prereqs:
+                    value = getattr(pr, c.name)
+                    if value > 0:
+                        tempcands.remove(c)
+                        break
+            if not tempcands:
+                tempcands = list(candidates)
+            index = len(tempcands) / 2
+            index = randint(0, index) + randint(0, index)
+            index = max(0, min(len(tempcands)-1, index))
+            prereq = tempcands[index]
+            prereqs.append(prereq)
+            candidates.remove(prereq)
+
+        for prereq, sublevel in zip(prereqs, sublevels):
+            assert hasattr(req, prereq.name)
+            setattr(req, prereq.name, sublevel)
+
+        for r in reqs:
+            r.remax_jobreqs()
+        done.append(req)
+
+    for req in reqs:
+        req.write_data()
+
+
 def mutate_job_stats():
+    print "Mutating job stats."
     jobs = get_jobs_kind("human")
     for j in jobs:
         success = j.mutate_stats()
@@ -774,6 +860,7 @@ def mutate_job_stats():
 
 
 def mutate_job_innates():
+    print "Mutating job innate features."
     jobs = get_jobs_kind("human")
     for j in jobs:
         success = j.mutate_innate()
@@ -782,6 +869,7 @@ def mutate_job_innates():
 
 
 def mutate_monsters():
+    print "Mutating monsters."
     jobs = get_jobs_kind("monster")
     for j in jobs:
         success = j.mutate_stats() and j.mutate_innate()
@@ -976,6 +1064,14 @@ if __name__ == "__main__":
             u.set_bit("control", True)
             u.write_data()
     '''
+
+    if 'r' in flags:
+        for u in units:
+            u.set_backup_jp_total()
+        mutate_job_requirements()
+
+    for req in jobreqs:
+        req.set_required_unlock_jp()
 
     if 'u' in flags:
         mutate_units()
