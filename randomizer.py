@@ -82,9 +82,34 @@ class MoveFindObject(TableObject):
     def y(self):
         return self.coordinates & 0xF
 
+    def mutate(self):
+        if random.choice([True, False]):
+            self.coordinates = randint(0, 0xFF)
+
+        if self.common != 0:
+            self.common = get_similar_item(self.common,
+                                           boost_factor=1.25).index
+        if self.rare != 0:
+            self.rare = get_similar_item(self.rare, boost_factor=1.15).index
+
+        if self.common or self.rare:
+            trapvalue = random.choice([True, False])
+            self.set_bit("disable_trap", not trapvalue)
+            if trapvalue:
+                self.set_bit("always_trap", randint(1, 3) == 3)
+                traptypes = ["sleeping_gas", "steel_needle",
+                             "deathtrap", "degenerator"]
+                for traptype in traptypes:
+                    self.set_bit(traptype, False)
+                self.set_bit(random.choice(traptypes), True)
+
 
 class PoachObject(TableObject):
     specs = poach_specs
+
+    def mutate(self):
+        self.common = get_similar_item(self.common, boost_factor=1.25).index
+        self.rare = get_similar_item(self.rare, boost_factor=1.15).index
 
 
 class AbilityObject(TableObject):
@@ -254,6 +279,13 @@ class UnitObject(TableObject):
         total = calculate_jp_total(joblevels)
 
         return total
+
+    def mutate_trophy(self):
+        if self.gil > 0:
+            self.gil = mutate_normal(self.gil, maximum=65000, smart=True)
+            self.gil = int(round(self.gil, -2))
+        if self.trophy:
+            self.trophy = get_similar_item(self.trophy).index
 
     def mutate_secondary(self, base_job=None, jp_remaining=None,
                          boost_factor=1.2):
@@ -583,6 +615,10 @@ def get_items(filename=None):
     return items
 
 
+def get_item(index):
+    return [i for i in get_items() if i.index == index][0]
+
+
 def get_monster_skills(filename=None):
     return get_table_objects(MonsterSkillsObject, 0x623c4, 48, filename)
 
@@ -747,6 +783,15 @@ def get_ranked(category):
     return ranked
 
 
+def get_ranked_items():
+    items = [i for i in get_items() if i.index > 0]
+    priceless = [i for i in items if i.price <= 10]
+    priced = [i for i in items if i not in priceless]
+    priced = sorted(priced, key=lambda i: i.price)
+    priceless = sorted(priceless, key=lambda i: i.enemy_level)
+    return priced + priceless
+
+
 def sort_mapunits():
     units = get_units()
     for u in units:
@@ -836,9 +881,6 @@ def mutate_job_requirements(filename):
             r.remax_jobreqs()
         done.append(req)
 
-    for req in reqs:
-        req.write_data()
-
     global JOBLEVEL_JP
     jp_per_level = []
     for (a, b) in zip([0] + JOBLEVEL_JP, JOBLEVEL_JP):
@@ -863,9 +905,8 @@ def mutate_job_stats():
     print "Mutating job stats."
     jobs = get_jobs_kind("human")
     for j in jobs:
-        success = j.mutate_stats()
-        if success:
-            j.write_data()
+        j.mutate_stats()
+
     abilities = get_abilities()
     for a in abilities:
         if a.jp_cost > 0:
@@ -876,25 +917,20 @@ def mutate_job_stats():
                 a.jp_cost = int(round(a.jp_cost, -1))
             a.learn_chance = mutate_normal(a.learn_chance, maximum=100,
                                            smart=True)
-            a.write_data()
 
 
 def mutate_job_innates():
     print "Mutating job innate features."
     jobs = get_jobs_kind("human")
     for j in jobs:
-        success = j.mutate_innate()
-        if success:
-            j.write_data()
+        j.mutate_innate()
 
 
 def mutate_monsters():
     print "Mutating monsters."
     jobs = get_jobs_kind("monster")
     for j in jobs:
-        success = j.mutate_stats() and j.mutate_innate()
-        if success:
-            j.write_data()
+        j.mutate_stats() and j.mutate_innate()
 
 
 def mutate_units():
@@ -909,6 +945,9 @@ def mutate_units():
         if remaining > 0 and key in range(0x100, 0x14B):
             # only appropriate for maps you can't assign units to
             generic += remaining
+        elif key >= 0x180 and generic > 2 and other > 1:
+            # account for event poses
+            generic -= 1
 
         mapsprite_restrictions[key] = (generic, monster, other)
         mapsprite_selection[key] = set([])
@@ -939,16 +978,54 @@ def mutate_units():
         assert len(set(nus)) == nuslen
         for u in nus:
             assert not u.has_special_graphic
-            success = u.mutate_job()
+            u.mutate_job()
             u.job_mutated = True
-            if success:
-                u.write_data()
 
     random.shuffle(units)
     for u in [u for u in units if u.has_special_graphic or not u.named]:
-        success = u.mutate_job()
-        if success:
-            u.write_data()
+        u.mutate_job()
+
+
+def mutate_treasure():
+    print "Mutating treasure."
+    units = get_units()
+    for u in units:
+        u.mutate_trophy()
+
+    poaches = get_poaches()
+    for p in poaches:
+        p.mutate()
+
+    move_finds = get_move_finds()
+    for mf in move_finds:
+        mf.mutate()
+
+
+def mutate_shops():
+    print "Mutating shop item availability."
+    items = get_items()
+    for i in items:
+        i.mutate_shop()
+
+
+def get_similar_item(base_item, same_type=False, same_equip=False,
+                     boost_factor=1.0):
+    if isinstance(base_item, int):
+        base_item = get_item(base_item)
+    items = get_items()
+    if same_type:
+        items = [i for i in items if i.itemtype == base_item.itemtype]
+    if same_equip:
+        items = [i for i in items if i.misc1 & 0xF8 == base_item.misc1 & 0xF8]
+
+    index = items.index(base_item)
+    reverse_index = len(items) - index - 1
+    reverse_index = randint(int(round(reverse_index / boost_factor)),
+                            reverse_index)
+    index = len(items) - reverse_index - 1
+    index = mutate_normal(index, maximum=len(items)-1, smart=True)
+    replace_item = items[index]
+    return replace_item
 
 
 def setup_fiesta(filename):
@@ -1019,10 +1096,6 @@ def setup_fiesta(filename):
     for u in mapunits[0x183] | mapunits[0x184]:
         if u.get_bit("team1"):
             u.righthand = 0x49
-            u.write_data()
-
-    for u in units:
-        u.write_data()
 
 
 if __name__ == "__main__":
@@ -1072,6 +1145,9 @@ if __name__ == "__main__":
     poaches = get_poaches(TEMPFILE)
     abilities = get_abilities(TEMPFILE)
 
+    all_objects = [units, jobs, jobreqs, skillsets, items,
+                   monster_skills, move_finds, poaches, abilities]
+
     ''' Unlock all jobs (lowers overall enemy JP)
     for j in jobreqs:
         j.set_zero()
@@ -1104,6 +1180,20 @@ if __name__ == "__main__":
 
     if 'm' in flags:
         mutate_monsters()
+
+    if 't' in flags:
+        mutate_treasure()
+
+    if 's' in flags:
+        mutate_shops()
+
+    if 'k' in flags:
+        pass
+
+    print "WRITING MUTATED DATA"
+    for objects in all_objects:
+        for obj in objects:
+            obj.write_data()
 
     #setup_fiesta(TEMPFILE)
     #unlock_jobs(TEMPFILE)

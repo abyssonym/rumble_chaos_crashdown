@@ -77,6 +77,8 @@ def mutate_bits(value, size=8):
 
 def mutate_normal(value, minimum=0, maximum=0xFF,
                   reverse=False, smart=False, chain=True):
+    if maximum-minimum < 5:
+        raise Exception("Are you sure you want to do this?")
     value = max(minimum, min(value, maximum))
     rev = reverse
     if smart:
@@ -92,7 +94,8 @@ def mutate_normal(value, minimum=0, maximum=0xFF,
 
     odd = value % 2
     value = value / 2
-    value = value + random.randint(0, value) + random.randint(0, value)
+    rval = max(value, 2)
+    value = value + random.randint(0, rval) + random.randint(0, rval)
     if odd:
         value += random.randint(0, 1)
 

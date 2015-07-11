@@ -73,6 +73,8 @@ class TableObject(object):
 
     @property
     def display_name(self):
+        if not hasattr(self, "name"):
+            self.name = "%x" % self.index
         if isinstance(self.name, int):
             return "%x" % self.name
         return "".join([c for c in self.name if ord(c) > 0])
