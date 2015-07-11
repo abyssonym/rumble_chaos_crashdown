@@ -3,4 +3,3 @@ jp_cost,2
 learn_chance,1
 misc_type,1
 misc_unk,4
-

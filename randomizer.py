@@ -4,7 +4,8 @@ from sys import argv
 from time import time
 from string import lowercase
 
-from utils import TABLE_SPECS, mutate_index, utilrandom as random
+from utils import (TABLE_SPECS, mutate_index, mutate_normal, mutate_bits,
+                   utilrandom as random)
 from tablereader import TableSpecs, TableObject, get_table_objects
 from uniso import remove_sector_metadata, inject_logical_sectors
 
@@ -17,6 +18,9 @@ monster_skills_specs = TableSpecs(TABLE_SPECS['monster_skills'])
 move_find_specs = TableSpecs(TABLE_SPECS['move_find'])
 poach_specs = TableSpecs(TABLE_SPECS['poach'])
 ability_specs = TableSpecs(TABLE_SPECS['ability'])
+
+VALID_INNATE_STATUSES = 0xCAFCE92A10
+VALID_START_STATUSES = VALID_INNATE_STATUSES | 0x3402301000
 
 
 jobreq_namedict = {}
@@ -118,6 +122,90 @@ class SkillsetObject(TableObject):
 
 class JobObject(TableObject):
     specs = job_specs
+
+    def mutate_stats(self, boost_factor=1.3):
+        for attr in ["hpgrowth", "hpmult", "mpgrowth", "mpmult", "spdgrowth",
+                     "spdmult", "pagrowth", "pamult", "magrowth", "mamult",
+                     "move", "jump", "evade"]:
+            value = getattr(self, attr)
+            if self.index not in range(0xE) + range(0x4A, 0x5E):
+                value = random.randint(value, int(value * boost_factor))
+            setattr(self, attr, mutate_normal(value, smart=True))
+
+        return True
+
+    def mutate_innate(self):
+        if random.choice([True, False]):
+            self.equips = mutate_bits(self.equips, 32)
+
+        if random.choice([True, False]):
+            self.nullify_elem = mutate_bits(self.nullify_elem)
+            vulnerable = 0xFF ^ self.nullify_elem
+            self.absorb_elem = mutate_bits(self.absorb_elem) & vulnerable
+            self.resist_elem = mutate_bits(self.resist_elem) & vulnerable
+            vulnerable = 0xFF ^ (self.nullify_elem | self.resist_elem)
+            self.weak_elem = mutate_bits(self.weak_elem) & vulnerable
+
+        if self.index in [0x4A, 0x4B]:
+            return True
+
+        if random.choice([True, False]):
+            immune = mutate_bits(self.immune_status, 40)
+            for i in range(40):
+                mask = (1 << i)
+                if mask & immune:
+                    if random.randint(1, 50) == 50:
+                        self.immune_status ^= mask
+                    else:
+                        self.immune_status |= mask
+            not_innate = ((2**40)-1) ^ self.innate_status
+            not_start = ((2**40)-1) ^ self.start_status
+            self.immune_status &= not_innate
+            self.immune_status &= not_start
+
+            vulnerable = ((2**40)-1) ^ self.immune_status
+            innate = mutate_bits(self.innate_status, 40)
+            innate &= vulnerable
+            innate &= VALID_INNATE_STATUSES
+            not_innate2 = ((2**40)-1) ^ innate
+            start = mutate_bits(self.start_status, 40)
+            start &= vulnerable
+            start &= (not_innate & not_innate2)
+            start &= VALID_START_STATUSES
+            self.innate_status |= innate
+            self.start_status |= start
+
+        if random.choice([True, False]):
+            innate_cands = [a for a in get_abilities()
+                            if a.ability_type in [7, 8, 9]]
+            innate_cands = sorted(innate_cands, key=lambda a: a.jp_cost)
+            innate_cands = [a.index for a in innate_cands]
+            innate_attrs = ["innate1", "innate2", "innate3", "innate4"]
+            innates = []
+            for attr in innate_attrs:
+                value = getattr(self, attr)
+                if random.randint(1, 10) == 10:
+                    index = None
+                    if value:
+                        assert value in innate_cands
+                        index = innate_cands.index(value)
+                    if not value and random.randint(1, 2) == 2:
+                        ranked_jobs = get_ranked("job")
+                        if self.index not in ranked_jobs:
+                            continue
+                        index = ranked_jobs.index(self.index)
+                        index = float(index) / len(ranked_jobs)
+                        index = int(round(index * len(innate_cands)))
+                    if index is not None:
+                        index = mutate_index(index, len(innate_cands),
+                                             [True, False], (-6, 7), (-4, 4))
+                        value = innate_cands[index]
+                innates.append(value)
+            innates = reversed(sorted(innates))
+            for attr, innate in zip(innate_attrs, innates):
+                setattr(self, attr, innate)
+
+        return True
 
 
 class UnitObject(TableObject):
@@ -309,13 +397,10 @@ class UnitObject(TableObject):
                 raise Exception("No gender.")
 
         if preserve_gender and not self.has_special_graphic:
-            try:
-                if gender == "male":
-                    assert male_sel or len(selection) < generic_r
-                elif gender == "female":
-                    assert female_sel or len(selection) < generic_r
-            except:
-                import pdb; pdb.set_trace()
+            if gender == "male":
+                assert male_sel or len(selection) < generic_r
+            elif gender == "female":
+                assert female_sel or len(selection) < generic_r
 
         assert self.job in jobreq_indexdict.keys()
         jobs = jobreq_namedict.values()
@@ -372,10 +457,7 @@ class UnitObject(TableObject):
         assert base_job is not None
         if not self.has_special_graphic:
             if self.named and (self.name, self.job) in named_jobs:
-                try:
-                    assert named_jobs[(self.name, self.job)] == base_job
-                except:
-                    import pdb; pdb.set_trace()
+                assert named_jobs[(self.name, self.job)] == base_job
             else:
                 named_jobs[(self.name, self.job)] = base_job
             named_map_jobs[(self.map_id, self.job, gender)] = base_job
@@ -661,6 +743,41 @@ def sort_mapunits():
         mapunits[u.map_id].add(u)
 
 
+def get_jobs_kind(kind):
+    jobs = get_jobs()
+    if kind == "human":
+        jobs = [j for j in jobs if j.index < 0x5E]
+    elif kind == "monster":
+        jobs = [j for j in jobs if j.index >= 0x5E]
+    else:
+        raise Exception("Unknown kind.")
+    return jobs
+
+
+def mutate_job_stats():
+    jobs = get_jobs_kind("human")
+    for j in jobs:
+        success = j.mutate_stats()
+        if success:
+            j.write_data()
+
+
+def mutate_job_innates():
+    jobs = get_jobs_kind("human")
+    for j in jobs:
+        success = j.mutate_innate()
+        if success:
+            j.write_data()
+
+
+def mutate_monsters():
+    jobs = get_jobs_kind("monster")
+    for j in jobs:
+        success = j.mutate_stats() and j.mutate_innate()
+        if success:
+            j.write_data()
+
+
 def mutate_units():
     units = get_units()
     sort_mapunits()
@@ -836,9 +953,6 @@ if __name__ == "__main__":
     poaches = get_poaches(TEMPFILE)
     abilities = get_abilities(TEMPFILE)
 
-    for a in abilities[:10]:
-        print a.long_description
-
     ''' Unlock all jobs (lowers overall enemy JP)
     for j in jobreqs:
         j.set_zero()
@@ -854,6 +968,15 @@ if __name__ == "__main__":
 
     if 'u' in flags:
         mutate_units()
+
+    if 'j' in flags:
+        mutate_job_stats()
+
+    if 'i' in flags:
+        mutate_job_innates()
+
+    if 'm' in flags:
+        mutate_monsters()
 
     #setup_fiesta(TEMPFILE)
     #unlock_jobs(TEMPFILE)

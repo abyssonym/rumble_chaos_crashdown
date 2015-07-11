@@ -63,6 +63,52 @@ utran = utilrandom
 random = utilrandom
 
 
+def mutate_bits(value, size=8):
+    bits_set = bin(value).count('1')
+    bits_unset = size - bits_set
+    assert bits_unset >= 0
+    lowvalue = min(bits_set, bits_unset)
+    lowvalue = max(lowvalue, 1)
+    for i in range(size):
+        if random.randint(1, size*2) <= lowvalue:
+            value ^= (1 << i)
+    return value
+
+
+def mutate_normal(value, minimum=0, maximum=0xFF,
+                  reverse=False, smart=False, chain=True):
+    value = max(minimum, min(value, maximum))
+    rev = reverse
+    if smart:
+        if value > (minimum + maximum) / 2:
+            rev = True
+        else:
+            rev = False
+
+    if rev:
+        value = maximum - value
+    else:
+        value = value - minimum
+
+    odd = value % 2
+    value = value / 2
+    value = value + random.randint(0, value) + random.randint(0, value)
+    if odd:
+        value += random.randint(0, 1)
+
+    if rev:
+        value = maximum - value
+    else:
+        value = value + minimum
+
+    value = max(minimum, min(value, maximum))
+    if chain and random.randint(1, 10) == 10:
+        return mutate_normal(value, minimum=minimum, maximum=maximum,
+                             reverse=reverse, smart=smart, chain=True)
+    else:
+        return value
+
+
 def mutate_index(index, length, continuation=None,
                  basic_range=None, extended_range=None):
     if length == 0:
