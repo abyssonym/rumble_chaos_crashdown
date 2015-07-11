@@ -760,6 +760,17 @@ def mutate_job_stats():
         success = j.mutate_stats()
         if success:
             j.write_data()
+    abilities = get_abilities()
+    for a in abilities:
+        if a.jp_cost > 0:
+            a.jp_cost = mutate_normal(a.jp_cost, maximum=9999, smart=True)
+            if a.jp_cost > 200:
+                a.jp_cost = int(round(a.jp_cost*2, -2) / 2)
+            else:
+                a.jp_cost = int(round(a.jp_cost, -1))
+            a.learn_chance = mutate_normal(a.learn_chance, maximum=100,
+                                           smart=True)
+            a.write_data()
 
 
 def mutate_job_innates():
