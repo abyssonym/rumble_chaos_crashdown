@@ -1,5 +1,6 @@
 #25 bytes, Basic Skill (#5) starts at 0x61311, 171 total not including #0-#4
-actionbits,2
+actionbits1,1
+actionbits2,1
 rsmbits,1
-actions,16,list
-rsms,6,list
+actionbytes,16,list
+rsmbytes,6,list

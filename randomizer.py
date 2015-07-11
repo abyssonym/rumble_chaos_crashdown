@@ -23,7 +23,8 @@ ability_specs = TableSpecs(TABLE_SPECS['ability'])
 
 VALID_INNATE_STATUSES = 0xCAFCE92A10
 VALID_START_STATUSES = VALID_INNATE_STATUSES | 0x3402301000
-
+BANNED_SKILLSET_SHUFFLE = [0, 1, 2, 3, 6, 8, 0x11, 0x12, 0x13, 0x14, 0x15,
+                           0x34, 0x38, 0x39, 0x3B, 0x3E, 0x9C]
 
 jobreq_namedict = {}
 jobreq_indexdict = {}
@@ -123,29 +124,89 @@ class AbilityObject(TableObject):
 class ItemObject(TableObject):
     specs = item_specs
 
+    def mutate_shop(self):
+        self.price = mutate_normal(self.price, maximum=65000, smart=True)
+        self.price = int(round(self.price, -1))
+        if self.price > 500:
+            self.price = int(round(self.price, -2))
+        if 1 <= self.time_available <= 16:
+            self.time_available = mutate_normal(self.time_available,
+                                                maximum=16, smart=True)
+
 
 class SkillsetObject(TableObject):
     specs = ss_specs
 
     @property
-    def actual_actions(self):
+    def num_actions(self):
+        return len([a for a in self.actions if a > 0])
+
+    @property
+    def num_rsms(self):
+        return len([a for a in self.rsms if a > 0])
+
+    @property
+    def has_learnable_actions(self):
+        for action in self.actions:
+            if get_ability(action).jp_cost > 0:
+                return True
+        else:
+            return False
+
+    @property
+    def has_learnable_rsms(self):
+        for action in self.rsms:
+            if get_ability(action).jp_cost > 0:
+                return True
+        else:
+            return False
+
+    def get_actual_actions(self):
         actuals = []
-        for i, action in enumerate(self.actions):
-            highbit = (self.actionbits >> (15-i)) & 1
+        actionbits = (self.actionbits1 << 8) | self.actionbits2
+        for i, action in enumerate(self.actionbytes):
+            highbit = (actionbits >> (15-i)) & 1
             if highbit:
                 action |= 0x100
             actuals.append(action)
         return actuals
 
-    @property
-    def actual_rsms(self):
+    def get_actual_rsms(self):
         actuals = []
-        for i, rsm in enumerate(self.rsms):
+        for i, rsm in enumerate(self.rsmbytes):
             highbit = (self.rsmbits >> (7-i)) & 1
             if highbit:
                 rsm |= 0x100
             actuals.append(rsm)
         return actuals
+
+    def read_data(self, filename=None, pointer=None):
+        super(SkillsetObject, self).read_data(filename, pointer=pointer)
+        self.actions = self.get_actual_actions()
+        self.rsms = self.get_actual_rsms()
+        self.actions = [a for a in self.actions if a > 0]
+        self.rsms = [a for a in self.rsms if a > 0]
+
+    def write_data(self, filename=None, pointer=None):
+        actions, rsms = list(self.actions), list(self.rsms)
+        while len(actions) < 16:
+            actions.append(0)
+        while len(rsms) < 6:
+            rsms.append(0)
+        self.actionbytes = [a & 0xFF for a in actions]
+        self.rsmbytes = [a & 0xFF for a in rsms]
+        assert len(self.actionbytes) == 16
+        assert len(self.rsmbytes) == 6
+        actionbits, self.rsmbits = 0, 0
+        for (i, a) in enumerate(actions):
+            if a & 0x100:
+                actionbits |= (1 << (15-i))
+        self.actionbits1 = actionbits >> 8
+        self.actionbits2 = actionbits & 0xFF
+        for (i, a) in enumerate(rsms):
+            if a & 0x100:
+                self.rsmbits |= (1 << (7-i))
+        super(SkillsetObject, self).write_data(filename, pointer=pointer)
 
 
 class JobObject(TableObject):
@@ -604,10 +665,8 @@ def get_unit(index):
 
 
 def get_skillsets(filename=None):
-    skillsets = get_table_objects(SkillsetObject, 0x61311, 171, filename)
-    for ss in skillsets:
-        ss.index = ss.index + 5
-    return skillsets
+    skillsets = get_table_objects(SkillsetObject, 0x61294, 176, filename)
+    return skillsets[5:]
 
 
 def get_items(filename=None):
@@ -633,6 +692,10 @@ def get_poaches(filename=None):
 
 def get_abilities(filename=None):
     return get_table_objects(AbilityObject, 0x5b3f0, 512, filename)
+
+
+def get_ability(index):
+    return [a for a in get_abilities() if a.index == index][0]
 
 
 def get_jobs(filename=None):
@@ -926,11 +989,50 @@ def mutate_job_innates():
         j.mutate_innate()
 
 
+def mutate_skillsets():
+    print "Shuffling job skillsets."
+    skillsets = get_skillsets()
+    skillsets = [s for s in skillsets if s.has_learnable_actions
+                 and s.index not in BANNED_SKILLSET_SHUFFLE]
+    doing_skillsets = [s for s in skillsets if 5 <= s.index <= 0x18]
+    done_actions = set([])
+    for ss in doing_skillsets:
+        done_actions |= set(ss.actions)
+    #skillsets = reversed(sorted(skillsets, key=lambda s: s.num_actions))
+    random.shuffle(skillsets)
+    for ss in skillsets:
+        if ss in doing_skillsets:
+            continue
+        if set(ss.actions) & done_actions:
+            continue
+        doing_skillsets.append(ss)
+        done_actions |= set(ss.actions)
+    pulled_actions = {}
+    for ss in doing_skillsets:
+        num_to_pull = len(ss.actions) / 2
+        num_to_pull = randint(0, num_to_pull) + randint(0, num_to_pull)
+        if num_to_pull > len(ss.actions) / 2:
+            num_to_pull = len(ss.actions) - num_to_pull
+        pulled = random.sample(ss.actions, num_to_pull)
+        for p in pulled:
+            ss.actions.remove(p)
+        pulled_actions[ss] = pulled
+    exchanges = list(doing_skillsets)
+    random.shuffle(exchanges)
+    for a, b in zip(doing_skillsets, exchanges):
+        pulled = pulled_actions[b]
+        a.actions.extend(pulled)
+        if len(a.actions) > 16:
+            a.actions = random.sample(a.actions, 16)
+        a.actions = sorted(a.actions)
+
+
 def mutate_monsters():
     print "Mutating monsters."
     jobs = get_jobs_kind("monster")
     for j in jobs:
         j.mutate_stats() and j.mutate_innate()
+    print "Shuffling monster skills."
 
 
 def mutate_units():
@@ -1188,7 +1290,7 @@ if __name__ == "__main__":
         mutate_shops()
 
     if 'k' in flags:
-        pass
+        mutate_skillsets()
 
     print "WRITING MUTATED DATA"
     for objects in all_objects:
