@@ -1562,6 +1562,8 @@ def randomize():
 
     if set(flags) & set("rujimtps"):
         for map_id in range(0x180, 0x1D5):
+            if map_id == 0x183:
+                continue
             for u in mapunits[map_id]:
                 if not u.get_bit("team1") and not u.level_normalized:
                     u.normalize_level()
