@@ -1,0 +1,36 @@
+FFT Rumble Chaos Crashdown Randomizer
+Version:    1
+Date:       July 12, 2015
+URL:        https://github.com/abyssonym/rumble_chaos_crashdown
+Contact:    https://twitter.com/abyssonym
+            https://www.twitch.tv/abyssonym
+
+--- HOW TO USE ---
+Running the randomizer:
+    Windows users may use the executable file, "fft_rcc.exe". Other users, please run "randomizer.py" using Python version 2.7.
+
+Source iso file:
+    The randomizer will ask for a filename. Place your Final Fantasy Tactics iso in the same directory as "fft_rcc.exe" and input the name of the file. Please note that the randomizer needs 1 GB of free space to create the randomized iso. The iso used for testing has the following hash:
+    MD5 - aefdf27f1cd541ad46b5df794f635f50
+    CRC32 - 8ab1b7b1
+
+Flags:
+    Input the following flags to customize your RUMBLE CHAOS CRASHDOWN experience.
+
+    u  Randomize enemy and ally units.
+    j  Randomize job stats and JP required for skills.
+    i  Randomize innate properties of jobs.
+    s  Randomize job skillsets.
+    r  Randomize job requirements and job level JP.
+    t  Randomize trophies, poaches, and move-find items.
+    p  Randomize item prices and shop availability.
+    m  Randomize monster stats and skills.
+
+Seed value:
+    Input a seed value here, or leave it blank if you don't care.
+
+Output files:
+    The randomizer will output a new, randomized iso with the seed in the filename. If you choose to randomize job requirements, it will also output a text file with the new job requirements inside.
+
+Like this randomizer? Be sure to check out my main project, the FF6 Beyond Chaos randomizer:
+    https://github.com/abyssonym/beyondchaos

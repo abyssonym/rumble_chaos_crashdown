@@ -1445,6 +1445,7 @@ def randomize():
                "to create a new rom file.\n")
         if len(argv) <= 1:
             sourcefile = raw_input("Filename? ").strip()
+            print
         print ("u  Randomize enemy and ally units.\n"
                "j  Randomize job stats and JP required for skills.\n"
                "i  Randomize innate properties of jobs.\n"
@@ -1477,9 +1478,9 @@ def randomize():
     seed = seed % (10**10)
     print "Using seed: %s.%s\n" % (flags, seed)
     if flags:
-        newsource = "fft.%s.%s.img" % (flags, seed)
+        newsource = "fft_rcc.%s.%s.iso" % (flags, seed)
     else:
-        newsource = "fft.%s.img" % seed
+        newsource = "fft_rcc.%s.iso" % seed
 
     secret_codes = {}
     secret_codes['fiesta'] = "JOB FIESTA MODE"
@@ -1587,7 +1588,8 @@ def randomize():
 
     if len(argv) <= 2:
         raw_input("\nRandomization completed successfully. "
-                  "Press enter to close this program. ")
+                  "\nOutput filename: %s"
+                  "\nPress enter to close this program. " % sourcefile)
 
 if __name__ == "__main__":
     try:
