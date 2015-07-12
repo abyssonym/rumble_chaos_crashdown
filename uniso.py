@@ -58,10 +58,14 @@ def inject_logical_sectors(sourcefile, outfile):
                 minpointer = pointer_dest
             maxpointer = max(pointer_dest + 0x800, maxpointer)
             num_changed_sectors += 1
+            # gotta do this dumb file seeking thing for windows
             g.seek(pointer_dest)
             g.write(header)
+            g.seek(pointer_dest + len(header))
             g.write(data_source)
+            g.seek(pointer_dest + len(header) + len(data_source))
             g.write("".join([chr(0) for _ in range(0x118)]))
+            g.seek(pointer_dest + len(header) + len(data_source) + 0x118)
 
     if minpointer is not None and maxpointer is not None:
         print "%s SECTORS CHANGED IN RANGE %x-%x" % (

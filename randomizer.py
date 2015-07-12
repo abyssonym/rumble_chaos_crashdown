@@ -1,5 +1,6 @@
 from shutil import copyfile
 from os import remove
+import sys
 from sys import argv
 from time import time
 from string import lowercase
@@ -12,7 +13,7 @@ from uniso import remove_sector_metadata, inject_logical_sectors
 
 randint = random.randint
 
-VERSION = 1
+VERSION = "1"
 MD5HASH = "aefdf27f1cd541ad46b5df794f635f50"
 
 unit_specs = TableSpecs(TABLE_SPECS['unit'])
@@ -56,7 +57,7 @@ g_monster_skills = None
 def get_md5_hash(filename):
     from hashlib import md5
     m = md5()
-    f = open(filename)
+    f = open(filename, 'r+b')
     while True:
         data = f.read(128)
         if data:
@@ -1467,7 +1468,7 @@ def randomize():
         if resp and resp[0].lower() == 'y':
             pass
         else:
-            exit(0)
+            sys.exit(0)
 
     if seed:
         seed = int(seed)
