@@ -45,6 +45,8 @@ named_jobs = {}
 named_map_jobs = {}
 backup_jobreqs = None
 rankdict = None
+ranked_skills_dict = {}
+g_monster_skills = None
 
 
 def calculate_jp_total(joblevels):
@@ -62,15 +64,60 @@ TEMPFILE = "_fftrandom.tmp"
 class MonsterSkillsObject(TableObject):
     specs = monster_skills_specs
 
-    @property
-    def actual_attacks(self):
+    def get_actual_attacks(self):
         actuals = []
-        for i, attack in enumerate(self.attacks):
+        for i, attack in enumerate(self.attackbytes):
             highbit = (self.highbits >> (7-i)) & 1
             if highbit:
                 attack |= 0x100
             actuals.append(attack)
         return actuals
+
+    def read_data(self, filename=None, pointer=None):
+        super(MonsterSkillsObject, self).read_data(filename, pointer=pointer)
+        self.attacks = self.get_actual_attacks()
+
+    def write_data(self, filename=None, pointer=None):
+        self.attackbytes = [a & 0xFF for a in self.attacks]
+        self.highbits = 0
+        for i, attack in enumerate(self.attacks):
+            if attack & 0x100:
+                self.highbits |= (1 << (7-i))
+        super(MonsterSkillsObject, self).write_data(filename, pointer=pointer)
+
+    def mutate(self):
+        if randint(1, 12) == 12:
+            candidates = get_ranked_skills()
+        else:
+            candidates = get_ranked_skills("monster")
+
+        new_attacks = []
+        for action in self.attacks:
+            if action == 0:
+                if random.choice([True, False]):
+                    continue
+                else:
+                    action = random.choice(self.attacks)
+                if action == 0:
+                    continue
+            elif random.choice([True, False]):
+                new_attacks.append(action)
+                continue
+            index = candidates.index(get_ability(action))
+            index = mutate_normal(index, maximum=len(candidates)-1, smart=True)
+            new_attacks.append(candidates[index].index)
+
+        new_attacks, beastmaster = new_attacks[:-1], new_attacks[-1]
+        new_attacks = [n for n in new_attacks if n != beastmaster]
+        if len(new_attacks) == 0:
+            new_attacks = [beastmaster]
+            beastmaster = random.choice(candidates).index
+        new_attacks = sorted(set(new_attacks))
+        assert len(new_attacks) >= 1
+        assert 0 not in new_attacks
+        while len(new_attacks) < 3:
+            new_attacks.append(0)
+        self.attacks = new_attacks + [beastmaster]
 
 
 class MoveFindObject(TableObject):
@@ -690,6 +737,10 @@ def get_skillsets(filename=None):
     return skillsets[5:]
 
 
+def get_skillset(index):
+    return [ss for ss in get_skillsets() if ss.index == index][0]
+
+
 def get_items(filename=None):
     items = get_table_objects(ItemObject, 0x5f6b8, 254, filename)
     return items
@@ -700,7 +751,18 @@ def get_item(index):
 
 
 def get_monster_skills(filename=None):
-    return get_table_objects(MonsterSkillsObject, 0x623c4, 48, filename)
+    global g_monster_skills
+    if g_monster_skills is not None:
+        return g_monster_skills
+    mss = get_table_objects(MonsterSkillsObject, 0x623c4, 48, filename)
+    for ms in mss:
+        ms.index += 0xb0
+    g_monster_skills = mss
+    return get_monster_skills()
+
+
+def get_monster_skillset(index):
+    return [ms for ms in get_monster_skills() if ms.index == index][0]
 
 
 def get_move_finds(filename=None):
@@ -874,6 +936,72 @@ def get_ranked_items():
     priced = sorted(priced, key=lambda i: i.price)
     priceless = sorted(priceless, key=lambda i: i.enemy_level)
     return priced + priceless
+
+
+def get_ranked_skills(kind=None):
+    if kind in ranked_skills_dict:
+        return ranked_skills_dict[kind]
+
+    ranked_jobs = get_ranked("job")
+    if kind is None:
+        tempjobs = get_jobs()
+    else:
+        tempjobs = get_jobs_kind(kind)
+
+    jobs = []
+    for r in ranked_jobs:
+        tempranked = [j for j in tempjobs if j.index == r]
+        if tempranked:
+            jobs.append(tempranked[0])
+
+    ranked_skills = []
+    for j in jobs:
+        if 1 <= j.skillset <= 0xAF:
+            ss = get_skillset(j.skillset)
+            for action in ss.actions:
+                if action not in ranked_skills:
+                    ranked_skills.append(action)
+
+    ranked_monster_skills = []
+    for j in jobs:
+        if j.skillset >= 0xB0:
+            ms = get_monster_skillset(j.skillset)
+            for action in ms.attacks[:3]:
+                if action not in ranked_monster_skills:
+                    ranked_monster_skills.append(action)
+    for j in jobs:
+        if j.skillset >= 0xB0:
+            ms = get_monster_skillset(j.skillset)
+            action = ms.attacks[3]
+            if action not in ranked_monster_skills:
+                ranked_monster_skills.append(action)
+
+    if 0 in ranked_monster_skills:
+        ranked_monster_skills.remove(0)
+
+    if not ranked_skills:
+        ranked_skills = ranked_monster_skills
+    else:
+        ranked_skills = [get_ability(a) for a in ranked_skills]
+        ranked_skills = [a for a in ranked_skills
+                         if a.ability_type == 1 and a.jp_cost > 0]
+        ranked_skills = sorted(ranked_skills, key=lambda r: r.jp_cost)
+        ranked_monster_skills = [get_ability(a) for a in ranked_monster_skills]
+        length_skills = len(ranked_skills)
+        length_monster_skills = len(ranked_monster_skills)
+        factor = float(length_skills) / length_monster_skills
+        for i, ms in reversed(list(enumerate(ranked_monster_skills))):
+            new_index = int(round(factor * i))
+            new_index = max(0, min(new_index, length_skills-1))
+            ranked_skills.insert(new_index, ms)
+
+    uniq_ranked_skills = []
+    for r in ranked_skills:
+        if r not in uniq_ranked_skills:
+            uniq_ranked_skills.append(r)
+
+    ranked_skills_dict[kind] = uniq_ranked_skills
+    return get_ranked_skills(kind)
 
 
 def sort_mapunits():
@@ -1054,7 +1182,7 @@ def mutate_skillsets():
     skillsets = get_skillsets()
     abilities = get_abilities()
     abilities = [a for a in abilities if a.jp_cost > 0
-                 and 7 <= a.misc_type <= 9 and a.index not in BANNED_RSMS]
+                 and 7 <= a.ability_type <= 9 and a.index not in BANNED_RSMS]
     for skillset in skillsets:
         if len(skillset.rsms) > 0:
             num_to_sample = 2 + randint(0, 3) + randint(0, 3)
@@ -1081,6 +1209,8 @@ def mutate_monsters():
     for j in jobs:
         j.mutate_stats() and j.mutate_innate()
     print "Shuffling monster skills."
+    for ms in get_monster_skills():
+        ms.mutate()
 
 
 def mutate_units():
