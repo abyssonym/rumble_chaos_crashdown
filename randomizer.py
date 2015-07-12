@@ -11,6 +11,10 @@ from tablereader import TableSpecs, TableObject, get_table_objects
 from uniso import remove_sector_metadata, inject_logical_sectors
 
 randint = random.randint
+
+VERSION = 1
+MD5HASH = "aefdf27f1cd541ad46b5df794f635f50"
+
 unit_specs = TableSpecs(TABLE_SPECS['unit'])
 job_specs = TableSpecs(TABLE_SPECS['job'])
 job_reqs_specs = TableSpecs(TABLE_SPECS['job_reqs'])
@@ -47,6 +51,20 @@ backup_jobreqs = None
 rankdict = None
 ranked_skills_dict = {}
 g_monster_skills = None
+
+
+def get_md5_hash(filename):
+    from hashlib import md5
+    m = md5()
+    f = open(filename)
+    while True:
+        data = f.read(128)
+        if data:
+            m.update(data)
+        else:
+            break
+    f.close()
+    return m.hexdigest()
 
 
 def calculate_jp_total(joblevels):
@@ -654,7 +672,7 @@ class UnitObject(TableObject):
                     setattr(self, attr, random.choice([0xFF, 0xFE]))
                 elif value != 0xFE and random.choice([True, False]):
                     value = get_similar_item(value, same_equip=True,
-                                             boost_factor=1.3)
+                                             boost_factor=1.3).index
                     setattr(self, attr, value)
             elif random.choice([True, False]):
                 setattr(self, attr, 0xFE)
@@ -1219,7 +1237,7 @@ def mutate_monsters():
     jobs = get_jobs_kind("monster")
     for j in jobs:
         j.mutate_stats() and j.mutate_innate()
-    print "Shuffling monster skills."
+    print "Mutating monster skills."
     for ms in get_monster_skills():
         ms.mutate()
 
@@ -1387,7 +1405,9 @@ def setup_fiesta(filename):
             u.righthand = 0x49
 
 
-if __name__ == "__main__":
+def randomize():
+    print ('You are using the FFT RUMBLE CHAOS CRASHDOWN randomizer '
+           'version "%s".' % VERSION)
     flags, seed = None, None
     if len(argv) >= 2:
         sourcefile = argv[1]
@@ -1401,24 +1421,51 @@ if __name__ == "__main__":
                     flags = argv[2]
 
     if len(argv) <= 2:
+        print ("NOTICE: This randomizer requires 1 GB of free space "
+               "to create a new rom file.\n")
         if len(argv) <= 1:
             sourcefile = raw_input("Filename? ").strip()
-        flags = raw_input("Flags? ").strip()
-        seed = raw_input("Seed? ").strip()
+        print ("u  Randomize enemy and ally units.\n"
+               "j  Randomize job stats and JP required for skills.\n"
+               "i  Randomize innate properties of jobs.\n"
+               "s  Randomize job skillsets.\n"
+               "r  Randomize job requirements and job level JP.\n"
+               "t  Randomize trophies, poaches, and move-find items.\n"
+               "p  Randomize item prices and shop availability.\n"
+               "m  Randomize monster stats and skills.\n")
+        flags = raw_input("Flags? (blank for all) ").strip()
+        seed = raw_input("Seed? (blank for random) ").strip()
+        print
 
-    if not flags:
-        flags = lowercase
+    srchash = get_md5_hash(sourcefile)
+    if srchash != MD5HASH:
+        print "WARNING! The file you provided has the following md5 hash: "
+        print srchash
+        print "\nThis randomizer was tested on a file with this hash: "
+        print MD5HASH
+        resp = raw_input("\nContinuing might have unexpected results. "
+                         "Proceed? (y/n) ")
+        if resp and resp[0].lower() == 'y':
+            pass
+        else:
+            exit(0)
 
     if seed:
         seed = int(seed)
     else:
         seed = int(time())
     seed = seed % (10**10)
-    print seed
+    print "Using seed: %s.%s\n" % (flags, seed)
+    if flags:
+        newsource = "fft.%s.%s.img" % (flags, seed)
+    else:
+        newsource = "fft.%s.img" % seed
+    if not flags:
+        flags = lowercase
+
     random.seed(seed)
 
     print "COPYING ROM IMAGE"
-    newsource = "out.img"
     copyfile(sourcefile, newsource)
     sourcefile = newsource
 
@@ -1437,20 +1484,8 @@ if __name__ == "__main__":
     all_objects = [units, jobs, jobreqs, skillsets, items,
                    monster_skills, move_finds, poaches, abilities]
 
-    ''' Unlock all jobs (lowers overall enemy JP)
-    for j in jobreqs:
-        j.set_zero()
-        j.write_data()
-
-    # make Orbonne controllable
     sort_mapunits()
-    for u in sorted(mapunits[0x183], key=lambda u: u.index):
-        if not u.get_bit("team1"):
-            u.set_bit("control", True)
-            u.write_data()
-    '''
-
-    sort_mapunits()
+    make_rankings()
     if 'r' in flags:
         for u in units:
             u.set_backup_jp_total()
@@ -1474,19 +1509,27 @@ if __name__ == "__main__":
     if 't' in flags:
         mutate_treasure()
 
-    if 's' in flags:
+    if 'p' in flags:
         mutate_shops()
 
-    if 'k' in flags:
+    if 's' in flags:
         mutate_skillsets()
 
-    for map_id in range(0x180, 0x1D5):
-        for u in mapunits[map_id]:
-            if not u.get_bit("team1") and not u.level_normalized:
-                u.normalize_level()
+    if flags:
+        for map_id in range(0x180, 0x1D5):
+            for u in mapunits[map_id]:
+                if not u.get_bit("team1") and not u.level_normalized:
+                    u.normalize_level()
+
+        # make Orbonne controllable
+        sort_mapunits()
+        for u in sorted(mapunits[0x183], key=lambda u: u.index):
+            if not u.get_bit("team1"):
+                u.set_bit("control", True)
 
     print "WRITING MUTATED DATA"
     for objects in all_objects:
+        print "Writing %s data." % objects[0].__class__.__name__
         for obj in objects:
             obj.write_data()
 
@@ -1495,3 +1538,14 @@ if __name__ == "__main__":
 
     inject_logical_sectors(TEMPFILE, sourcefile)
     remove(TEMPFILE)
+
+    if len(argv) <= 2:
+        raw_input("\nRandomization completed successfully. "
+                  "Press enter to close this program. ")
+
+if __name__ == "__main__":
+    try:
+        randomize()
+    except Exception, e:
+        print "ERROR: %s" % e
+        raw_input("Press enter to quit. ")
