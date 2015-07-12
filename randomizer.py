@@ -1272,7 +1272,7 @@ def mutate_units():
         if remaining > 0 and key in range(0x100, 0x14B):
             # only appropriate for maps you can't assign units to
             generic += remaining
-        elif key >= 0x180 and generic > 2 and other > 1:
+        elif key >= 0x180 and generic > 2 and other > 2:
             # account for event poses
             generic -= 1
 
