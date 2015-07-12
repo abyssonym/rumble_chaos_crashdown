@@ -694,6 +694,15 @@ class UnitObject(TableObject):
 class JobReqObject(TableObject):
     specs = job_reqs_specs
 
+    @property
+    def pretty_str(self):
+        s = "%s\n" % self.name.upper()
+        for attr in sorted(jobreq_namedict.keys()):
+            value = getattr(self, attr)
+            if value > 0:
+                s += "  %s %s\n" % (value, attr)
+        return s.strip()
+
     def set_required_unlock_jp(self):
         self.remax_jobreqs()
 
@@ -1490,6 +1499,14 @@ def randomize():
         for u in units:
             u.set_backup_jp_total()
         mutate_job_requirements(TEMPFILE)
+        s = ""
+        for name in sorted(jobreq_namedict.keys()):
+            jr = jobreq_namedict[name]
+            s = "\n\n".join([s, jr.pretty_str])
+        s = s.strip()
+        f = open("%s.txt" % seed, "w+")
+        f.write(s)
+        f.close()
 
     for req in jobreqs:
         req.set_required_unlock_jp()
@@ -1515,7 +1532,7 @@ def randomize():
     if 's' in flags:
         mutate_skillsets()
 
-    if flags:
+    if set(flags) & set("rujimtps"):
         for map_id in range(0x180, 0x1D5):
             for u in mapunits[map_id]:
                 if not u.get_bit("team1") and not u.level_normalized:
