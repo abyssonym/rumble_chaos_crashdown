@@ -208,6 +208,10 @@ class ItemObject(TableObject):
         if 1 <= self.time_available <= 16:
             self.time_available = mutate_normal(self.time_available,
                                                 maximum=16, smart=True)
+        if self.enemy_level > 1:
+            self.enemy_level = int(round(0.8 * self.enemy_level))
+            self.enemy_level = mutate_normal(self.enemy_level, minimum=1,
+                                             maximum=99, smart=True)
 
 
 class SkillsetObject(TableObject):
