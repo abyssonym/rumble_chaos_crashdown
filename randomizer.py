@@ -209,6 +209,26 @@ class SkillsetObject(TableObject):
                 self.rsmbits |= (1 << (7-i))
         super(SkillsetObject, self).write_data(filename, pointer=pointer)
 
+    def mutate_abilities(self):
+        candidates = [a for a in get_abilities() if a.ability_type == 1]
+        for i, a in enumerate(self.actions):
+            if get_ability(a).ability_type == 1:
+                if randint(1, 100) == 100:
+                    a = random.choice(candidates)
+                    if a.jp_cost == 0:
+                        a.jp_cost = 100 + randint(0, 700) + randint(0, 700)
+                        a.jp_cost = int(round(a.jp_cost*2, -2) / 2)
+                    self.actions[i] = a.index
+
+        candidates = [a for a in get_abilities() if 7 <= a.ability_type <= 9]
+        for i, a in enumerate(self.rsms):
+            if randint(1, 100) == 100:
+                a = random.choice(candidates)
+                if a.jp_cost == 0:
+                    a.jp_cost = 100 + randint(0, 700) + randint(0, 700)
+                    a.jp_cost = int(round(a.jp_cost*2, -2) / 2)
+                self.rsms[i] = a.index
+
 
 class JobObject(TableObject):
     specs = job_specs
@@ -1042,7 +1062,17 @@ def mutate_skillsets():
             chosens = [a.index for a in random.sample(abilities, 6)]
             chosens.extend(skillset.rsms)
             random.shuffle(chosens)
-            skillset.rsms = sorted(chosens[:num_to_sample])
+            chosens = chosens[:num_to_sample]
+            skillset.rsms = sorted(set(chosens))
+
+    for skillset in get_skillsets():
+        skillset.mutate_abilities()
+
+    jobs = [j for j in get_jobs() if 0x4A <= j.index <= 0x5D]
+    other_jobs_skills = [j.skillset for j in jobs]
+    random.shuffle(other_jobs_skills)
+    for j, ss in zip(jobs, other_jobs_skills):
+        j.skillset = ss
 
 
 def mutate_monsters():
