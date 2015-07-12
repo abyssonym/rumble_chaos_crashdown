@@ -1381,8 +1381,9 @@ def setup_fiesta(filename):
     for f in funits:
         f.unlocked = 0x13  # mime
         f.unlocked_level = 1
-        for attr in ["righthand", "lefthand", "head", "body", "accessory"]:
+        for attr in ["lefthand", "head", "body", "accessory"]:
             setattr(f, attr, 0xFE)
+        u.righthand = 0x49
 
     specs = [("ramza", 0x5d, 69, 69),
              ("male", 0x5d, 70, 40),
@@ -1478,8 +1479,18 @@ def randomize():
         newsource = "fft.%s.%s.img" % (flags, seed)
     else:
         newsource = "fft.%s.img" % seed
+
+    secret_codes = {}
+    secret_codes['fiesta'] = "JOB FIESTA MODE"
+    activated_codes = set([])
     if not flags:
         flags = lowercase
+    else:
+        for key in secret_codes.keys():
+            if key in flags:
+                flags = flags.replace(key, '')
+                print "SECRET CODE: %s ACTIVATED" % secret_codes[key]
+                activated_codes.add(key)
 
     print "COPYING ROM IMAGE"
     copyfile(sourcefile, newsource)
@@ -1558,13 +1569,15 @@ def randomize():
             if not u.get_bit("team1"):
                 u.set_bit("control", True)
 
+    if "fiesta" in activated_codes:
+        setup_fiesta(TEMPFILE)
+
     print "WRITING MUTATED DATA"
     for objects in all_objects:
         print "Writing %s data." % objects[0].__class__.__name__
         for obj in objects:
             obj.write_data()
 
-    #setup_fiesta(TEMPFILE)
     #unlock_jobs(TEMPFILE)
     rewrite_header(TEMPFILE, "FFT RCC %s" % seed)
 
