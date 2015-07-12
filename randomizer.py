@@ -317,9 +317,13 @@ class JobObject(TableObject):
                      "spdmult", "pagrowth", "pamult", "magrowth", "mamult",
                      "move", "jump", "evade"]:
             value = getattr(self, attr)
+            newvalue = value
             if self.index not in range(0xE) + range(0x4A, 0x5E):
-                value = randint(value, int(value * boost_factor))
-            setattr(self, attr, mutate_normal(value, smart=True))
+                newvalue = randint(newvalue, int(newvalue * boost_factor))
+            newvalue = mutate_normal(newvalue, smart=True)
+            if value > 0:
+                newvalue = max(newvalue, 1)
+            setattr(self, attr, newvalue)
 
         return True
 
