@@ -1472,8 +1472,6 @@ def randomize():
     if not flags:
         flags = lowercase
 
-    random.seed(seed)
-
     print "COPYING ROM IMAGE"
     copyfile(sourcefile, newsource)
     sourcefile = newsource
@@ -1496,6 +1494,7 @@ def randomize():
     sort_mapunits()
     make_rankings()
     if 'r' in flags:
+        random.seed(seed)
         for u in units:
             u.set_backup_jp_total()
         mutate_job_requirements(TEMPFILE)
@@ -1512,24 +1511,31 @@ def randomize():
         req.set_required_unlock_jp()
 
     if 'u' in flags:
+        random.seed(seed)
         mutate_units()
 
     if 'j' in flags:
+        random.seed(seed)
         mutate_job_stats()
 
     if 'i' in flags:
+        random.seed(seed)
         mutate_job_innates()
 
     if 'm' in flags:
+        random.seed(seed)
         mutate_monsters()
 
     if 't' in flags:
+        random.seed(seed)
         mutate_treasure()
 
     if 'p' in flags:
+        random.seed(seed)
         mutate_shops()
 
     if 's' in flags:
+        random.seed(seed)
         mutate_skillsets()
 
     if set(flags) & set("rujimtps"):
@@ -1539,7 +1545,6 @@ def randomize():
                     u.normalize_level()
 
         # make Orbonne controllable
-        sort_mapunits()
         for u in sorted(mapunits[0x183], key=lambda u: u.index):
             if not u.get_bit("team1"):
                 u.set_bit("control", True)
