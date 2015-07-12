@@ -76,6 +76,15 @@ def calculate_jp_total(joblevels):
     return total
 
 
+def rewrite_header(filename, message):
+    while len(message) < 0x20:
+        message += " "
+    f = open(filename, 'r+b')
+    f.seek(0x8028)
+    f.write(message)
+    f.close()
+
+
 TEMPFILE = "_fftrandom.tmp"
 
 
@@ -1557,6 +1566,7 @@ def randomize():
 
     #setup_fiesta(TEMPFILE)
     #unlock_jobs(TEMPFILE)
+    rewrite_header(TEMPFILE, "FFT RCC %s" % seed)
 
     inject_logical_sectors(TEMPFILE, sourcefile)
     remove(TEMPFILE)
