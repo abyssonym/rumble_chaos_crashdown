@@ -648,7 +648,15 @@ class UnitObject(TableObject):
                 setattr(self, attr, 0x1FE)
 
         for attr in ["lefthand", "righthand", "head", "body", "accessory"]:
-            if random.choice([True, False]):
+            if self.has_special_graphic:
+                value = getattr(self, attr)
+                if value in [0, 0xFF]:
+                    setattr(self, attr, random.choice([0xFF, 0xFE]))
+                elif value != 0xFE and random.choice([True, False]):
+                    value = get_similar_item(value, same_equip=True,
+                                             boost_factor=1.3)
+                    setattr(self, attr, value)
+            elif random.choice([True, False]):
                 setattr(self, attr, 0xFE)
 
         if gender == "male":
