@@ -384,6 +384,9 @@ class UnitObject(TableObject):
     def level_normalized(self):
         return self.level >= 100 or self.level == 0
 
+    def normalize_level(self):
+        self.level = 0xFE
+
     def set_backup_jp_total(self):
         self.backup_jp_total = self.jp_total
 
@@ -1215,7 +1218,6 @@ def mutate_monsters():
 
 def mutate_units():
     units = get_units()
-    sort_mapunits()
     for key, value in mapsprites.items():
         generic = len([_ for (g, _) in value if g in (0x80, 0x81)])
         monster = len([_ for (g, _) in value if g == 0x82])
@@ -1323,7 +1325,6 @@ def setup_fiesta(filename):
     #f.write(chr(0xff))  # unlock jobs?
     f.close()
 
-    sort_mapunits()
     units = sorted(mapunits[0x188], key=lambda u: u.index)
     funits = [u for u in units if u.index in
               [0x1880, 0x1882, 0x1883, 0x1884, 0x1885]]
@@ -1441,6 +1442,7 @@ if __name__ == "__main__":
             u.write_data()
     '''
 
+    sort_mapunits()
     if 'r' in flags:
         for u in units:
             u.set_backup_jp_total()
@@ -1469,6 +1471,11 @@ if __name__ == "__main__":
 
     if 'k' in flags:
         mutate_skillsets()
+
+    for map_id in range(0x180, 0x1D5):
+        for u in mapunits[map_id]:
+            if not u.get_bit("team1") and not u.level_normalized:
+                u.normalize_level()
 
     print "WRITING MUTATED DATA"
     for objects in all_objects:
