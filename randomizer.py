@@ -1339,7 +1339,7 @@ def get_similar_item(base_item, same_type=False, same_equip=False,
                      boost_factor=1.0):
     if isinstance(base_item, int):
         base_item = get_item(base_item)
-    items = get_items()
+    items = get_ranked_items()
     if same_type:
         items = [i for i in items if i.itemtype == base_item.itemtype]
     if same_equip:
