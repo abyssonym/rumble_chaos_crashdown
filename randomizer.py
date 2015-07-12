@@ -25,6 +25,7 @@ VALID_INNATE_STATUSES = 0xCAFCE92A10
 VALID_START_STATUSES = VALID_INNATE_STATUSES | 0x3402301000
 BANNED_SKILLSET_SHUFFLE = [0, 1, 2, 3, 6, 8, 0x11, 0x12, 0x13, 0x14, 0x15,
                            0x34, 0x38, 0x39, 0x3B, 0x3E, 0x9C]
+BANNED_RSMS = [0x1BB, 0x1E1, 0x1E4, 0x1E5, 0x1F1]
 
 jobreq_namedict = {}
 jobreq_indexdict = {}
@@ -1014,8 +1015,12 @@ def mutate_skillsets():
         if num_to_pull > len(ss.actions) / 2:
             num_to_pull = len(ss.actions) - num_to_pull
         pulled = random.sample(ss.actions, num_to_pull)
-        for p in pulled:
-            ss.actions.remove(p)
+        for p in list(pulled):
+            a = get_ability(p)
+            if a.jp_cost > 0:
+                ss.actions.remove(p)
+            else:
+                pulled.remove(p)
         pulled_actions[ss] = pulled
     exchanges = list(doing_skillsets)
     random.shuffle(exchanges)
@@ -1025,6 +1030,19 @@ def mutate_skillsets():
         if len(a.actions) > 16:
             a.actions = random.sample(a.actions, 16)
         a.actions = sorted(a.actions)
+
+    skillsets = get_skillsets()
+    abilities = get_abilities()
+    abilities = [a for a in abilities if a.jp_cost > 0
+                 and 7 <= a.misc_type <= 9 and a.index not in BANNED_RSMS]
+    for skillset in skillsets:
+        if len(skillset.rsms) > 0:
+            num_to_sample = 2 + randint(0, 3) + randint(0, 3)
+            num_to_sample = min(num_to_sample, 6)
+            chosens = [a.index for a in random.sample(abilities, 6)]
+            chosens.extend(skillset.rsms)
+            random.shuffle(chosens)
+            skillset.rsms = sorted(chosens[:num_to_sample])
 
 
 def mutate_monsters():
