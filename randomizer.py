@@ -1172,6 +1172,8 @@ def mutate_job_requirements():
 
         assert len(sublevels) <= len(candidates)
         assert len(sublevels) <= 14
+        if len(candidates) >= (len(sublevels) + 1):
+            candidates = candidates[:-1]
 
         prereqs = []
         for _ in range(len(sublevels)):
@@ -1184,9 +1186,12 @@ def mutate_job_requirements():
                         break
             if not tempcands:
                 tempcands = list(candidates)
-            index = len(tempcands) / 2
-            index = randint(0, index) + randint(0, index)
-            index = max(0, min(len(tempcands)-1, index))
+            index = len(tempcands) - 1
+            while index > 0:
+                if random.choice([True, False]):
+                    index -= 1
+                else:
+                    break
             prereq = tempcands[index]
             prereqs.append(prereq)
             candidates.remove(prereq)
