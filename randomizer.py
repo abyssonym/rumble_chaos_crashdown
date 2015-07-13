@@ -1297,11 +1297,13 @@ def mutate_skillsets():
         num_to_sample = min(len(candidates), 6)
         candidates = random.sample(candidates, num_to_sample)
         candidates += [a for a in skillset.rsms if a not in done]
-        num_to_sample = (randint(0, 3) + randint(0, 3)
-                         + random.choice([0, 0, 1]))
+        candidates = sorted(set(candidates))
+        num_to_sample = randint(0, 3) + randint(0, 3)
+        if num_to_sample <= 4 and random.choice([True, False]):
+            num_to_sample += 1
         num_to_sample = min(num_to_sample, len(candidates), 6)
         chosens = random.sample(candidates, num_to_sample)
-        skillset.rsms = sorted(set(chosens))
+        skillset.rsms = sorted(chosens)
         done.extend(skillset.rsms)
 
     for skillset in get_skillsets():
