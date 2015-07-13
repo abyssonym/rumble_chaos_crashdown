@@ -13,7 +13,7 @@ from uniso import remove_sector_metadata, inject_logical_sectors
 
 randint = random.randint
 
-VERSION = "1"
+VERSION = "2"
 MD5HASHES = ["aefdf27f1cd541ad46b5df794f635f50",
              "b156ba386436d20fd5ed8d37bab6b624",
              ]
