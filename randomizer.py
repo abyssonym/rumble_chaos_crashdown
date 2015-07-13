@@ -1275,15 +1275,34 @@ def mutate_skillsets():
     abilities = get_abilities()
     abilities = [a for a in abilities if a.jp_cost > 0
                  and 7 <= a.ability_type <= 9 and a.index not in BANNED_RSMS]
+    abilities = [a.index for a in abilities]
+    random.shuffle(skillsets)
     for skillset in skillsets:
+        if 5 <= skillset.index <= 0x18:
+            continue
         if len(skillset.rsms) > 0:
             num_to_sample = 2 + randint(0, 3) + randint(0, 3)
             num_to_sample = min(num_to_sample, 6)
-            chosens = [a.index for a in random.sample(abilities, 6)]
+            chosens = random.sample(abilities, 6)
             chosens.extend(skillset.rsms)
             random.shuffle(chosens)
             chosens = chosens[:num_to_sample]
             skillset.rsms = sorted(set(chosens))
+
+    done = []
+    for skillset in skillsets:
+        if not (5 <= skillset.index <= 0x18):
+            continue
+        candidates = [a for a in abilities if a not in done]
+        num_to_sample = min(len(candidates), 6)
+        candidates = random.sample(candidates, num_to_sample)
+        candidates += [a for a in skillset.rsms if a not in done]
+        num_to_sample = (randint(0, 3) + randint(0, 3)
+                         + random.choice([0, 0, 1]))
+        num_to_sample = min(num_to_sample, len(candidates), 6)
+        chosens = random.sample(candidates, num_to_sample)
+        skillset.rsms = sorted(set(chosens))
+        done.extend(skillset.rsms)
 
     for skillset in get_skillsets():
         skillset.mutate_abilities()
