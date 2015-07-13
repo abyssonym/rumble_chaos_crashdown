@@ -52,6 +52,7 @@ backup_jobreqs = None
 rankdict = None
 ranked_skills_dict = {}
 g_monster_skills = None
+g_ranked_secondaries = None
 
 
 def get_md5_hash(filename):
@@ -218,7 +219,7 @@ class SkillsetObject(TableObject):
     specs = ss_specs
 
     @property
-    def has_free_action(self):
+    def num_free_actions(self):
         for a in self.actions:
             if get_ability(a).jp_cost == 0:
                 return True
@@ -542,20 +543,15 @@ class UnitObject(TableObject):
         #    return
 
         if randint(1, 10) == 10:
-            candidates = get_ranked("secondary")
-            candidates = [c for c in candidates if c < 0xb0]
-            candidates = [ss for ss in get_skillsets()
-                          if ss.index in candidates]
-            free_candidates = [ss for ss in candidates if ss.has_free_action]
-            nonfree_candidates = [ss for ss in candidates
-                                  if ss not in free_candidates]
-            candidates = nonfree_candidates + free_candidates
-            candidates = [ss.index for ss in candidates]
+            candidates = get_ranked_secondaries()
             base = get_job(self.job).skillset
             if self.secondary in candidates:
                 base = random.choice([base, self.secondary])
-            index = candidates.index(base)
-            candidates.remove(base)
+            if base not in candidates:
+                index = randint(0, 9)
+            else:
+                index = candidates.index(base)
+                candidates.remove(base)
             index = max(index-1, 0)
             index = mutate_index(index, len(candidates), [True, False],
                                  (-4, 5), (-2, 3))
@@ -856,7 +852,7 @@ def get_item(index):
 def get_monster_skills(filename=None):
     global g_monster_skills
     if g_monster_skills is not None:
-        return g_monster_skills
+        return list(g_monster_skills)
     mss = get_table_objects(MonsterSkillsObject, 0x623c4, 48, filename)
     for ms in mss:
         ms.index += 0xb0
@@ -901,7 +897,7 @@ def get_job(index):
 def get_jobreqs(filename=None):
     global backup_jobreqs
     if backup_jobreqs is not None:
-        return backup_jobreqs
+        return list(backup_jobreqs)
 
     jobreqs = get_table_objects(JobReqObject, 0x628c4, 19, filename)
     for j, jobname in zip(jobreqs, JOBNAMES[1:]):
@@ -937,7 +933,7 @@ def unlock_jobs(outfile):
 def make_rankings():
     global rankdict
     if rankdict is not None:
-        return rankdict
+        return dict(rankdict)
 
     print "Analyzing and ranking unit data."
     units = get_units()
@@ -1020,7 +1016,7 @@ def make_rankings():
     return make_rankings()
 
 
-def get_ranked(category):
+def get_ranked(category, full=False):
     make_rankings()
     ranked = []
     for key in rankdict:
@@ -1028,8 +1024,41 @@ def get_ranked(category):
         if cat == category:
             ranked.append((rankdict[key], value))
     ranked = sorted(ranked)
+    if full:
+        return dict([(b, a) for (a, b) in ranked])
     ranked = [b for (a, b) in ranked]
     return ranked
+
+
+def get_ranked_secondaries():
+    global g_ranked_secondaries
+    if g_ranked_secondaries is not None:
+        return list(g_ranked_secondaries)
+
+    ranked = get_ranked("secondary", full=True)
+    other_ranked = get_ranked("job", full=True)
+    for job, rank in other_ranked.items():
+        job = get_job(job)
+        if job.skillset not in ranked:
+            ranked[job.skillset] = rank
+    candidates = {}
+    for ss in get_skillsets():
+        if ss.index in ranked:
+            candidates[ss] = ranked[ss.index]
+    for skillset, rank in candidates.items():
+        num_free = skillset.num_free_actions
+        if num_free:
+            rank = rank * 1.1
+            for i in xrange(num_free):
+                rank += max(4-i, 0)
+            candidates[skillset] = rank
+
+    ranked = sorted(candidates, key=lambda c: candidates[c])
+    g_ranked_secondaries = [r.index for r in ranked]
+    for index in get_ranked("secondary"):
+        if 0 < index <= 0xAF:
+            assert index in g_ranked_secondaries
+    return get_ranked_secondaries()
 
 
 def get_ranked_items():
