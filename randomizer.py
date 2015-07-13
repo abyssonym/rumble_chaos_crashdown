@@ -715,10 +715,24 @@ class JobReqObject(TableObject):
     @property
     def pretty_str(self):
         s = "%s\n" % self.name.upper()
+        prereq_dict = {}
         for attr in sorted(jobreq_namedict.keys()):
             value = getattr(self, attr)
             if value > 0:
+                prereq_dict[attr] = value
+
+        for attr in prereq_dict:
+            prereq = jobreq_namedict[attr]
+            for attr2 in prereq_dict:
+                value = prereq_dict[attr2]
+                value2 = getattr(prereq, attr2)
+                if value2 >= value:
+                    prereq_dict[attr2] = 0
+
+        for attr, value in prereq_dict.items():
+            if value > 0:
                 s += "  %s %s\n" % (value, attr)
+
         return s.strip()
 
     def set_required_unlock_jp(self):
