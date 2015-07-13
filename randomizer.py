@@ -439,7 +439,10 @@ class UnitObject(TableObject):
         self.level = 0xFE
 
     def set_backup_jp_total(self):
-        self.backup_jp_total = self.jp_total
+        value = self.jp_total
+        if value < JOBLEVEL_JP[0]:
+            value = random.choice([value, JOBLEVEL_JP[0]])
+        self.backup_jp_total = value
 
     @property
     def jp_total(self):
