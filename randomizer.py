@@ -726,14 +726,15 @@ class UnitObject(TableObject):
             elif random.choice([True, False]):
                 setattr(self, attr, 0xFE)
 
-        if gender == "male":
-            self.set_bit("male", True)
-            self.set_bit("female", False)
-            self.graphic = 0x80
-        elif gender == "female":
-            self.set_bit("female", True)
-            self.set_bit("male", False)
-            self.graphic = 0x81
+        if not self.has_special_graphic:
+            if gender == "male":
+                self.set_bit("male", True)
+                self.set_bit("female", False)
+                self.graphic = 0x80
+            elif gender == "female":
+                self.set_bit("female", True)
+                self.set_bit("male", False)
+                self.graphic = 0x81
 
         self.mutate_secondary()
 
