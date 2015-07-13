@@ -14,7 +14,9 @@ from uniso import remove_sector_metadata, inject_logical_sectors
 randint = random.randint
 
 VERSION = "1"
-MD5HASH = "aefdf27f1cd541ad46b5df794f635f50"
+MD5HASHES = ["aefdf27f1cd541ad46b5df794f635f50",
+             "b156ba386436d20fd5ed8d37bab6b624",
+             ]
 
 unit_specs = TableSpecs(TABLE_SPECS['unit'])
 job_specs = TableSpecs(TABLE_SPECS['job'])
@@ -1574,11 +1576,11 @@ def randomize():
         print
 
     srchash = get_md5_hash(sourcefile)
-    if srchash != MD5HASH:
+    if srchash not in MD5HASHES:
         print "WARNING! The file you provided has the following md5 hash: "
         print srchash
         print "\nThis randomizer was tested on a file with this hash: "
-        print MD5HASH
+        print MD5HASHES[0]
         resp = raw_input("\nContinuing might have unexpected results. "
                          "Proceed? (y/n) ")
         if resp and resp[0].lower() == 'y':
