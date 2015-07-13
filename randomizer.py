@@ -1124,11 +1124,16 @@ def get_ranked_skills(kind=None):
         ranked_monster_skills = [get_ability(a) for a in ranked_monster_skills]
         length_skills = len(ranked_skills)
         length_monster_skills = len(ranked_monster_skills)
-        factor = float(length_skills) / length_monster_skills
-        for i, ms in reversed(list(enumerate(ranked_monster_skills))):
-            new_index = int(round(factor * i))
-            new_index = max(0, min(new_index, length_skills-1))
-            ranked_skills.insert(new_index, ms)
+        if length_skills < (length_monster_skills / 4):
+            ranked_skills = ranked_monster_skills
+        elif length_monster_skills < (length_skills / 4):
+            ranked_skills = ranked_skills
+        else:
+            factor = float(length_skills) / length_monster_skills
+            for i, ms in reversed(list(enumerate(ranked_monster_skills))):
+                new_index = int(round(factor * i))
+                new_index = max(0, min(new_index, length_skills-1))
+                ranked_skills.insert(new_index, ms)
 
     uniq_ranked_skills = []
     for r in ranked_skills:
