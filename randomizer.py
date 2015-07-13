@@ -1095,7 +1095,28 @@ def get_jobs_kind(kind):
     return jobs
 
 
-def mutate_job_requirements(filename):
+def mutate_job_level(filename):
+    global JOBLEVEL_JP
+    jp_per_level = []
+    for (a, b) in zip([0] + JOBLEVEL_JP, JOBLEVEL_JP):
+        difference = b - a
+        jp_per_level.append(difference)
+
+    new_joblevel_jp = [0]
+    for diff in jp_per_level:
+        diff = randint(diff, int(diff*1.5))
+        diff = mutate_normal(diff, maximum=800, smart=True)
+        diff = int(round(diff*2, -2)) / 2
+        new_joblevel_jp.append(new_joblevel_jp[-1] + diff)
+    JOBLEVEL_JP = new_joblevel_jp[1:]
+    f = open(filename, 'r+b')
+    f.seek(0x62984)
+    for j in JOBLEVEL_JP:
+        write_multi(f, j, length=2)
+    f.close()
+
+
+def mutate_job_requirements():
     print "Mutating job requirements."
     reqs = get_jobreqs()
     done = [r for r in reqs if r.name == "squire"]
@@ -1162,25 +1183,6 @@ def mutate_job_requirements(filename):
         for r in reqs:
             r.remax_jobreqs()
         done.append(req)
-
-    global JOBLEVEL_JP
-    jp_per_level = []
-    for (a, b) in zip([0] + JOBLEVEL_JP, JOBLEVEL_JP):
-        difference = b - a
-        jp_per_level.append(difference)
-
-    new_joblevel_jp = [0]
-    for diff in jp_per_level:
-        diff = randint(diff, int(diff*1.5))
-        diff = mutate_normal(diff, maximum=800, smart=True)
-        diff = int(round(diff*2, -2)) / 2
-        new_joblevel_jp.append(new_joblevel_jp[-1] + diff)
-    JOBLEVEL_JP = new_joblevel_jp[1:]
-    f = open(filename, 'r+b')
-    f.seek(0x62984)
-    for j in JOBLEVEL_JP:
-        write_multi(f, j, length=2)
-    f.close()
 
 
 def mutate_job_stats():
@@ -1542,9 +1544,10 @@ def randomize():
     make_rankings()
     if 'r' in flags:
         random.seed(seed)
+        mutate_job_level(TEMPFILE)
         for u in units:
             u.set_backup_jp_total()
-        mutate_job_requirements(TEMPFILE)
+        mutate_job_requirements()
         s = ""
         for name in sorted(jobreq_namedict.keys()):
             jr = jobreq_namedict[name]
