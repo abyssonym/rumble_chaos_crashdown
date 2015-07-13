@@ -218,6 +218,14 @@ class SkillsetObject(TableObject):
     specs = ss_specs
 
     @property
+    def has_free_action(self):
+        for a in self.actions:
+            if get_ability(a).jp_cost == 0:
+                return True
+        else:
+            return False
+
+    @property
     def num_actions(self):
         return len([a for a in self.actions if a > 0])
 
@@ -536,6 +544,13 @@ class UnitObject(TableObject):
         if randint(1, 10) == 10:
             candidates = get_ranked("secondary")
             candidates = [c for c in candidates if c < 0xb0]
+            candidates = [ss for ss in get_skillsets()
+                          if ss.index in candidates]
+            free_candidates = [ss for ss in candidates if ss.has_free_action]
+            nonfree_candidates = [ss for ss in candidates
+                                  if ss not in free_candidates]
+            candidates = nonfree_candidates + free_candidates
+            candidates = [ss.index for ss in candidates]
             base = get_job(self.job).skillset
             if self.secondary in candidates:
                 base = random.choice([base, self.secondary])
