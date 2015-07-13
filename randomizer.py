@@ -312,14 +312,29 @@ class SkillsetObject(TableObject):
 class JobObject(TableObject):
     specs = job_specs
 
-    def mutate_stats(self, boost_factor=1.3):
+    def get_appropriate_boost(self):
+        units = [u for u in get_units() if u.job == self.index
+                 and u.get_bit("team1") and not u.level_normalized
+                 and 0x180 <= u.map_id <= 0x1D5]
+        if not units:
+            return 1.3
+        units = sorted(units, key=lambda u: u.level)
+        units = units[-2:]
+        average_level = sum([u.level for u in units]) / float(len(units))
+        boost = 1.0 + (average_level / 100.0)
+        return boost
+
+    def mutate_stats(self, boost_factor=None):
+        if boost_factor is None:
+            boost_factor = self.get_appropriate_boost()
         for attr in ["hpgrowth", "hpmult", "mpgrowth", "mpmult", "spdgrowth",
                      "spdmult", "pagrowth", "pamult", "magrowth", "mamult",
                      "move", "jump", "evade"]:
             value = getattr(self, attr)
             newvalue = value
             if self.index not in range(0xE) + range(0x4A, 0x5E):
-                newvalue = randint(newvalue, int(newvalue * boost_factor))
+                newvalue = randint(newvalue,
+                                   int(round(newvalue * boost_factor)))
             newvalue = mutate_normal(newvalue, smart=True)
             if value > 0:
                 newvalue = max(newvalue, 1)
