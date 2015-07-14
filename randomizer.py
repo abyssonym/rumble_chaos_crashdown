@@ -328,11 +328,11 @@ class JobObject(TableObject):
                  and u.get_bit("team1") and not u.level_normalized
                  and 0x180 <= u.map_id <= 0x1D5]
         if not units:
-            return 1.3
+            return 1.2
         units = sorted(units, key=lambda u: u.level)
         units = units[-2:]
         average_level = sum([u.level for u in units]) / float(len(units))
-        boost = 1.0 + (average_level / 100.0)
+        boost = (1.0 + (average_level / 100.0)) ** 0.75
         return boost
 
     def mutate_stats(self, boost_factor=None):
