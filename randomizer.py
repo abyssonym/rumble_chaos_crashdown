@@ -300,15 +300,16 @@ class SkillsetObject(TableObject):
         super(SkillsetObject, self).write_data(filename, pointer=pointer)
 
     def mutate_abilities(self):
-        candidates = [a for a in get_abilities() if a.ability_type == 1]
-        for i, a in enumerate(self.actions):
-            if get_ability(a).ability_type == 1:
-                if randint(1, 100) == 100:
-                    a = random.choice(candidates)
-                    if a.jp_cost == 0:
-                        a.jp_cost = 100 + randint(0, 700) + randint(0, 700)
-                        a.jp_cost = int(round(a.jp_cost*2, -2) / 2)
-                    self.actions[i] = a.index
+        if self.index not in BANNED_SKILLSET_SHUFFLE:
+            candidates = [a for a in get_abilities() if a.ability_type == 1]
+            for i, a in enumerate(self.actions):
+                if get_ability(a).ability_type == 1:
+                    if randint(1, 100) == 100:
+                        a = random.choice(candidates)
+                        if a.jp_cost == 0:
+                            a.jp_cost = 100 + randint(0, 700) + randint(0, 700)
+                            a.jp_cost = int(round(a.jp_cost*2, -2) / 2)
+                        self.actions[i] = a.index
 
         candidates = [a for a in get_abilities() if 7 <= a.ability_type <= 9]
         for i, a in enumerate(self.rsms):
