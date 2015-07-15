@@ -447,8 +447,12 @@ class UnitObject(TableObject):
     def level_normalized(self):
         return self.level >= 100 or self.level == 0
 
-    def normalize_level(self):
-        self.level = 0xFE
+    def normalize_level(self, boost=None):
+        if boost is None:
+            self.level = 0xFE
+        else:
+            self.level = 100 + randint(0, boost) + randint(0, boost)
+            self.level = max(100, min(self.level, 199))
 
     def set_backup_jp_total(self):
         value = self.jp_total
@@ -1369,9 +1373,9 @@ def mutate_skillsets():
         if not 5 <= index <= 0x18:
             continue
         ss = get_skillset(index)
-        for rsm in list(skillset.rsms):
+        for action in list(ss.actions):
             if randint(1, 10) == 10:
-                skillset.rsms.remove(rsm)
+                ss.actions.remove(action)
 
 
 def mutate_monsters():
@@ -1685,12 +1689,11 @@ def randomize():
         mutate_skillsets()
 
     if set(flags) & set("rujimtps"):
-        for map_id in range(0x180, 0x1D5):
-            if map_id == 0x183:
-                continue
-            for u in mapunits[map_id]:
-                if not u.get_bit("team1") and not u.level_normalized:
-                    u.normalize_level()
+        random.seed(seed)
+        for unit_id in [0x1a10, 0x1ac0, 0x1b10]:
+            u.normalize_level(randint(1, 10))
+        for unit_id in [0x19d0]:
+            u.normalize_level(randint(1, 5))
 
         # make Orbonne controllable
         for u in sorted(mapunits[0x183], key=lambda u: u.index):
