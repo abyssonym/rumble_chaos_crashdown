@@ -506,7 +506,7 @@ class UnitObject(TableObject):
         jobs = jobreq_namedict.values()
         jobs = [j for j in jobs if j.required_unlock_jp <= jp_remaining]
         if base_job is not None:
-            if (randint(1, 5) != 5 and base_job.otherindex > 0):
+            if (randint(1, 20) != 20 and base_job.otherindex > 0):
                 base_name = base_job.name
                 jobs = [j for j in jobs if getattr(j, base_name) > 0
                         or j == base_job]
