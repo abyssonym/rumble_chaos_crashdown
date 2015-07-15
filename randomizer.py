@@ -1364,14 +1364,13 @@ def mutate_skillsets():
     for skillset in get_skillsets():
         skillset.mutate_abilities()
 
-    '''
-    jobs = [j for j in get_jobs() if 0x4A <= j.index <= 0x5D]
-    jobs = [j for j in jobs if j.skillset not in BANNED_SKILLSET_SHUFFLE]
-    other_jobs_skills = [j.skillset for j in jobs]
-    random.shuffle(other_jobs_skills)
-    for j, ss in zip(jobs, other_jobs_skills):
-        j.skillset = ss
-    '''
+    for index in BANNED_SKILLSET_SHUFFLE:
+        if not 5 <= index <= 0x18:
+            continue
+        ss = get_skillset(index)
+        for rsm in list(skillset.rsms):
+            if randint(1, 10) == 10:
+                skillset.rsms.remove(rsm)
 
 
 def mutate_monsters():
