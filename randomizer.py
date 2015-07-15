@@ -1690,7 +1690,7 @@ def randomize():
 
     if set(flags) & set("rujimtps"):
         random.seed(seed)
-        for unit_id in [0x1a10, 0x1ac0, 0x1b10, 0x19d0]:
+        for unit_id in [0x1951, 0x19d0, 0x1a10, 0x1ac0, 0x1b10]:
             u.normalize_level(randint(1, 3))
 
         # make Orbonne controllable
