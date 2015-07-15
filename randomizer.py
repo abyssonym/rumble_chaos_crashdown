@@ -17,6 +17,8 @@ VERSION = "4"
 MD5HASHES = ["aefdf27f1cd541ad46b5df794f635f50",
              "b156ba386436d20fd5ed8d37bab6b624",
              ]
+DAYS_IN_MONTH = {1: 31, 2: 28, 3: 31, 4: 30, 5: 31, 6: 30,
+                 7: 31, 8: 31, 9: 30, 10: 31, 11: 30, 12: 31}
 
 unit_specs = TableSpecs(TABLE_SPECS['unit'])
 job_specs = TableSpecs(TABLE_SPECS['job'])
@@ -55,6 +57,7 @@ rankdict = None
 ranked_skills_dict = {}
 g_monster_skills = None
 g_ranked_secondaries = None
+birthday_dict = {}
 
 
 def get_md5_hash(filename):
@@ -611,7 +614,7 @@ class UnitObject(TableObject):
         self.job = newjob.index
         return True
 
-    def mutate_job(self, boost_factor=1.2, preserve_gender=False):
+    def mutate(self, boost_factor=1.2, preserve_gender=False):
         if self.job >= 0x5E:
             return self.mutate_monster_job()
 
@@ -742,8 +745,31 @@ class UnitObject(TableObject):
                 self.graphic = 0x81
 
         self.mutate_secondary()
+        self.mutate_stats()
 
         return True
+
+    def mutate_stats(self):
+        if not self.level_normalized and 5 <= self.level <= 99:
+            self.level = mutate_index(self.level, 99,
+                                      (True, False), (-2, 3), (-1, 1))
+        for attr in ["brave", "faith"]:
+            value = getattr(self, attr)
+            if 0 <= value <= 100:
+                value = mutate_normal(value, maximum=100, smart=True)
+                setattr(self, attr, value)
+
+        if self.named and self.name in birthday_dict:
+            self.month, self.day = birthday_dict[self.name]
+        elif self.named or randint(1, 8) == 8:
+            if random.choice([True, False, False]):
+                self.month = randint(1, 12)
+                self.day = randint(1, DAYS_IN_MONTH[self.month])
+            elif not self.named and randint(1, 10) == 10:
+                self.month, self.day = 0xFE, 0xFE
+
+        if self.named:
+            birthday_dict[self.name] = (self.month, self.day)
 
 
 class JobReqObject(TableObject):
@@ -1394,6 +1420,8 @@ def mutate_units():
         generic = len([_ for (g, _) in value if g in (0x80, 0x81)])
         monster = len([_ for (g, _) in value if g == 0x82])
         other = len([_ for (g, _) in value if g not in (0x80, 0x81, 0x82, 0x00)])
+        if key in [0x19B]:
+            other += 1
 
         remaining = 9 - (generic + monster + other)
         if remaining > 0 and key in range(0x100, 0x14B):
@@ -1432,12 +1460,12 @@ def mutate_units():
         assert len(set(nus)) == nuslen
         for u in nus:
             assert not u.has_special_graphic
-            u.mutate_job()
+            u.mutate()
             u.job_mutated = True
 
     random.shuffle(units)
     for u in [u for u in units if u.has_special_graphic or not u.named]:
-        u.mutate_job()
+        u.mutate()
 
 
 def mutate_treasure():
