@@ -768,7 +768,7 @@ class UnitObject(TableObject):
             elif not self.named and randint(1, 10) == 10:
                 self.month, self.day = 0xFE, 0xFE
 
-        if self.named:
+        if self.named and 1 <= self.month <= 12:
             birthday_dict[self.name] = (self.month, self.day)
 
 
