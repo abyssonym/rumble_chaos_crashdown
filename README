@@ -1,5 +1,5 @@
 FFT Rumble Chaos Crashdown Randomizer
-Version:    5
+Version:    6
 Date:       July 15, 2015
 URL:        https://github.com/abyssonym/rumble_chaos_crashdown
 Contact:    https://twitter.com/abyssonym
@@ -21,6 +21,7 @@ Flags:
     j  Randomize job stats and JP required for skills.
     i  Randomize innate properties of jobs.
     s  Randomize job skillsets.
+    a  Randomize abilities, including CT, MP cost, etc.
     r  Randomize job requirements and job level JP.
     t  Randomize trophies, poaches, and move-find items.
     p  Randomize item prices and shop availability.
