@@ -10,7 +10,8 @@ except ImportError:
 
 TABLE_SPECS = {}
 for table_type in ["unit", "job_reqs", "job", "skillset", "item",
-                   "monster_skills", "move_find", "poach", "ability"]:
+                   "monster_skills", "move_find", "poach", "ability",
+                   "ability_attribute"]:
     TABLE_SPECS[table_type] = path.join(tblpath, "%s_table.txt" % table_type)
 
 
@@ -76,7 +77,7 @@ def mutate_bits(value, size=8):
 
 
 def mutate_normal(value, minimum=0, maximum=0xFF,
-                  reverse=False, smart=False, chain=True):
+                  reverse=False, smart=True, chain=True):
     if maximum-minimum < 5:
         raise Exception("Are you sure you want to do this?")
     value = max(minimum, min(value, maximum))

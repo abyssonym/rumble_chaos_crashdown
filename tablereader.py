@@ -115,6 +115,7 @@ class TableObject(object):
 
             s.append((attr, "%s" % value))
         s = ", ".join(["%s: %s" % (a, b) for (a, b) in s])
+        s = "%x - %s" % (self.index, s)
         return s
 
     def __repr__(self):

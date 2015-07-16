@@ -20,6 +20,18 @@ MD5HASHES = ["aefdf27f1cd541ad46b5df794f635f50",
 DAYS_IN_MONTH = {1: 31, 2: 28, 3: 31, 4: 30, 5: 31, 6: 30,
                  7: 31, 8: 31, 9: 30, 10: 31, 11: 30, 12: 31}
 
+X_FORMULAS = [0x9, 0xA, 0xB, 0xD, 0xE, 0xF, 0x10, 0x12, 0x14, 0x15, 0x16, 0x17,
+              0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x25, 0x26, 0x27, 0x28, 0x29,
+              0x2A, 0x2B, 0x2C, 0x32, 0x33, 0x35, 0x3B, 0x3D, 0x3F, 0x40, 0x41,
+              0x42, 0x4D, 0x4F, 0x50, 0x51, 0x53, 0x55, 0x56, 0x58, 0x59, 0x5C,
+              0x5E, 0x61, 0x62
+              ]
+Y_FORMULAS = [0x8, 0x9, 0xC, 0xD, 0xE, 0xF, 0x10, 0x1A, 0x1B, 0x1E, 0x1F, 0x20,
+              0x21, 0x23, 0x24, 0x28, 0x2A, 0x2C, 0x2D, 0x31, 0x32, 0x34, 0x35,
+              0x36, 0x37, 0x39, 0x3A, 0x3B, 0x42, 0x47, 0x4C, 0x4D, 0x4E, 0x54,
+              0x55, 0x56, 0x5B, 0x5C, 0x5E, 0x5F, 0x60, 0x61, 0x62
+              ]
+
 unit_specs = TableSpecs(TABLE_SPECS['unit'])
 job_specs = TableSpecs(TABLE_SPECS['job'])
 job_reqs_specs = TableSpecs(TABLE_SPECS['job_reqs'])
@@ -29,6 +41,7 @@ monster_skills_specs = TableSpecs(TABLE_SPECS['monster_skills'])
 move_find_specs = TableSpecs(TABLE_SPECS['move_find'])
 poach_specs = TableSpecs(TABLE_SPECS['poach'])
 ability_specs = TableSpecs(TABLE_SPECS['ability'])
+ability_attribute_specs = TableSpecs(TABLE_SPECS['ability_attribute'])
 
 VALID_INNATE_STATUSES = 0xCAFCE92A10
 VALID_START_STATUSES = VALID_INNATE_STATUSES | 0x3402301000
@@ -138,7 +151,7 @@ class MonsterSkillsObject(TableObject):
                 new_attacks.append(action)
                 continue
             index = candidates.index(get_ability(action))
-            index = mutate_normal(index, maximum=len(candidates)-1, smart=True)
+            index = mutate_normal(index, maximum=len(candidates)-1)
             new_attacks.append(candidates[index].index)
 
         new_attacks, beastmaster = new_attacks[:-1], new_attacks[-1]
@@ -195,6 +208,32 @@ class PoachObject(TableObject):
         self.rare = get_similar_item(self.rare, boost_factor=1.15).index
 
 
+class AbilityAttributesObject(TableObject):
+    specs = ability_attribute_specs
+
+    def mutate(self):
+        for attr in ["ct", "mp"]:
+            value = getattr(self, attr)
+            if 1 <= value <= 0xFD:
+                value = mutate_normal(value)
+                setattr(self, attr, value)
+
+        #if 1 <= self.xval <= 0xFD and self.formula in X_FORMULAS:
+        if 1 <= self.xval <= 0xFD:
+            self.xval = mutate_normal(self.xval, minimum=1, maximum=0xFD)
+
+        #if 1 <= self.yval <= 0xFD and self.formula in Y_FORMULAS:
+        if 1 <= self.yval <= 0xFD:
+            self.yval = mutate_normal(self.yval, minimum=1, maximum=0xFD)
+
+        if randint(1, 50) == 50:
+            for attr in ["range", "effect", "vertical"]:
+                value = getattr(self, attr)
+                if 1 <= value <= 0xFD:
+                    value = mutate_normal(value, minimum=1, maximum=0xFD)
+                    setattr(self, attr, value)
+
+
 class AbilityObject(TableObject):
     specs = ability_specs
 
@@ -207,17 +246,17 @@ class ItemObject(TableObject):
     specs = item_specs
 
     def mutate_shop(self):
-        self.price = mutate_normal(self.price, maximum=65000, smart=True)
+        self.price = mutate_normal(self.price, maximum=65000)
         self.price = int(round(self.price, -1))
         if self.price > 500:
             self.price = int(round(self.price, -2))
         if 1 <= self.time_available <= 16:
             self.time_available = mutate_normal(self.time_available,
-                                                maximum=16, smart=True)
+                                                maximum=16)
         if self.enemy_level > 1:
             self.enemy_level = int(round(0.8 * self.enemy_level))
             self.enemy_level = mutate_normal(self.enemy_level, minimum=1,
-                                             maximum=99, smart=True)
+                                             maximum=99)
 
 
 class SkillsetObject(TableObject):
@@ -350,10 +389,9 @@ class JobObject(TableObject):
             if self.index not in range(0xE) + range(0x4A, 0x5E):
                 newvalue = randint(newvalue,
                                    int(round(newvalue * boost_factor)))
-            newvalue = mutate_normal(newvalue, smart=True)
-            if value > 0:
-                newvalue = max(newvalue, 1)
-            setattr(self, attr, newvalue)
+            if 1 <= newvalue <= 0xFD:
+                newvalue = mutate_normal(newvalue, minimum=1, maximum=0xFD)
+                setattr(self, attr, newvalue)
 
         return True
 
@@ -487,7 +525,7 @@ class UnitObject(TableObject):
 
     def mutate_trophy(self):
         if self.gil > 0:
-            self.gil = mutate_normal(self.gil, maximum=65000, smart=True)
+            self.gil = mutate_normal(self.gil, maximum=65000)
             self.gil = int(round(self.gil, -2))
         if self.trophy:
             self.trophy = get_similar_item(self.trophy).index
@@ -756,7 +794,7 @@ class UnitObject(TableObject):
         for attr in ["brave", "faith"]:
             value = getattr(self, attr)
             if 0 <= value <= 100:
-                value = mutate_normal(value, maximum=100, smart=True)
+                value = mutate_normal(value, maximum=100)
                 setattr(self, attr, value)
 
         if self.named and self.name in birthday_dict:
@@ -908,6 +946,10 @@ def get_poaches(filename=None):
 
 def get_abilities(filename=None):
     return get_table_objects(AbilityObject, 0x5b3f0, 512, filename)
+
+
+def get_abilities_attributes(filename=None):
+    return get_table_objects(AbilityAttributesObject, 0x5c3f0, 0x165, filename)
 
 
 def get_ability(index):
@@ -1206,7 +1248,7 @@ def mutate_job_level(filename):
     new_joblevel_jp = [0]
     for diff in jp_per_level:
         diff = randint(diff, int(diff*1.5))
-        diff = mutate_normal(diff, maximum=800, smart=True)
+        diff = mutate_normal(diff, maximum=800)
         diff = int(round(diff*2, -2)) / 2
         new_joblevel_jp.append(new_joblevel_jp[-1] + diff)
     JOBLEVEL_JP = new_joblevel_jp[1:]
@@ -1300,13 +1342,12 @@ def mutate_job_stats():
     abilities = get_abilities()
     for a in abilities:
         if a.jp_cost > 0:
-            a.jp_cost = mutate_normal(a.jp_cost, maximum=9999, smart=True)
+            a.jp_cost = mutate_normal(a.jp_cost, maximum=9999)
             if a.jp_cost > 200:
                 a.jp_cost = int(round(a.jp_cost*2, -2) / 2)
             else:
                 a.jp_cost = int(round(a.jp_cost, -1))
-            a.learn_chance = mutate_normal(a.learn_chance, maximum=100,
-                                           smart=True)
+            a.learn_chance = mutate_normal(a.learn_chance, maximum=100)
 
 
 def mutate_job_innates():
@@ -1402,6 +1443,12 @@ def mutate_skillsets():
         for action in list(ss.actions):
             if randint(1, 10) == 10:
                 ss.actions.remove(action)
+
+
+def mutate_abilities_attributes():
+    abilities_attributes = get_abilities_attributes()
+    for aa in abilities_attributes:
+        aa.mutate()
 
 
 def mutate_monsters():
@@ -1505,7 +1552,7 @@ def get_similar_item(base_item, same_type=False, same_equip=False,
     reverse_index = randint(int(round(reverse_index / boost_factor)),
                             reverse_index)
     index = len(items) - reverse_index - 1
-    index = mutate_normal(index, maximum=len(items)-1, smart=True)
+    index = mutate_normal(index, maximum=len(items)-1)
     replace_item = items[index]
     return replace_item
 
@@ -1605,6 +1652,7 @@ def randomize():
                "j  Randomize job stats and JP required for skills.\n"
                "i  Randomize innate properties of jobs.\n"
                "s  Randomize job skillsets.\n"
+               "a  Randomize abilities, including CT, MP cost, etc.\n"
                "r  Randomize job requirements and job level JP.\n"
                "t  Randomize trophies, poaches, and move-find items.\n"
                "p  Randomize item prices and shop availability.\n"
@@ -1664,9 +1712,11 @@ def randomize():
     move_finds = get_move_finds(TEMPFILE)
     poaches = get_poaches(TEMPFILE)
     abilities = get_abilities(TEMPFILE)
+    abilities_attributes = get_abilities_attributes(TEMPFILE)
 
     all_objects = [units, jobs, jobreqs, skillsets, items,
-                   monster_skills, move_finds, poaches, abilities]
+                   monster_skills, move_finds, poaches, abilities,
+                   abilities_attributes]
 
     sort_mapunits()
     make_rankings()
@@ -1716,9 +1766,14 @@ def randomize():
         random.seed(seed)
         mutate_skillsets()
 
-    if set(flags) & set("rujimtps"):
+    if 'a' in flags:
+        random.seed(seed)
+        mutate_abilities_attributes()
+
+    if set(flags) & set("rujimtpsa"):
         random.seed(seed)
         for unit_id in [0x1951, 0x19d0, 0x1a10, 0x1ac0, 0x1b10]:
+            u = get_unit(unit_id)
             u.normalize_level(randint(1, 3))
 
         # make Orbonne controllable
