@@ -4,6 +4,7 @@ import sys
 from sys import argv
 from time import time
 from string import lowercase
+from collections import Counter
 
 from utils import (TABLE_SPECS, mutate_index, mutate_normal, mutate_bits,
                    write_multi,
@@ -365,6 +366,10 @@ class SkillsetObject(TableObject):
 
 class JobObject(TableObject):
     specs = job_specs
+
+    @property
+    def can_invite(self):
+        return not bool(self.immune_status & 0x4000)
 
     def get_appropriate_boost(self):
         units = [u for u in get_units() if u.job == self.index
@@ -1515,6 +1520,80 @@ def mutate_units():
         u.mutate()
 
 
+def mutate_units_special(job_names):
+    print "Adding special surprises."
+    mundane_job_names = job_names[0x4A:0x5E]
+    ranked_jobs = get_ranked("job")
+    special_jobs = [j for j in get_jobs() if not 5 <= j.skillset <= 0x18
+                    and not j.skillset == 0
+                    and not 0x4A <= j.index <= 0x8F
+                    and job_names[j.index] not in mundane_job_names
+                    and job_names[j.index]]
+    special_jobs = [j.index for j in special_jobs]
+    probval = 20
+    for map_id in range(1, 0xFE) + range(0x180, 0x1D5):
+        probval -= 1
+        probval = max(probval, 2)
+        if map_id in [0x183, 0x184, 0x185]:
+            continue
+        if randint(1, probval) == 1:
+            units = mapunits[map_id]
+            candidates = [u for u in units if not u.named
+                          and u.get_bit("team1")
+                          and 0x80 <= u.graphic <= 0x82]
+            noncandidates = [u for u in units if u not in candidates]
+            noncandjobs = [u.job for u in noncandidates
+                           if 0x80 <= u.graphic <= 0x82]
+            candidates = [c for c in candidates if c.job not in noncandjobs]
+            if not candidates:
+                continue
+            jobs = Counter([c.job for c in candidates])
+            if len(jobs.keys()) == 1:
+                continue
+            jobs = [key for key in jobs if jobs[key] == min(jobs.values())]
+            chosen_job = random.choice(jobs)
+            cand_jobs = [j for j in ranked_jobs
+                         if j in special_jobs or j == chosen_job]
+            index = cand_jobs.index(chosen_job)
+            cand_jobs.remove(chosen_job)
+            index = mutate_normal(index, maximum=len(cand_jobs)-1)
+            new_job = cand_jobs[index]
+            jobunits = [u for u in get_units() if u.job == new_job]
+            jobgraphics = Counter([u.graphic for u in jobunits])
+            jobgraphics = [key for key in jobgraphics
+                           if jobgraphics[key] == max(jobgraphics.values())]
+            if not jobunits or not jobgraphics:
+                continue
+            graphic = random.choice(jobgraphics)
+            jobunits = [u for u in jobunits if u.graphic == graphic]
+            tempunits = [u for u in jobunits
+                         if u.map_id in range(1, 0xFE) + range(0x180, 0x1D5)]
+            if tempunits:
+                jobunits = tempunits
+            chosen_unit = random.choice(jobunits)
+            change_units = [u for u in units if u.job == chosen_job]
+            for unit in change_units:
+                unit.job = chosen_unit.job
+                unit.graphic = chosen_unit.graphic
+                for bitname in ["monster", "female", "male", "hidden_stats"]:
+                    unit.set_bit(bitname, chosen_unit.get_bit(bitname))
+                for attr in ["job", "graphic", "month", "day", "trophy", "gil",
+                             "brave", "faith", "palette"]:
+                    setattr(unit, attr, getattr(chosen_unit, attr))
+                if chosen_unit.named:
+                    unit.name = chosen_unit.name
+            job = get_job(chosen_unit.job)
+            if (not job.can_invite and
+                    random.choice([True, False, False])):
+                unit = random.choice(change_units)
+                unit.set_bit("join_after_event", True)
+            if map_id >= 0x180:
+                special_jobs.remove(chosen_unit.job)
+                if not special_jobs:
+                    break
+            probval = max(probval, 15)
+
+
 def mutate_treasure():
     print "Mutating treasure."
     units = get_units()
@@ -1627,6 +1706,24 @@ def setup_fiesta(filename):
             u.righthand = 0x49
 
 
+def get_job_names(filename):
+    pointer = 0x2eed41
+    job_names = []
+    f = open(filename, "r+b")
+    f.seek(pointer)
+    for i in xrange(0xA0):
+        s = ""
+        while True:
+            c = f.read(1)
+            if ord(c) == 0xFE:
+                job_names.append(s)
+                break
+            else:
+                s += c
+    f.close()
+    return job_names
+
+
 def randomize():
     print ('You are using the FFT RUMBLE CHAOS CRASHDOWN randomizer '
            'version "%s".' % VERSION)
@@ -1656,7 +1753,8 @@ def randomize():
                "r  Randomize job requirements and job level JP.\n"
                "t  Randomize trophies, poaches, and move-find items.\n"
                "p  Randomize item prices and shop availability.\n"
-               "m  Randomize monster stats and skills.\n")
+               "m  Randomize monster stats and skills.\n"
+               "z  Enable special surprises.\n")
         flags = raw_input("Flags? (blank for all) ").strip()
         seed = raw_input("Seed? (blank for random) ").strip()
         print
@@ -1741,6 +1839,10 @@ def randomize():
     if 'u' in flags:
         random.seed(seed)
         mutate_units()
+
+    if 'z' in flags:
+        random.seed(seed)
+        mutate_units_special(get_job_names(TEMPFILE))
 
     if 'j' in flags:
         random.seed(seed)
