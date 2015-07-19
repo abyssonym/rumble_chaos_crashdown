@@ -795,7 +795,7 @@ class UnitObject(TableObject):
     def mutate_stats(self):
         if not self.level_normalized and 5 <= self.level <= 99:
             self.level = mutate_index(self.level, 99,
-                                      (True, False), (-2, 3), (-1, 1))
+                                      (True, False), (-2, 3), (-1, 2))
         for attr in ["brave", "faith"]:
             value = getattr(self, attr)
             if 0 <= value <= 100:
