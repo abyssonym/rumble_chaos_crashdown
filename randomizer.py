@@ -1148,8 +1148,9 @@ def get_ranked_secondaries():
 
 
 def get_ranked_items():
+    PRICELESS = [0x8F]
     items = [i for i in get_items() if i.index > 0]
-    priceless = [i for i in items if i.price <= 10]
+    priceless = [i for i in items if i.price <= 10 or i.index in PRICELESS]
     priced = [i for i in items if i not in priceless]
     priced = sorted(priced, key=lambda i: i.price)
     priceless = sorted(priceless, key=lambda i: i.enemy_level)
