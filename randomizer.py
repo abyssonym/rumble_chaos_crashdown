@@ -827,6 +827,7 @@ class JobReqObject(TableObject):
             if value > 0:
                 prereq_dict[attr] = value
 
+        removed = []
         for attr in prereq_dict:
             prereq = jobreq_namedict[attr]
             for attr2 in prereq_dict:
@@ -834,10 +835,13 @@ class JobReqObject(TableObject):
                 value2 = getattr(prereq, attr2)
                 if value2 >= value:
                     prereq_dict[attr2] = 0
+                    removed.append(attr2)
 
         for attr, value in prereq_dict.items():
             if value > 0:
                 s += "  %s %s\n" % (value, attr)
+        if removed:
+            s += "  Also: " + ", ".join(sorted(set(removed)))
 
         return s.strip()
 
@@ -1275,6 +1279,11 @@ def mutate_job_requirements():
               [randint(8, 13) + randint(0, 8) for _ in range(3)] +
               [randint(13, 21) + randint(0, 13) for _ in range(2)] +
               [randint(34, 55)])
+
+    num_jobpools = 1 + randint(0, 1) + randint(0, 1)
+    squire = [r for r in reqs if r.name == "squire"][0]
+    jobpools = [set([]) for _ in xrange(num_jobpools)]
+    allpool = set([squire])
     assert len(levels) == 19
     random.shuffle(reqs)
     for req, numlevels in zip(reqs, levels):
@@ -1282,15 +1291,36 @@ def mutate_job_requirements():
             continue
         assert req not in done
 
+        base_numlevels = numlevels
         req.set_zero()
         prereqs = []
         sublevels = []
-        candidates = [c for c in done if c.name not in ["dancer", "bard"]]
+        jobpoolcands = [j for j in jobpools
+                        if len(j) == len(min(jobpools, key=lambda j: len(j)))]
+        jobpool = random.choice(jobpoolcands)
+        if base_numlevels >= 30:
+            candidates = [c for c in done if c.name not in ["dancer", "bard"]]
+        else:
+            effective_jobpool = set(jobpool)
+            while len(effective_jobpool) < base_numlevels:
+                if allpool <= effective_jobpool:
+                    break
+                else:
+                    allcands = sorted(allpool, key=lambda a: a.index)
+                    allcands = [a for a in allcands
+                                if a not in effective_jobpool]
+                    effective_jobpool.add(random.choice(allcands))
+            candidates = [c for c in done
+                          if c in effective_jobpool
+                          and c.name not in ["dancer", "bard"]]
         while numlevels > 1:
             sublevel = randint(2, 3) + randint(0, 1)
             sublevel = min(sublevel, numlevels)
             if len(sublevels) == 14 or len(sublevels) == len(candidates):
-                index = randint(0, len(sublevels)-1)
+                if len(sublevels) == 1:
+                    index = 0
+                else:
+                    index = randint(0, len(sublevels)-1)
                 sublevels[index] = min(sublevels[index] + sublevel, 8)
             else:
                 sublevels.append(sublevel)
@@ -1336,6 +1366,11 @@ def mutate_job_requirements():
         for r in reqs:
             r.remax_jobreqs()
         done.append(req)
+        if req.name not in ["dancer", "bard"]:
+            if base_numlevels >= 3:
+                jobpool.add(req)
+            else:
+                allpool.add(req)
 
 
 def mutate_job_stats():
@@ -1472,8 +1507,8 @@ def mutate_units():
         generic = len([_ for (g, _) in value if g in (0x80, 0x81)])
         monster = len([_ for (g, _) in value if g == 0x82])
         other = len([_ for (g, _) in value if g not in (0x80, 0x81, 0x82, 0x00)])
-        if key in [0x19B]:
-            other += 1
+        if key in [0x19B, 0x1AA]:
+            other = max(other, 3)
 
         remaining = 9 - (generic + monster + other)
         if remaining > 0 and key in range(0x100, 0x14B):
