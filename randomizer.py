@@ -835,7 +835,8 @@ class JobReqObject(TableObject):
                 value2 = getattr(prereq, attr2)
                 if value2 >= value:
                     prereq_dict[attr2] = 0
-                    removed.append(attr2)
+                    if attr2 != "squire":
+                        removed.append(attr2)
 
         for attr, value in prereq_dict.items():
             if value > 0:
@@ -1284,11 +1285,10 @@ def mutate_job_requirements():
     squire = [r for r in reqs if r.name == "squire"][0]
     jobpools = [set([]) for _ in xrange(num_jobpools)]
     allpool = set([squire])
-    assert len(levels) == 19
+    reqs = [r for r in reqs if r is not squire]
     random.shuffle(reqs)
+    assert len(levels) == len(reqs) == 19
     for req, numlevels in zip(reqs, levels):
-        if req.name == "squire":
-            continue
         assert req not in done
 
         base_numlevels = numlevels
@@ -1298,7 +1298,7 @@ def mutate_job_requirements():
         jobpoolcands = [j for j in jobpools
                         if len(j) == len(min(jobpools, key=lambda j: len(j)))]
         jobpool = random.choice(jobpoolcands)
-        if base_numlevels >= 30:
+        if base_numlevels >= 30 or randint(1, 15) == 15:
             candidates = [c for c in done if c.name not in ["dancer", "bard"]]
         else:
             effective_jobpool = set(jobpool)
@@ -1337,6 +1337,9 @@ def mutate_job_requirements():
         assert len(sublevels) <= 14
         if len(candidates) >= (len(sublevels) + 1):
             candidates = candidates[:-1]
+        if (len(candidates) >= (len(sublevels) + 1)
+                and random.choice([True, False])):
+            candidates = candidates[1:]
 
         prereqs = []
         for _ in range(len(sublevels)):
@@ -1352,6 +1355,8 @@ def mutate_job_requirements():
             index = len(tempcands) - 1
             while index > 0:
                 if random.choice([True, False]):
+                    if index <= 3 and random.choice([True, False]):
+                        break
                     index -= 1
                 else:
                     break
@@ -1367,7 +1372,7 @@ def mutate_job_requirements():
             r.remax_jobreqs()
         done.append(req)
         if req.name not in ["dancer", "bard"]:
-            if base_numlevels >= 3:
+            if base_numlevels >= randint(2, 3):
                 jobpool.add(req)
             else:
                 allpool.add(req)
