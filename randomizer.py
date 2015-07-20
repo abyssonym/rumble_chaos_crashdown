@@ -73,6 +73,9 @@ g_monster_skills = None
 g_ranked_secondaries = None
 birthday_dict = {}
 
+SUPER_LEVEL_BOOSTED = []
+SUPER_SPECIAL = []
+
 
 def get_md5_hash(filename):
     from hashlib import md5
@@ -485,6 +488,16 @@ class UnitObject(TableObject):
     def has_special_graphic(self):
         return self.graphic not in [0x80, 0x81, 0x82]
 
+    def has_similar_monster_graphic(self, other):
+        if not (self.graphic == 0x82 and other.graphic == 0x82):
+            return False
+
+        if (get_job(self.job).monster_graphic
+                == get_job(other.job).monster_graphic):
+            return True
+        else:
+            return False
+
     @property
     def named(self):
         return bool(self.name != 0xFF)
@@ -619,8 +632,16 @@ class UnitObject(TableObject):
         return True
 
     def mutate_monster_job(self):
+        if self.job <= 0x5D or self.job in [0x91, 0x97]:
+            return True
+
+        oldjob = self.job
+        if self.named and (self.name, oldjob) in named_jobs:
+            self.job = named_jobs[self.name, self.job]
+            return True
+
         ranked_monster_jobs = [get_job(m) for m in get_ranked("job")
-                               if m >= 0x5E]
+                               if m >= 0x5E and m != 0x97]
         if self.map_id not in monster_selection:
             monster_jobs = [get_job(m.job) for m in mapunits[self.map_id]
                             if m.job >= 0x5E]
@@ -655,9 +676,12 @@ class UnitObject(TableObject):
                              (-1, 2), (-1, 1))
         newjob = ranked_selection[index]
         self.job = newjob.index
+        named_jobs[self.name, oldjob] = self.job
         return True
 
     def mutate(self, boost_factor=1.2, preserve_gender=False):
+        self.mutate_stats()
+
         if self.job >= 0x5E:
             return self.mutate_monster_job()
 
@@ -788,11 +812,19 @@ class UnitObject(TableObject):
                 self.graphic = 0x81
 
         self.mutate_secondary()
-        self.mutate_stats()
-
         return True
 
     def mutate_stats(self):
+        if self.index <= 0xFFF and randint(1, 10) == 10:
+            if not self.level_normalized:
+                self.level += randint(0, 10) + randint(0, 10)
+                self.level = min(self.level, 99)
+            else:
+                if self.level > 199:
+                    self.level = 100
+                self.level += randint(0, 10) + randint(0, 10)
+                self.level = min(self.level, 199)
+            SUPER_LEVEL_BOOSTED.append(self)
         if not self.level_normalized and 5 <= self.level <= 99:
             self.level = mutate_index(self.level, 99,
                                       (True, False), (-2, 3), (-1, 2))
@@ -1571,13 +1603,23 @@ def mutate_units_special(job_names):
                     and job_names[j.index] not in mundane_job_names
                     and job_names[j.index]]
     special_jobs = [j.index for j in special_jobs]
-    probval = 20
     for map_id in range(1, 0xFE) + range(0x180, 0x1D5):
-        probval -= 1
-        probval = max(probval, 2)
+        if map_id <= 0xFF:
+            boost_factor = 1.5
+        else:
+            boost_factor = 1.0
+
+        if map_id == 1:
+            probval = 8
+        elif map_id == 0x180:
+            probval = 15
+        else:
+            probval -= 1
+            probval = max(probval, 2)
+
         if map_id in [0x183, 0x184, 0x185]:
             continue
-        if randint(1, probval) == 1:
+        if probval == 1 or randint(1, probval) == 1:
             units = mapunits[map_id]
             candidates = [u for u in units if not u.named
                           and u.get_bit("team1")
@@ -1588,17 +1630,30 @@ def mutate_units_special(job_names):
             candidates = [c for c in candidates if c.job not in noncandjobs]
             if not candidates:
                 continue
-            jobs = Counter([c.job for c in candidates])
+            jobs = [c.job for c in candidates]
+            jobs = [get_job(j).monster_graphic | 0x100 if 0x5E <= j <= 0x8D
+                    else j for j in jobs]
+            jobs = [j for j in jobs if (j & 0xFF) > 0]
+            jobs = Counter(jobs)
             if len(jobs.keys()) == 1:
                 continue
+
             jobs = [key for key in jobs if jobs[key] == min(jobs.values())]
-            chosen_job = random.choice(jobs)
+            replace_job = random.choice(jobs)
+            if replace_job >= 0x100:
+                replace_job &= 0xFF
+                replace_job = [c.job for c in candidates if
+                               get_job(c.job).monster_graphic == replace_job]
+                replace_job = replace_job[0]
+
             cand_jobs = [j for j in ranked_jobs
-                         if j in special_jobs or j == chosen_job]
-            index = cand_jobs.index(chosen_job)
-            cand_jobs.remove(chosen_job)
+                         if j in special_jobs or j == replace_job]
+            index = cand_jobs.index(replace_job)
+            index = randint(index, int(round(index * boost_factor)))
+            cand_jobs.remove(replace_job)
             index = mutate_normal(index, maximum=len(cand_jobs)-1)
             new_job = cand_jobs[index]
+
             jobunits = [u for u in get_units() if u.job == new_job]
             jobgraphics = Counter([u.graphic for u in jobunits])
             jobgraphics = [key for key in jobgraphics
@@ -1612,7 +1667,14 @@ def mutate_units_special(job_names):
             if tempunits:
                 jobunits = tempunits
             chosen_unit = random.choice(jobunits)
-            change_units = [u for u in units if u.job == chosen_job]
+
+            if not 0x5E <= replace_job <= 0x8D:
+                change_units = [u for u in units if u.job == replace_job]
+            else:
+                mg = get_job(replace_job).monster_graphic
+                change_units = [u for u in units
+                                if get_job(u.job).monster_graphic == mg]
+
             for unit in change_units:
                 unit.job = chosen_unit.job
                 unit.graphic = chosen_unit.graphic
@@ -1623,16 +1685,21 @@ def mutate_units_special(job_names):
                     setattr(unit, attr, getattr(chosen_unit, attr))
                 if chosen_unit.named:
                     unit.name = chosen_unit.name
+                SUPER_SPECIAL.append(unit)
+
             job = get_job(chosen_unit.job)
             if (not job.can_invite and
                     random.choice([True, False, False])):
                 unit = random.choice(change_units)
                 unit.set_bit("join_after_event", True)
+
             if map_id >= 0x180:
                 special_jobs.remove(chosen_unit.job)
                 if not special_jobs:
                     break
-            probval = max(probval, 15)
+                probval = max(probval, 15)
+            else:
+                probval = max(probval, 8)
 
 
 def mutate_treasure():
@@ -1926,6 +1993,10 @@ def randomize():
 
     if "fiesta" in activated_codes:
         setup_fiesta(TEMPFILE)
+
+    DOUBLE_SUPER = set(SUPER_LEVEL_BOOSTED) & set(SUPER_SPECIAL)
+    #for unit in DOUBLE_SUPER:
+    #    print "%x %x %s" % (unit.map_id, unit.job, unit.level)
 
     print "WRITING MUTATED DATA"
     for objects in all_objects:
