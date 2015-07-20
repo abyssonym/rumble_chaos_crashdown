@@ -95,7 +95,7 @@ def mutate_normal(value, minimum=0, maximum=0xFF,
 
     odd = value % 2
     value = value / 2
-    rval = max(value, 2)
+    rval = max(value, 1)
     value = value + random.randint(0, rval) + random.randint(0, rval)
     if odd:
         value += random.randint(0, 1)
