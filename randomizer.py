@@ -70,6 +70,7 @@ backup_jobreqs = None
 rankdict = None
 ranked_skills_dict = {}
 g_monster_skills = None
+g_ranked_monster_jobs = None
 g_ranked_secondaries = None
 birthday_dict = {}
 
@@ -374,6 +375,10 @@ class JobObject(TableObject):
     def can_invite(self):
         return not bool(self.immune_status & 0x4000)
 
+    @property
+    def is_monster_job(self):
+        return self.index >= 0x5E and self.index != 0x97
+
     def get_appropriate_boost(self):
         units = [u for u in get_units() if u.job == self.index
                  and u.get_bit("team1") and not u.level_normalized
@@ -487,6 +492,10 @@ class UnitObject(TableObject):
     @property
     def has_special_graphic(self):
         return self.graphic not in [0x80, 0x81, 0x82]
+
+    @property
+    def has_monster_job(self):
+        return self.job >= 0x5E and self.job != 0x97
 
     def has_similar_monster_graphic(self, other):
         if not (self.graphic == 0x82 and other.graphic == 0x82):
@@ -640,16 +649,15 @@ class UnitObject(TableObject):
             self.job = named_jobs[self.name, self.job]
             return True
 
-        ranked_monster_jobs = [get_job(m) for m in get_ranked("job")
-                               if m >= 0x5E and m != 0x97]
+        ranked_monster_jobs = get_ranked_monster_jobs()
         if self.map_id not in monster_selection:
-            monster_jobs = [get_job(m.job) for m in mapunits[self.map_id]
-                            if m.job >= 0x5E]
-            monster_sprites = set([m.monster_graphic for m in monster_jobs])
+            monster_jobs = [get_job(u.job) for u in mapunits[self.map_id]
+                            if u.has_monster_job]
+            monster_sprites = set([m.monster_portrait for m in monster_jobs])
             ranked_monster_sprites = []
             for m in ranked_monster_jobs:
-                if m.monster_graphic not in ranked_monster_sprites:
-                    ranked_monster_sprites.append(m.monster_graphic)
+                if m.monster_portrait not in ranked_monster_sprites:
+                    ranked_monster_sprites.append(m.monster_portrait)
             selected_sprites = []
             for s in sorted(monster_sprites):
                 temp_sprites = [t for t in ranked_monster_sprites
@@ -662,7 +670,7 @@ class UnitObject(TableObject):
                 selected = temp_sprites[index]
                 selected_sprites.append(selected)
             selected_monsters = [m for m in ranked_monster_jobs
-                                 if m.monster_graphic in selected_sprites]
+                                 if m.monster_portrait in selected_sprites]
             monster_selection[self.map_id] = selected_monsters
 
         selection = monster_selection[self.map_id]
@@ -1152,6 +1160,16 @@ def get_ranked(category, full=False):
     return ranked
 
 
+def get_ranked_monster_jobs():
+    global g_ranked_monster_jobs
+    if g_ranked_monster_jobs is not None:
+        return g_ranked_monster_jobs
+
+    g_ranked_monster_jobs = [get_job(m) for m in get_ranked("job")
+                             if get_job(m).is_monster_job]
+    return get_ranked_monster_jobs()
+
+
 def get_ranked_secondaries():
     global g_ranked_secondaries
     if g_ranked_secondaries is not None:
@@ -1635,7 +1653,7 @@ def mutate_units_special(job_names):
             if not candidates:
                 continue
             jobs = [c.job for c in candidates]
-            jobs = [get_job(j).monster_graphic | 0x100 if 0x5E <= j <= 0x8D
+            jobs = [get_job(j).monster_portrait | 0x100 if 0x5E <= j <= 0x8D
                     else j for j in jobs]
             jobs = [j for j in jobs if (j & 0xFF) > 0]
             jobs = Counter(jobs)
@@ -1647,7 +1665,7 @@ def mutate_units_special(job_names):
             if replace_job >= 0x100:
                 replace_job &= 0xFF
                 replace_job = [c.job for c in candidates if
-                               get_job(c.job).monster_graphic == replace_job]
+                               get_job(c.job).monster_portrait == replace_job]
                 replace_job = replace_job[0]
 
             cand_jobs = [j for j in ranked_jobs
@@ -1672,12 +1690,13 @@ def mutate_units_special(job_names):
                 jobunits = tempunits
             chosen_unit = random.choice(jobunits)
 
-            if not 0x5E <= replace_job <= 0x8D:
+            if not 0x5E <= replace_job:
                 change_units = [u for u in units if u.job == replace_job]
             else:
-                mg = get_job(replace_job).monster_graphic
+                mg = get_job(replace_job).monster_portrait
+                assert mg > 0
                 change_units = [u for u in units
-                                if get_job(u.job).monster_graphic == mg]
+                                if get_job(u.job).monster_portrait == mg]
 
             for unit in change_units:
                 unit.job = chosen_unit.job
