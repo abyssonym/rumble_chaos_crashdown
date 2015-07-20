@@ -238,10 +238,10 @@ class AbilityAttributesObject(TableObject):
         if randint(1, 2) <= self.yval <= 0xFD:
             self.yval = mutate_normal(self.yval, minimum=1, maximum=0xFD)
 
-        if randint(1, 50) == 50:
+        if randint(1, 40) == 40:
             for attr in ["range", "effect", "vertical"]:
                 value = getattr(self, attr)
-                if 1 <= value <= 0xFD:
+                if randint(1, 2) <= value <= 0xFD:
                     value = mutate_normal(value, minimum=1, maximum=0xFD)
                     setattr(self, attr, value)
 
