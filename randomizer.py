@@ -536,6 +536,10 @@ class UnitObject(TableObject):
         if self.job in jobreq_indexdict:
             base_job = jobreq_indexdict[self.job]
         else:
+            if (self.unlocked == 0 and self.unlocked_level == 0
+                    and not self.level_normalized):
+                total = mutate_normal(175 * self.level, maximum=500000)
+                return total
             base_job = jobreq_indexdict[0x4a]
         unlocked_job = jobreq_indexdict[self.unlocked + 0x4a]
 
@@ -573,11 +577,21 @@ class UnitObject(TableObject):
 
         jobs = jobreq_namedict.values()
         jobs = [j for j in jobs if j.required_unlock_jp <= jp_remaining]
+        jobs = sorted(jobs, key=lambda j: j.required_unlock_jp)
+        goal_length = (len(jobs) / 2) + 1
+        while len(jobs) > goal_length:
+            if randint(1, len(jobs)) == 1:
+                break
+            else:
+                jobs = jobs[1:]
+
         if base_job is not None:
             if (randint(1, 20) != 20 and base_job.otherindex > 0):
                 base_name = base_job.name
-                jobs = [j for j in jobs if getattr(j, base_name) > 0
-                        or j == base_job]
+                tempjobs = [j for j in jobs if getattr(j, base_name) > 0
+                            or j == base_job]
+                if tempjobs:
+                    jobs = tempjobs
             random.shuffle(jobs)
 
             while True:
@@ -599,8 +613,6 @@ class UnitObject(TableObject):
                     break
         else:
             required_jp = 0
-            if random.choice([True, False]):
-                jobs = jobs[len(jobs)/2:]
             unlocked_job = random.choice(jobs)
 
         jp_remaining -= required_jp
@@ -610,14 +622,27 @@ class UnitObject(TableObject):
         while randint(1, 7) == 7:
             unlocked_level += 1
 
+        old_unlocked = self.unlocked
         unlocked_level = min(unlocked_level, 8)
         self.unlocked = unlocked_job.otherindex
         self.unlocked_level = unlocked_level
-
-        #if self.secondary > 0x18:
-        #    return
-
-        if randint(1, 10) == 10:
+        secondary_skillset = get_skillset(self.secondary)
+        rss = get_ranked_secondaries()
+        if (self.secondary in rss and secondary_skillset
+                and secondary_skillset.num_free_actions >= 1
+                and random.choice([True, False])):
+            candidates = []
+            for rs in rss:
+                skillset = get_skillset(rs)
+                if skillset and skillset.num_free_actions >= 1:
+                    candidates.append(rs)
+                elif rs == self.secondary:
+                    candidates.append(rs)
+            index = candidates.index(self.secondary)
+            index = mutate_index(index, len(candidates), [True, False],
+                                 (-2, 3), (-2, 3))
+            self.secondary = candidates[index]
+        elif randint(1, 10) == 10:
             candidates = get_ranked_secondaries()
             base = get_job(self.job).skillset
             if self.secondary in candidates:
@@ -963,7 +988,11 @@ def get_skillsets(filename=None):
 
 
 def get_skillset(index):
-    return [ss for ss in get_skillsets() if ss.index == index][0]
+    skillsets = [ss for ss in get_skillsets() if ss.index == index]
+    if skillsets:
+        return skillsets[0]
+    else:
+        return None
 
 
 def get_items(filename=None):
@@ -2032,6 +2061,7 @@ def randomize():
 
     inject_logical_sectors(TEMPFILE, sourcefile)
     remove(TEMPFILE)
+    print "Output file has hash: %s" % get_md5_hash(sourcefile)
 
     if len(argv) <= 2:
         raw_input("\nRandomization completed successfully. "
