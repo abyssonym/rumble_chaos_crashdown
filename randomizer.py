@@ -1399,6 +1399,8 @@ def mutate_job_requirements():
                     allcands = sorted(allpool, key=lambda a: a.index)
                     allcands = [a for a in allcands
                                 if a not in effective_jobpool]
+                    if len(allcands) > 1:
+                        allcands = [a for a in allcands if a.name != "squire"]
                     effective_jobpool.add(random.choice(allcands))
             candidates = [c for c in done
                           if c in effective_jobpool
