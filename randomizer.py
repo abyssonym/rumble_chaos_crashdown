@@ -1696,12 +1696,12 @@ def mutate_units_special(job_names):
                 continue
 
             jobs = [key for key in jobs if jobs[key] == min(jobs.values())]
-            replace_job = random.choice(jobs)
+            replace_job = random.choice(sorted(jobs))
             if replace_job >= 0x100:
                 replace_job &= 0xFF
                 replace_job = [c.job for c in candidates if
                                get_job(c.job).monster_portrait == replace_job]
-                replace_job = replace_job[0]
+                replace_job = sorted(replace_job)[0]
 
             cand_jobs = [j for j in ranked_jobs
                          if j in special_jobs or j == replace_job]
@@ -1717,13 +1717,14 @@ def mutate_units_special(job_names):
                            if jobgraphics[key] == max(jobgraphics.values())]
             if not jobunits or not jobgraphics:
                 continue
-            graphic = random.choice(jobgraphics)
+            graphic = random.choice(sorted(jobgraphics))
             jobunits = [u for u in jobunits if u.graphic == graphic]
             tempunits = [u for u in jobunits
                          if u.map_id in range(1, 0xFE) + range(0x180, 0x1D5)]
             if tempunits:
                 jobunits = tempunits
-            chosen_unit = random.choice(jobunits)
+            chosen_unit = random.choice(sorted(jobunits,
+                                               key=lambda u: u.index))
 
             if not 0x5E <= replace_job:
                 change_units = [u for u in units if u.job == replace_job]
@@ -1733,6 +1734,8 @@ def mutate_units_special(job_names):
                 change_units = [u for u in units
                                 if get_job(u.job).monster_portrait == mg]
 
+            change_units = sorted(change_units, key=lambda u: u.index)
+            old_job = change_units[0].job
             for unit in change_units:
                 unit.job = chosen_unit.job
                 unit.graphic = chosen_unit.graphic
