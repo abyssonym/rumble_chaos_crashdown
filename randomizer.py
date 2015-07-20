@@ -73,9 +73,16 @@ g_monster_skills = None
 g_ranked_monster_jobs = None
 g_ranked_secondaries = None
 birthday_dict = {}
+rng_report_counter = 0
 
 SUPER_LEVEL_BOOSTED = []
 SUPER_SPECIAL = []
+
+
+def get_rng_state():
+    global rng_report_counter
+    rng_report_counter += 1
+    return rng_report_counter, sum(random.getstate()[1]) % (10**20)
 
 
 def get_md5_hash(filename):
@@ -719,8 +726,7 @@ class UnitObject(TableObject):
             return self.mutate_monster_job()
 
         if self.job not in jobreq_indexdict:
-            success = self.mutate_secondary()
-            return success
+            return self.mutate_secondary()
 
         jp_remaining = self.jp_total
         jp_remaining = randint(jp_remaining, int(jp_remaining * boost_factor))
@@ -1192,7 +1198,7 @@ def get_ranked(category, full=False):
 def get_ranked_monster_jobs():
     global g_ranked_monster_jobs
     if g_ranked_monster_jobs is not None:
-        return g_ranked_monster_jobs
+        return list(g_ranked_monster_jobs)
 
     g_ranked_monster_jobs = [get_job(m) for m in get_ranked("job")
                              if get_job(m).is_monster_job]
@@ -1222,7 +1228,7 @@ def get_ranked_secondaries():
                 rank += max(4-i, 0)
             candidates[skillset] = rank
 
-    ranked = sorted(candidates, key=lambda c: candidates[c])
+    ranked = sorted(candidates, key=lambda c: (candidates[c], c.index))
     g_ranked_secondaries = [r.index for r in ranked]
     for index in get_ranked("secondary"):
         if 0 < index <= 0xAF:
@@ -2032,7 +2038,7 @@ def randomize():
         random.seed(seed)
         mutate_abilities_attributes()
 
-    if set(flags) & set("rujimtpsa"):
+    if set(flags) & set("rujimtpsaz"):
         random.seed(seed)
         for unit_id in [0x1951, 0x19d0, 0x1a10, 0x1ac0, 0x1b10]:
             u = get_unit(unit_id)
