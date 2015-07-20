@@ -231,11 +231,11 @@ class AbilityAttributesObject(TableObject):
                 setattr(self, attr, value)
 
         #if 1 <= self.xval <= 0xFD and self.formula in X_FORMULAS:
-        if 1 <= self.xval <= 0xFD:
+        if 2 <= self.xval <= 0xFD:
             self.xval = mutate_normal(self.xval, minimum=1, maximum=0xFD)
 
         #if 1 <= self.yval <= 0xFD and self.formula in Y_FORMULAS:
-        if 1 <= self.yval <= 0xFD:
+        if 2 <= self.yval <= 0xFD:
             self.yval = mutate_normal(self.yval, minimum=1, maximum=0xFD)
 
         if randint(1, 50) == 50:
