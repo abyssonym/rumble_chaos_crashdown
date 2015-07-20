@@ -746,8 +746,12 @@ class UnitObject(TableObject):
 
             if cands:
                 cands = sorted(cands, key=lambda j: j.required_unlock_jp)
-                if random.choice([True, False]):
-                    cands = cands[len(cands)/2:]
+                goal_length = (len(cands)/2) + 1
+                while len(cands) > goal_length:
+                    if randint(1, len(cands)) == 1:
+                        break
+                    else:
+                        cands = cands[1:]
                 base_job = random.choice(cands)
             else:
                 base_job = jobreq_namedict['squire']
