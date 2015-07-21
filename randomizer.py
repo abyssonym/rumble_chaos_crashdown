@@ -47,8 +47,9 @@ ability_attribute_specs = TableSpecs(TABLE_SPECS['ability_attribute'])
 VALID_INNATE_STATUSES = 0xCAFCE92A10
 VALID_START_STATUSES = VALID_INNATE_STATUSES | 0x3402301000
 BANNED_SKILLSET_SHUFFLE = [0, 1, 2, 3, 6, 8, 0x11, 0x12, 0x13, 0x14, 0x15,
-                           0x34, 0x38, 0x39, 0x3B, 0x3E, 0x9C]
+                           0x18, 0x34, 0x38, 0x39, 0x3B, 0x3E, 0x9C]
 BANNED_RSMS = [0x1BB, 0x1E1, 0x1E4, 0x1E5, 0x1F1]
+BANNED_ANYTHING = [0x18]
 
 jobreq_namedict = {}
 jobreq_indexdict = {}
@@ -354,6 +355,9 @@ class SkillsetObject(TableObject):
         super(SkillsetObject, self).write_data(filename, pointer=pointer)
 
     def mutate_abilities(self):
+        if self.index in BANNED_ANYTHING:
+            return
+
         if self.index not in BANNED_SKILLSET_SHUFFLE:
             candidates = [a for a in get_abilities() if a.ability_type == 1]
             for i, a in enumerate(self.actions):
@@ -1542,7 +1546,10 @@ def mutate_skillsets():
     abilities = [a.index for a in abilities]
     random.shuffle(skillsets)
     for skillset in skillsets:
+        # RSMs for non-basic classes
         if 5 <= skillset.index <= 0x18:
+            continue
+        if skillset.index in BANNED_ANYTHING:
             continue
         if len(skillset.rsms) > 0:
             num_to_sample = 2 + randint(0, 3) + randint(0, 3)
@@ -1555,7 +1562,10 @@ def mutate_skillsets():
 
     done = []
     for skillset in skillsets:
+        # RSMs for basic classes
         if not (5 <= skillset.index <= 0x18):
+            continue
+        if skillset.index in BANNED_ANYTHING:
             continue
         candidates = [a for a in abilities if a not in done]
         num_to_sample = min(len(candidates), 6)
