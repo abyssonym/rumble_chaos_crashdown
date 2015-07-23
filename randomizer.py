@@ -862,6 +862,9 @@ class UnitObject(TableObject):
         return True
 
     def mutate_stats(self):
+        if self.job <= 3 or self.graphic <= 3:
+            return
+
         if self.index <= 0xFFF and randint(1, 10) == 10:
             if not self.level_normalized:
                 self.level += randint(0, 10) + randint(0, 10)
@@ -880,9 +883,6 @@ class UnitObject(TableObject):
             if 0 <= value <= 100:
                 value = mutate_normal(value, maximum=100)
                 setattr(self, attr, value)
-
-        if self.job <= 3 or self.graphic <= 3:
-            return
 
         if self.named and self.name in birthday_dict:
             self.month, self.day = birthday_dict[self.name]
