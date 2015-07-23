@@ -881,6 +881,9 @@ class UnitObject(TableObject):
                 value = mutate_normal(value, maximum=100)
                 setattr(self, attr, value)
 
+        if self.job <= 3 or self.graphic <= 3:
+            return
+
         if self.named and self.name in birthday_dict:
             self.month, self.day = birthday_dict[self.name]
         elif self.named or randint(1, 8) == 8:
