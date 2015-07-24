@@ -22,7 +22,8 @@ MD5HASHES = ["aefdf27f1cd541ad46b5df794f635f50",
 RAWMD5HASHES = ["55a8e2ad81ee308b573a2cdfb0c3c270",
                 "4851a6f32d6546eed65319c319ea8b55",
                 ]
-ISO_SIZE, RAW_SIZE = 541310448, 471345152
+ISO_SIZES = [541310448, 541315152]
+RAW_SIZES = [471345152]
 DAYS_IN_MONTH = {1: 31, 2: 28, 3: 31, 4: 30, 5: 31, 6: 30,
                  7: 31, 8: 31, 9: 30, 10: 31, 11: 30, 12: 31}
 
@@ -1951,11 +1952,11 @@ def randomize():
     srchash = get_md5_hash(sourcefile)
     stats = os.stat(sourcefile)
     filesize = stats.st_size
-    if filesize not in [ISO_SIZE, RAW_SIZE]:
+    if filesize not in ISO_SIZES + RAW_SIZES:
         resp = raw_input("WARNING! The file you provided is not a known "
                          "file size. Continue? (y/n) ")
         if resp and resp[0].lower() == 'y':
-            filesize = min([ISO_SIZE, RAW_SIZE], key=lambda s: abs(s-filesize))
+            filesize = min(ISO_SIZES + RAW_SIZES, key=lambda s: abs(s-filesize))
         else:
             sys.exit(0)
     elif srchash not in MD5HASHES + RAWMD5HASHES:
@@ -1981,7 +1982,7 @@ def randomize():
     else:
         newsource = "fft_rcc.%s.iso" % seed
 
-    if filesize == RAW_SIZE:
+    if filesize in RAW_SIZES:
         newsource = newsource[:-3] + "bin"
 
     secret_codes = {}
@@ -2000,8 +2001,8 @@ def randomize():
     copyfile(sourcefile, newsource)
     sourcefile = newsource
 
-    assert filesize in [RAW_SIZE, ISO_SIZE]
-    if filesize == ISO_SIZE:
+    assert filesize in ISO_SIZES + RAW_SIZES
+    if filesize in ISO_SIZES:
         remove_sector_metadata(sourcefile, TEMPFILE)
     else:
         copyfile(sourcefile, TEMPFILE)
@@ -2104,8 +2105,8 @@ def randomize():
     #unlock_jobs(TEMPFILE)
     rewrite_header(TEMPFILE, "FFT RCC %s" % seed)
 
-    assert filesize in [RAW_SIZE, ISO_SIZE]
-    if filesize == ISO_SIZE:
+    assert filesize in RAW_SIZES + ISO_SIZES
+    if filesize in ISO_SIZES:
         inject_logical_sectors(TEMPFILE, sourcefile)
     else:
         copyfile(TEMPFILE, sourcefile)
