@@ -1,4 +1,5 @@
 from shutil import copyfile
+import os
 from os import remove
 import sys
 from sys import argv
@@ -18,6 +19,10 @@ VERSION = "11"
 MD5HASHES = ["aefdf27f1cd541ad46b5df794f635f50",
              "b156ba386436d20fd5ed8d37bab6b624",
              ]
+RAWMD5HASHES = ["55a8e2ad81ee308b573a2cdfb0c3c270",
+                "4851a6f32d6546eed65319c319ea8b55",
+                ]
+ISO_SIZE, RAW_SIZE = 541310448, 471345152
 DAYS_IN_MONTH = {1: 31, 2: 28, 3: 31, 4: 30, 5: 31, 6: 30,
                  7: 31, 8: 31, 9: 30, 10: 31, 11: 30, 12: 31}
 
@@ -1944,7 +1949,16 @@ def randomize():
         print
 
     srchash = get_md5_hash(sourcefile)
-    if srchash not in MD5HASHES:
+    stats = os.stat(sourcefile)
+    filesize = stats.st_size
+    if filesize not in [ISO_SIZE, RAW_SIZE]:
+        resp = raw_input("WARNING! The file you provided is not a known "
+                         "file size. Continue? (y/n) ")
+        if resp and resp[0].lower() == 'y':
+            filesize = min([ISO_SIZE, RAW_SIZE], key=lambda s: abs(s-filesize))
+        else:
+            sys.exit(0)
+    elif srchash not in MD5HASHES + RAWMD5HASHES:
         print "WARNING! The file you provided has the following md5 hash: "
         print srchash
         print "\nThis randomizer was tested on a file with this hash: "
@@ -1967,6 +1981,9 @@ def randomize():
     else:
         newsource = "fft_rcc.%s.iso" % seed
 
+    if filesize == RAW_SIZE:
+        newsource = newsource[:-3] + "bin"
+
     secret_codes = {}
     secret_codes['fiesta'] = "JOB FIESTA MODE"
     activated_codes = set([])
@@ -1983,7 +2000,11 @@ def randomize():
     copyfile(sourcefile, newsource)
     sourcefile = newsource
 
-    remove_sector_metadata(sourcefile, TEMPFILE)
+    assert filesize in [RAW_SIZE, ISO_SIZE]
+    if filesize == ISO_SIZE:
+        remove_sector_metadata(sourcefile, TEMPFILE)
+    else:
+        copyfile(sourcefile, TEMPFILE)
 
     units = get_units(TEMPFILE)
     jobs = get_jobs(TEMPFILE)
@@ -2083,7 +2104,12 @@ def randomize():
     #unlock_jobs(TEMPFILE)
     rewrite_header(TEMPFILE, "FFT RCC %s" % seed)
 
-    inject_logical_sectors(TEMPFILE, sourcefile)
+    assert filesize in [RAW_SIZE, ISO_SIZE]
+    if filesize == ISO_SIZE:
+        inject_logical_sectors(TEMPFILE, sourcefile)
+    else:
+        copyfile(TEMPFILE, sourcefile)
+
     remove(TEMPFILE)
     print "Output file has hash: %s" % get_md5_hash(sourcefile)
 
