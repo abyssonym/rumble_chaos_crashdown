@@ -1,18 +1,4 @@
-from os import path
 import random
-
-try:
-    from sys import _MEIPASS
-    tblpath = path.join(_MEIPASS, "tables")
-except ImportError:
-    tblpath = "tables"
-
-
-TABLE_SPECS = {}
-for table_type in ["unit", "job_reqs", "job", "skillset", "item",
-                   "monster_skills", "move_find", "poach", "ability",
-                   "ability_attribute"]:
-    TABLE_SPECS[table_type] = path.join(tblpath, "%s_table.txt" % table_type)
 
 
 def int2bytes(value, length=2, reverse=True):

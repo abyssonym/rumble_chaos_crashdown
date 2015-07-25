@@ -7,10 +7,10 @@ from time import time
 from string import lowercase
 from collections import Counter
 
-from utils import (TABLE_SPECS, mutate_index, mutate_normal, mutate_bits,
+from utils import (mutate_index, mutate_normal, mutate_bits,
                    write_multi,
                    utilrandom as random)
-from tablereader import TableSpecs, TableObject, get_table_objects
+from tablereader import TableObject, get_table_objects
 from uniso import remove_sector_metadata, inject_logical_sectors
 
 randint = random.randint
@@ -38,17 +38,6 @@ Y_FORMULAS = [0x8, 0x9, 0xC, 0xD, 0xE, 0xF, 0x10, 0x1A, 0x1B, 0x1E, 0x1F, 0x20,
               0x36, 0x37, 0x39, 0x3A, 0x3B, 0x42, 0x47, 0x4C, 0x4D, 0x4E, 0x54,
               0x55, 0x56, 0x5B, 0x5C, 0x5E, 0x5F, 0x60, 0x61, 0x62
               ]
-
-unit_specs = TableSpecs(TABLE_SPECS['unit'])
-job_specs = TableSpecs(TABLE_SPECS['job'])
-job_reqs_specs = TableSpecs(TABLE_SPECS['job_reqs'])
-ss_specs = TableSpecs(TABLE_SPECS['skillset'])
-item_specs = TableSpecs(TABLE_SPECS['item'])
-monster_skills_specs = TableSpecs(TABLE_SPECS['monster_skills'])
-move_find_specs = TableSpecs(TABLE_SPECS['move_find'])
-poach_specs = TableSpecs(TABLE_SPECS['poach'])
-ability_specs = TableSpecs(TABLE_SPECS['ability'])
-ability_attribute_specs = TableSpecs(TABLE_SPECS['ability_attribute'])
 
 VALID_INNATE_STATUSES = 0xCAFCE92A10
 VALID_START_STATUSES = VALID_INNATE_STATUSES | 0x3402301000
@@ -128,8 +117,6 @@ TEMPFILE = "_fftrandom.tmp"
 
 
 class MonsterSkillsObject(TableObject):
-    specs = monster_skills_specs
-
     def get_actual_attacks(self):
         actuals = []
         for i, attack in enumerate(self.attackbytes):
@@ -187,8 +174,6 @@ class MonsterSkillsObject(TableObject):
 
 
 class MoveFindObject(TableObject):
-    specs = move_find_specs
-
     @property
     def x(self):
         return self.coordinates >> 4
@@ -220,16 +205,12 @@ class MoveFindObject(TableObject):
 
 
 class PoachObject(TableObject):
-    specs = poach_specs
-
     def mutate(self):
         self.common = get_similar_item(self.common, boost_factor=1.25).index
         self.rare = get_similar_item(self.rare, boost_factor=1.15).index
 
 
 class AbilityAttributesObject(TableObject):
-    specs = ability_attribute_specs
-
     def mutate(self):
         for attr in ["ct", "mp"]:
             value = getattr(self, attr)
@@ -254,16 +235,12 @@ class AbilityAttributesObject(TableObject):
 
 
 class AbilityObject(TableObject):
-    specs = ability_specs
-
     @property
     def ability_type(self):
         return self.misc_type & 0xF
 
 
 class ItemObject(TableObject):
-    specs = item_specs
-
     def mutate_shop(self):
         self.price = mutate_normal(self.price, maximum=65000)
         self.price = int(round(self.price, -1))
@@ -279,8 +256,6 @@ class ItemObject(TableObject):
 
 
 class SkillsetObject(TableObject):
-    specs = ss_specs
-
     @property
     def num_free_actions(self):
         for a in self.actions:
@@ -386,8 +361,6 @@ class SkillsetObject(TableObject):
 
 
 class JobObject(TableObject):
-    specs = job_specs
-
     @property
     def can_invite(self):
         return not bool(self.immune_status & 0x4000)
@@ -500,8 +473,6 @@ class JobObject(TableObject):
 
 
 class UnitObject(TableObject):
-    specs = unit_specs
-
     @property
     def map_id(self):
         return self.index >> 4
@@ -904,8 +875,6 @@ class UnitObject(TableObject):
 
 
 class JobReqObject(TableObject):
-    specs = job_reqs_specs
-
     @property
     def pretty_str(self):
         s = "%s\n" % self.name.upper()

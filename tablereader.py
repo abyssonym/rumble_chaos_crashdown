@@ -1,4 +1,15 @@
 from utils import read_multi, write_multi
+from os import path
+
+
+try:
+    from sys import _MEIPASS
+    tblpath = path.join(_MEIPASS, "tables")
+except ImportError:
+    tblpath = "tables"
+
+
+TABLE_SPECS = {}
 
 
 class TableSpecs:
@@ -35,6 +46,10 @@ class TableObject(object):
         self.pointer = pointer
         if filename:
             self.read_data(filename, pointer)
+
+    @property
+    def specs(self):
+        return TABLE_SPECS[self.__class__.__name__]
 
     @property
     def specattrs(self):
@@ -204,3 +219,10 @@ def get_table_objects(objtype, pointer, number, filename=None, grouped=False):
     already_gotten[identifier] = objects
 
     return get_table_objects(objtype, pointer, number, filename=filename)
+
+
+tablesfile = path.join(tblpath, "tables_list.txt")
+for line in open(tablesfile):
+    line = line.strip()
+    objname, tablefilename = tuple(line.split(','))
+    TABLE_SPECS[objname] = TableSpecs(path.join(tblpath, tablefilename))
