@@ -7,8 +7,7 @@ from time import time
 from string import lowercase
 from collections import Counter
 
-from utils import (mutate_index, mutate_normal, mutate_bits,
-                   write_multi,
+from utils import (mutate_index, mutate_normal, mutate_bits, write_multi,
                    utilrandom as random)
 from tablereader import TableObject, get_table_objects
 from uniso import remove_sector_metadata, inject_logical_sectors
@@ -963,7 +962,7 @@ class JobReqObject(TableObject):
 
 
 def get_units(filename=None):
-    return get_table_objects(UnitObject, 0x75e0800, 512*16, filename)
+    return get_table_objects(UnitObject, filename)
 
 
 def get_unit(index):
@@ -971,7 +970,7 @@ def get_unit(index):
 
 
 def get_skillsets(filename=None):
-    skillsets = get_table_objects(SkillsetObject, 0x61294, 176, filename)
+    skillsets = get_table_objects(SkillsetObject, filename)
     return skillsets[5:]
 
 
@@ -984,7 +983,7 @@ def get_skillset(index):
 
 
 def get_items(filename=None):
-    items = get_table_objects(ItemObject, 0x5f6b8, 254, filename)
+    items = get_table_objects(ItemObject, filename)
     return items
 
 
@@ -996,7 +995,7 @@ def get_monster_skills(filename=None):
     global g_monster_skills
     if g_monster_skills is not None:
         return list(g_monster_skills)
-    mss = get_table_objects(MonsterSkillsObject, 0x623c4, 48, filename)
+    mss = get_table_objects(MonsterSkillsObject, filename)
     for ms in mss:
         ms.index += 0xb0
     g_monster_skills = mss
@@ -1008,19 +1007,19 @@ def get_monster_skillset(index):
 
 
 def get_move_finds(filename=None):
-    return get_table_objects(MoveFindObject, 0x282e74, 512, filename)
+    return get_table_objects(MoveFindObject, filename)
 
 
 def get_poaches(filename=None):
-    return get_table_objects(PoachObject, 0x62864, 48, filename)
+    return get_table_objects(PoachObject, filename)
 
 
 def get_abilities(filename=None):
-    return get_table_objects(AbilityObject, 0x5b3f0, 512, filename)
+    return get_table_objects(AbilityObject, filename)
 
 
 def get_abilities_attributes(filename=None):
-    return get_table_objects(AbilityAttributesObject, 0x5c3f0, 0x165, filename)
+    return get_table_objects(AbilityAttributesObject, filename)
 
 
 def get_ability(index):
@@ -1028,7 +1027,7 @@ def get_ability(index):
 
 
 def get_jobs(filename=None):
-    jobs = get_table_objects(JobObject, 0x5d8b8, 160, filename)
+    jobs = get_table_objects(JobObject, filename)
     for j in jobs:
         if j.index in range(0x4A, 0x5E):
             j.name = JOBNAMES[j.index - 0x4A]
@@ -1046,7 +1045,7 @@ def get_jobreqs(filename=None):
     if backup_jobreqs is not None:
         return list(backup_jobreqs)
 
-    jobreqs = get_table_objects(JobReqObject, 0x628c4, 19, filename)
+    jobreqs = get_table_objects(JobReqObject, filename)
     for j, jobname in zip(jobreqs, JOBNAMES[1:]):
         j.name = jobname
     for j, jobindex in zip(jobreqs, range(0x4B, 0x60)):

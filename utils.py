@@ -124,3 +124,8 @@ def line_wrap(things, width=16):
         newthings.append(things[:width])
         things = things[width:]
     return newthings
+
+
+class classproperty(property):
+    def __get__(self, inst, cls):
+        return self.fget(cls)

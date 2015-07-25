@@ -1,4 +1,4 @@
-from utils import read_multi, write_multi
+from utils import read_multi, write_multi, classproperty
 from os import path
 
 
@@ -13,10 +13,13 @@ TABLE_SPECS = {}
 
 
 class TableSpecs:
-    def __init__(self, specfile):
+    def __init__(self, specfile, pointer=None, count=None, grouped=False):
         self.attributes = []
         self.bitnames = {}
         self.total_size = 0
+        self.pointer = pointer
+        self.count = count
+        self.grouped = grouped
         for line in open(specfile):
             line = line.strip()
             if not line or line[0] == "#":
@@ -47,21 +50,33 @@ class TableObject(object):
         if filename:
             self.read_data(filename, pointer)
 
-    @property
-    def specs(self):
-        return TABLE_SPECS[self.__class__.__name__]
+    @classproperty
+    def specs(cls):
+        return TABLE_SPECS[cls.__name__]
 
-    @property
-    def specattrs(self):
-        return self.specs.attributes
+    @classproperty
+    def specsattrs(cls):
+        return cls.specs.attributes
 
-    @property
-    def bitnames(self):
-        return self.specs.bitnames
+    @classproperty
+    def specspointer(cls):
+        return cls.specs.pointer
 
-    @property
-    def total_size(self):
-        return self.specs.total_size
+    @classproperty
+    def specscount(cls):
+        return cls.specs.count
+
+    @classproperty
+    def specsgrouped(cls):
+        return cls.specs.grouped
+
+    @classproperty
+    def bitnames(cls):
+        return cls.specs.bitnames
+
+    @classproperty
+    def total_size(cls):
+        return cls.specs.total_size
 
     def get_bit(self, bitname):
         for key, value in sorted(self.bitnames.items()):
@@ -145,7 +160,7 @@ class TableObject(object):
             return
         f = open(filename, 'r+b')
         f.seek(pointer)
-        for name, size, other in self.specattrs:
+        for name, size, other in self.specsattrs:
             if other in [None, "int"]:
                 value = read_multi(f, length=size)
             elif other == "str":
@@ -157,7 +172,7 @@ class TableObject(object):
         f.close()
 
     def copy_data(self, another):
-        for name, _, _ in self.specattrs:
+        for name, _, _ in self.specsattrs:
             if name in ["filename", "pointer", "index"]:
                 continue
             value = getattr(another, name)
@@ -172,7 +187,7 @@ class TableObject(object):
             return
         f = open(filename, 'r+b')
         f.seek(pointer)
-        for name, size, other in self.specattrs:
+        for name, size, other in self.specsattrs:
             value = getattr(self, name)
             if other in [None, "int"]:
                 write_multi(f, value, length=size)
@@ -188,7 +203,10 @@ class TableObject(object):
 already_gotten = {}
 
 
-def get_table_objects(objtype, pointer, number, filename=None, grouped=False):
+def get_table_objects(objtype, filename=None):
+    pointer = objtype.specspointer
+    number = objtype.specscount
+    grouped = objtype.specsgrouped
     identifier = (objtype, pointer, number)
     if identifier in already_gotten:
         return already_gotten[identifier]
@@ -218,11 +236,25 @@ def get_table_objects(objtype, pointer, number, filename=None, grouped=False):
             pointer += add_objects(value)
     already_gotten[identifier] = objects
 
-    return get_table_objects(objtype, pointer, number, filename=filename)
+    return get_table_objects(objtype, filename=filename)
 
 
 tablesfile = path.join(tblpath, "tables_list.txt")
 for line in open(tablesfile):
     line = line.strip()
-    objname, tablefilename = tuple(line.split(','))
-    TABLE_SPECS[objname] = TableSpecs(path.join(tblpath, tablefilename))
+    if line and line[0] == "#":
+        continue
+
+    while "  " in line:
+        line = line.replace("  ", " ")
+    line = line.split()
+    if len(line) == 5:
+        objname, tablefilename, pointer, count, grouped = tuple(line)
+        grouped = True if grouped.lower() == "true" else False
+    else:
+        objname, tablefilename, pointer, count = tuple(line)
+        grouped = False
+    pointer = int(pointer, 0x10)
+    count = int(count)
+    TABLE_SPECS[objname] = TableSpecs(path.join(tblpath, tablefilename),
+                                      pointer, count, grouped)

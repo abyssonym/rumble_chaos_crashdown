@@ -1,10 +1,11 @@
-UnitObject,unit_table.txt
-JobReqObject,job_reqs_table.txt
-JobObject,job_table.txt
-SkillsetObject,skillset_table.txt
-ItemObject,item_table.txt
-MonsterSkillsObject,monster_skills_table.txt
-MoveFindObject,move_find_table.txt
-PoachObject,poach_table.txt
-AbilityObject,ability_table.txt
-AbilityAttributesObject,ability_attribute_table.txt
+# objname tablefile address count grouped
+AbilityObject           ability_table.txt           5b3f0   512
+AbilityAttributesObject ability_attribute_table.txt 5c3f0   357
+JobObject               job_table.txt               5d8b8   160
+ItemObject              item_table.txt              5f6b8   254
+SkillsetObject          skillset_table.txt          61294   176
+MonsterSkillsObject     monster_skills_table.txt    623c4   48
+PoachObject             poach_table.txt             62864   48
+JobReqObject            job_reqs_table.txt          628c4   19
+MoveFindObject          move_find_table.txt         282e74  512
+UnitObject              unit_table.txt              75e0800 8192
