@@ -9,7 +9,7 @@ from collections import Counter
 
 from utils import (mutate_index, mutate_normal, mutate_bits, write_multi,
                    utilrandom as random)
-from tablereader import TableObject, get_table_objects
+from tablereader import TableObject, set_global_table_filename
 from uniso import remove_sector_metadata, inject_logical_sectors
 
 randint = random.randint
@@ -962,40 +962,39 @@ class JobReqObject(TableObject):
 
 
 def get_units(filename=None):
-    return get_table_objects(UnitObject, filename)
+    return UnitObject.every
 
 
 def get_unit(index):
-    return [u for u in get_units() if u.index == index][0]
+    return UnitObject.get(index)
 
 
 def get_skillsets(filename=None):
-    skillsets = get_table_objects(SkillsetObject, filename)
+    skillsets = SkillsetObject.every
     return skillsets[5:]
 
 
 def get_skillset(index):
-    skillsets = [ss for ss in get_skillsets() if ss.index == index]
-    if skillsets:
-        return skillsets[0]
-    else:
+    try:
+        return SkillsetObject.get(index)
+    except KeyError:
         return None
 
 
 def get_items(filename=None):
-    items = get_table_objects(ItemObject, filename)
+    items = ItemObject.every
     return items
 
 
 def get_item(index):
-    return [i for i in get_items() if i.index == index][0]
+    return ItemObject.get(index)
 
 
 def get_monster_skills(filename=None):
     global g_monster_skills
     if g_monster_skills is not None:
         return list(g_monster_skills)
-    mss = get_table_objects(MonsterSkillsObject, filename)
+    mss = MonsterSkillsObject.every
     for ms in mss:
         ms.index += 0xb0
     g_monster_skills = mss
@@ -1003,31 +1002,31 @@ def get_monster_skills(filename=None):
 
 
 def get_monster_skillset(index):
-    return [ms for ms in get_monster_skills() if ms.index == index][0]
+    return MonsterSkillsObject.get(index-0xb0)
 
 
 def get_move_finds(filename=None):
-    return get_table_objects(MoveFindObject, filename)
+    return MoveFindObject.every
 
 
 def get_poaches(filename=None):
-    return get_table_objects(PoachObject, filename)
+    return PoachObject.every
 
 
 def get_abilities(filename=None):
-    return get_table_objects(AbilityObject, filename)
+    return AbilityObject.every
 
 
 def get_abilities_attributes(filename=None):
-    return get_table_objects(AbilityAttributesObject, filename)
+    return AbilityAttributesObject.every
 
 
 def get_ability(index):
-    return [a for a in get_abilities() if a.index == index][0]
+    return AbilityObject.get(index)
 
 
 def get_jobs(filename=None):
-    jobs = get_table_objects(JobObject, filename)
+    jobs = JobObject.every
     for j in jobs:
         if j.index in range(0x4A, 0x5E):
             j.name = JOBNAMES[j.index - 0x4A]
@@ -1037,7 +1036,7 @@ def get_jobs(filename=None):
 
 
 def get_job(index):
-    return [j for j in get_jobs() if j.index == index][0]
+    return JobObject.get(index)
 
 
 def get_jobreqs(filename=None):
@@ -1045,7 +1044,7 @@ def get_jobreqs(filename=None):
     if backup_jobreqs is not None:
         return list(backup_jobreqs)
 
-    jobreqs = get_table_objects(JobReqObject, filename)
+    jobreqs = JobReqObject.every
     for j, jobname in zip(jobreqs, JOBNAMES[1:]):
         j.name = jobname
     for j, jobindex in zip(jobreqs, range(0x4B, 0x60)):
@@ -1975,16 +1974,18 @@ def randomize():
     else:
         copyfile(sourcefile, TEMPFILE)
 
-    units = get_units(TEMPFILE)
-    jobs = get_jobs(TEMPFILE)
-    jobreqs = get_jobreqs(TEMPFILE)
-    skillsets = get_skillsets(TEMPFILE)
-    items = get_items(TEMPFILE)
-    monster_skills = get_monster_skills(TEMPFILE)
-    move_finds = get_move_finds(TEMPFILE)
-    poaches = get_poaches(TEMPFILE)
-    abilities = get_abilities(TEMPFILE)
-    abilities_attributes = get_abilities_attributes(TEMPFILE)
+    set_global_table_filename(TEMPFILE)
+
+    units = get_units()
+    jobs = get_jobs()
+    jobreqs = get_jobreqs()
+    skillsets = get_skillsets()
+    items = get_items()
+    monster_skills = get_monster_skills()
+    move_finds = get_move_finds()
+    poaches = get_poaches()
+    abilities = get_abilities()
+    abilities_attributes = get_abilities_attributes()
 
     all_objects = [units, jobs, jobreqs, skillsets, items,
                    monster_skills, move_finds, poaches, abilities,

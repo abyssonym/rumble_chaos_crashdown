@@ -10,6 +10,13 @@ except ImportError:
 
 
 TABLE_SPECS = {}
+GLOBAL_FILENAME = None
+GRAND_OBJECT_DICT = {}
+
+
+def set_global_table_filename(filename):
+    global GLOBAL_FILENAME
+    GLOBAL_FILENAME = filename
 
 
 class TableSpecs:
@@ -77,6 +84,14 @@ class TableObject(object):
     @classproperty
     def total_size(cls):
         return cls.specs.total_size
+
+    @classproperty
+    def every(cls):
+        return get_table_objects(cls, filename=GLOBAL_FILENAME)
+
+    @classmethod
+    def get(cls, index):
+        return GRAND_OBJECT_DICT[cls, index]
 
     def get_bit(self, bitname):
         for key, value in sorted(self.bitnames.items()):
@@ -235,6 +250,9 @@ def get_table_objects(objtype, filename=None):
             pointer += 1
             pointer += add_objects(value)
     already_gotten[identifier] = objects
+
+    for o in objects:
+        GRAND_OBJECT_DICT[objtype, o.index] = o
 
     return get_table_objects(objtype, filename=filename)
 
