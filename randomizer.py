@@ -1976,27 +1976,20 @@ def randomize():
 
     set_global_table_filename(TEMPFILE)
 
-    units = get_units()
-    jobs = get_jobs()
-    jobreqs = get_jobreqs()
-    skillsets = get_skillsets()
-    items = get_items()
-    monster_skills = get_monster_skills()
-    move_finds = get_move_finds()
-    poaches = get_poaches()
-    abilities = get_abilities()
-    abilities_attributes = get_abilities_attributes()
+    all_objects = [g for g in globals().values()
+                   if isinstance(g, type) and issubclass(g, TableObject)
+                   and g is not TableObject]
+    for ao in all_objects:
+        ao.every
 
-    all_objects = [units, jobs, jobreqs, skillsets, items,
-                   monster_skills, move_finds, poaches, abilities,
-                   abilities_attributes]
+    get_jobreqs()
 
     sort_mapunits()
     make_rankings()
     if 'r' in flags:
         random.seed(seed)
         mutate_job_level(TEMPFILE)
-        for u in units:
+        for u in get_units():
             u.set_backup_jp_total()
         mutate_job_requirements()
         s = ""
@@ -2008,7 +2001,7 @@ def randomize():
         f.write(s)
         f.close()
 
-    for req in jobreqs:
+    for req in get_jobreqs():
         req.set_required_unlock_jp()
 
     if 'u' in flags:
@@ -2066,9 +2059,9 @@ def randomize():
     #    print "%x %x %s" % (unit.map_id, unit.job, unit.level)
 
     print "WRITING MUTATED DATA"
-    for objects in all_objects:
-        print "Writing %s data." % objects[0].__class__.__name__
-        for obj in objects:
+    for ao in all_objects:
+        print "Writing %s data." % ao.__name__
+        for obj in ao.every:
             obj.write_data()
 
     #unlock_jobs(TEMPFILE)
