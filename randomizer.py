@@ -1457,6 +1457,9 @@ def mutate_job_stats():
         j.mutate_stats()
 
     abilities = get_abilities()
+    num_abilities = len(abilities)
+    learn_base = 100 / num_abilities
+    learn_factor = (100 - learn_base) / 2
     for a in abilities:
         if a.jp_cost > 0:
             a.jp_cost = mutate_normal(a.jp_cost, maximum=9999)
@@ -1464,7 +1467,10 @@ def mutate_job_stats():
                 a.jp_cost = int(round(a.jp_cost*2, -2) / 2)
             else:
                 a.jp_cost = int(round(a.jp_cost, -1))
-            a.learn_chance = mutate_normal(a.learn_chance, maximum=100)
+        if 1 <= a.learn_chance <= 99 or randint(1, 20) == 20:
+            a.learn_chance = (learn_base + randint(0, learn_factor)
+                              + randint(0, learn_factor))
+            assert 1 <= a.learn_chance <= 100
 
 
 def mutate_job_innates():
