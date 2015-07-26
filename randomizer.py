@@ -1351,7 +1351,7 @@ def mutate_job_requirements():
               [randint(13, 21) + randint(0, 13) for _ in range(2)] +
               [randint(34, 55)])
 
-    num_jobpools = 1 + randint(0, 1) + randint(0, 1)
+    num_jobpools = 2 + random.choice([0, 0, 1])
     squire = [r for r in reqs if r.name == "squire"][0]
     jobpools = [set([]) for _ in xrange(num_jobpools)]
     allpool = set([squire])
