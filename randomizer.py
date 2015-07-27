@@ -45,6 +45,11 @@ BANNED_SKILLSET_SHUFFLE = [0, 1, 2, 3, 6, 8, 0x11, 0x12, 0x13, 0x14, 0x15,
 BANNED_RSMS = [0x1BB, 0x1E1, 0x1E4, 0x1E5, 0x1F1]
 BANNED_ANYTHING = [0x18]
 
+LUCAVI_JOBS = [0x43, 0x3C, 0x3E, 0x45, 0x40, 0x41, 0x49, 0x97]
+BASIC_JOBS = range(0x4A, 0x5E)
+MONSTER_JOBS = range(0x5E, 0x8E) + [0x90, 0x91, 0x96, 0x97, 0x99, 0x9A]
+STORYLINE_RECRUITABLE_JOBS = [1, 2, 3, 0x16, 0x1E, 0x29, 0x1A, 0xD, 0x2A]
+
 jobreq_namedict = {}
 jobreq_indexdict = {}
 JOBNAMES = ["squire", "chemist", "knight", "archer", "monk", "priest",
@@ -368,6 +373,10 @@ class JobObject(TableObject):
     def is_monster_job(self):
         return self.index >= 0x5E and self.index != 0x97
 
+    @property
+    def is_lucavi(self):
+        return self.index in LUCAVI_JOBS
+
     def get_appropriate_boost(self):
         units = [u for u in get_units() if u.job == self.index
                  and u.get_bit("team1") and not u.level_normalized
@@ -393,6 +402,8 @@ class JobObject(TableObject):
                                    int(round(newvalue * boost_factor)))
             if 1 <= newvalue <= 0xFD:
                 newvalue = mutate_normal(newvalue, minimum=1, maximum=0xFD)
+                if self.is_lucavi and newvalue < value:
+                    newvalue = value + abs(value - newvalue)
                 setattr(self, attr, newvalue)
 
         return True
@@ -483,6 +494,10 @@ class UnitObject(TableObject):
     @property
     def has_monster_job(self):
         return self.job >= 0x5E and self.job != 0x97
+
+    @property
+    def is_lucavi(self):
+        return self.job in LUCAVI_JOBS
 
     def has_similar_monster_graphic(self, other):
         if not (self.graphic == 0x82 and other.graphic == 0x82):
