@@ -487,7 +487,8 @@ class JobObject(TableObject):
             innates = []
             for attr in innate_attrs:
                 value = getattr(self, attr)
-                if randint(1, 10) == 10:
+                chance = randint(1, 10)
+                if chance == 10 or (self.is_monster_job and chance > 5):
                     index = None
                     if value:
                         old_inn = AbilityObject.get(value)
