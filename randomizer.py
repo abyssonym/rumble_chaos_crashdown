@@ -44,6 +44,14 @@ BANNED_SKILLSET_SHUFFLE = [0, 1, 2, 3, 6, 8, 0x11, 0x12, 0x13, 0x14, 0x15,
                            0x18, 0x34, 0x38, 0x39, 0x3B, 0x3E, 0x9C]
 BANNED_RSMS = [0x1BB, 0x1E1, 0x1E4, 0x1E5, 0x1F1]
 BANNED_ANYTHING = [0x18]
+LUCAVI_INNATES = (range(0x1A6, 0x1A9)
+                  + range(0x1AA, 0x1B4) + [0x1B5, 0x1B6, 0x1BA, 0x1BD, 0x1BE]
+                  + range(0x1C0, 0x1C6)
+                  + range(0x1D1, 0x1D6) + [0x1D8, 0x1DD, 0x1DE, 0x1E2, 0x1E3]
+                  + [0x1E7, 0x1E8]
+                  + range(0x1EB, 0x1EF) + [0x1F2, 0x1F3, 0x1F6, 0x1FA, 0x1FB]
+                  )
+
 
 LUCAVI_JOBS = [0x43, 0x3C, 0x3E, 0x45, 0x40, 0x41, 0x49, 0x97]
 BASIC_JOBS = range(0x4A, 0x5E)
@@ -243,6 +251,18 @@ class AbilityObject(TableObject):
     def ability_type(self):
         return self.misc_type & 0xF
 
+    @property
+    def is_reaction(self):
+        return self.ability_type == 7
+
+    @property
+    def is_support(self):
+        return self.ability_type == 8
+
+    @property
+    def is_movement(self):
+        return self.ability_type == 9
+
 
 class ItemObject(TableObject):
     def mutate_shop(self):
@@ -377,6 +397,16 @@ class JobObject(TableObject):
     def is_lucavi(self):
         return self.index in LUCAVI_JOBS
 
+    @property
+    def is_altima(self):
+        return self.index in [0x41, 0x49]
+
+    @property
+    def innates(self):
+        innate_attrs = ["innate1", "innate2", "innate3", "innate4"]
+        innates = [getattr(self, attr) for attr in innate_attrs]
+        return innates
+
     def get_appropriate_boost(self):
         units = [u for u in get_units() if u.job == self.index
                  and u.get_bit("team1") and not u.level_normalized
@@ -449,11 +479,10 @@ class JobObject(TableObject):
             self.innate_status |= innate
             self.start_status |= start
 
-        if random.choice([True, False]):
+        if not self.is_lucavi and random.choice([True, False]):
             innate_cands = [a for a in get_abilities()
                             if a.ability_type in [7, 8, 9]]
             innate_cands = sorted(innate_cands, key=lambda a: a.jp_cost)
-            innate_cands = [a.index for a in innate_cands]
             innate_attrs = ["innate1", "innate2", "innate3", "innate4"]
             innates = []
             for attr in innate_attrs:
@@ -461,23 +490,60 @@ class JobObject(TableObject):
                 if randint(1, 10) == 10:
                     index = None
                     if value:
-                        assert value in innate_cands
-                        index = innate_cands.index(value)
+                        old_inn = AbilityObject.get(value)
+                        assert old_inn in innate_cands
+                        attr_cands = [a.index for a in innate_cands if
+                                      a.ability_type == old_inn.ability_type]
+                        index = attr_cands.index(value)
+                    else:
+                        attr_cands = [a.index for a in innate_cands
+                                      if a.is_support]
+
                     if not value and randint(1, 2) == 2:
+                        attr_cands = [a.index for a in innate_cands
+                                      if a.is_support]
                         ranked_jobs = get_ranked("job")
                         if self.index not in ranked_jobs:
                             continue
                         index = ranked_jobs.index(self.index)
                         index = float(index) / len(ranked_jobs)
-                        index = int(round(index * len(innate_cands)))
+                        index = int(round(index * len(attr_cands)))
+
                     if index is not None:
-                        index = mutate_index(index, len(innate_cands),
-                                             [True, False], (-6, 7), (-4, 4))
-                        value = innate_cands[index]
+                        index = mutate_index(index, len(attr_cands),
+                                             [True, False], (-4, 5), (-3, 3))
+                        value = attr_cands[index]
                 innates.append(value)
             innates = reversed(sorted(innates))
             for attr, innate in zip(innate_attrs, innates):
                 setattr(self, attr, innate)
+
+        if self.is_lucavi:
+            innate_attrs = ["innate1", "innate2", "innate3", "innate4"]
+            innates = [getattr(self, attr) for attr in innate_attrs]
+            innates = [AbilityObject.get(i) for i in innates if i > 0]
+            innate_cands = [AbilityObject.get(i) for i in LUCAVI_INNATES]
+            innate_cands += innates
+            innate_cands = [i.index for i in innate_cands if i.is_support]
+            random.shuffle(innate_cands)
+            new_innates = []
+            while len(new_innates) < 4:
+                # short charge or non-charge
+                value = innate_cands.pop()
+                if value in new_innates:
+                    continue
+                if 0x1E2 not in new_innates and 0x1E3 not in new_innates:
+                    if len(new_innates) == 3:
+                        new_innates.append(0x1E2)
+                        break
+                elif value in [0x1E2, 0x1E3]:
+                    continue
+                new_innates.append(value)
+            assert len(new_innates) == 4
+            new_innates = sorted(new_innates)
+            for attr, innate in zip(innate_attrs, new_innates):
+                setattr(self, attr, innate)
+            assert all([isinstance(i, int) for i in self.innates])
 
         return True
 
@@ -717,6 +783,11 @@ class UnitObject(TableObject):
     def mutate(self, boost_factor=1.2, preserve_gender=False):
         self.mutate_stats()
 
+        if self.is_lucavi:
+            self.mutate_rsm()
+            self.mutate_secondary()
+            return
+
         if self.job >= 0x5E:
             return self.mutate_monster_job()
 
@@ -823,9 +894,7 @@ class UnitObject(TableObject):
             print "ERROR: Sprite limit."
             import pdb; pdb.set_trace()
 
-        for attr in ["reaction", "support", "movement"]:
-            if random.choice([True, False]):
-                setattr(self, attr, 0x1FE)
+        self.mutate_rsm()
 
         for attr in ["lefthand", "righthand", "head", "body", "accessory"]:
             if self.has_special_graphic:
@@ -851,6 +920,22 @@ class UnitObject(TableObject):
 
         self.mutate_secondary()
         return True
+
+    def mutate_rsm(self):
+        job = JobObject.get(self.job)
+        for attr in ["reaction", "support", "movement"]:
+            if self.is_lucavi:
+                cands = [a.index for a in AbilityObject.every
+                         if getattr(a, "is_%s" % attr) is True]
+                cands = [c for c in cands
+                         if c in LUCAVI_INNATES and c not in job.innates
+                         and c not in [0x1e2, 0x1e3]]
+                setattr(self, attr, random.choice(cands))
+            elif random.choice([True, False]):
+                setattr(self, attr, 0x1FE)
+
+        if job.is_altima:
+            self.movement = 0x1F3
 
     def mutate_stats(self):
         if self.job <= 3 or self.graphic <= 3:
@@ -1599,7 +1684,8 @@ def mutate_monsters():
     print "Mutating monsters."
     jobs = get_jobs_kind("monster")
     for j in jobs:
-        j.mutate_stats() and j.mutate_innate()
+        j.mutate_stats()
+        j.mutate_innate()
     print "Mutating monster skills."
     for ms in get_monster_skills():
         ms.mutate()
@@ -2008,6 +2094,7 @@ def randomize():
     sort_mapunits()
     make_rankings()
     if 'r' in flags:
+        # before units
         random.seed(seed)
         mutate_job_level(TEMPFILE)
         for u in get_units():
@@ -2025,6 +2112,16 @@ def randomize():
     for req in get_jobreqs():
         req.set_required_unlock_jp()
 
+    if 'i' in flags:
+        # before units
+        random.seed(seed)
+        mutate_job_innates()
+
+    if 'm' in flags:
+        # before units
+        random.seed(seed)
+        mutate_monsters()
+
     if 'u' in flags:
         random.seed(seed)
         mutate_units()
@@ -2036,14 +2133,6 @@ def randomize():
     if 'j' in flags:
         random.seed(seed)
         mutate_job_stats()
-
-    if 'i' in flags:
-        random.seed(seed)
-        mutate_job_innates()
-
-    if 'm' in flags:
-        random.seed(seed)
-        mutate_monsters()
 
     if 't' in flags:
         random.seed(seed)
