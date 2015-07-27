@@ -84,10 +84,25 @@ g_monster_skills = None
 g_ranked_monster_jobs = None
 g_ranked_secondaries = None
 birthday_dict = {}
+boostd = {}
 rng_report_counter = 0
 
 SUPER_LEVEL_BOOSTED = []
 SUPER_SPECIAL = []
+
+
+def set_difficulty_factors(value):
+    value = max(value, 0)
+    boostd["common_item"] = max(1.5 - (0.25 * value), 0.5)
+    boostd["rare_item"] = max(1.3 - (0.15 * value), 0.5)
+    boostd["trophy"] = max(1.5 - (0.5 * value), 0.25)
+    boostd["default_stat"] = 1.0 + (0.2 * value)
+    boostd["level_stat"] = 0.75 * value
+    boostd["equipment"] = 1.0 + (0.2 * value)
+    boostd["special_equipment"] = 1.0 + (0.5 * value)
+    boostd["jp"] = 1.5 ** value
+    boostd["random_special_unit"] = 1.0 + (0.5 * value)
+    boostd["story_special_unit"] = 0.5 + (0.5 * value)
 
 
 def get_rng_state():
@@ -202,10 +217,11 @@ class MoveFindObject(TableObject):
             self.coordinates = randint(0, 0xFF)
 
         if self.common != 0:
-            self.common = get_similar_item(self.common,
-                                           boost_factor=1.25).index
+            self.common = get_similar_item(
+                self.common, boost_factor=boostd["common_item"]).index
         if self.rare != 0:
-            self.rare = get_similar_item(self.rare, boost_factor=1.15).index
+            self.rare = get_similar_item(
+                self.rare, boost_factor=boostd["rare_item"]).index
 
         if self.common or self.rare:
             trapvalue = random.choice([True, False])
@@ -221,8 +237,10 @@ class MoveFindObject(TableObject):
 
 class PoachObject(TableObject):
     def mutate(self):
-        self.common = get_similar_item(self.common, boost_factor=1.25).index
-        self.rare = get_similar_item(self.rare, boost_factor=1.15).index
+        self.common = get_similar_item(
+            self.common, boost_factor=boostd["common_item"]).index
+        self.rare = get_similar_item(
+            self.rare, boost_factor=boostd["rare_item"]).index
 
 
 class AbilityAttributesObject(TableObject):
@@ -277,7 +295,8 @@ class ItemObject(TableObject):
             self.time_available = mutate_normal(self.time_available,
                                                 maximum=16)
         if self.enemy_level > 1:
-            self.enemy_level = int(round(0.8 * self.enemy_level))
+            self.enemy_level = int(round(
+                self.enemy_level / boostd["equipment"]))
             self.enemy_level = mutate_normal(self.enemy_level, minimum=1,
                                              maximum=99)
 
@@ -413,15 +432,18 @@ class JobObject(TableObject):
         return innates
 
     def get_appropriate_boost(self):
+        if self.index in [1, 2, 3, 0xD] + range(0x4A, 0x5E):
+            return 1.0
+
         units = [u for u in get_units() if u.job == self.index
                  and u.get_bit("team1") and not u.level_normalized
                  and 0x180 <= u.map_id <= 0x1D5]
         if not units:
-            return 1.2
+            return boostd["default_stat"]
         units = sorted(units, key=lambda u: u.level)
         units = units[-2:]
         average_level = sum([u.level for u in units]) / float(len(units))
-        boost = (1.0 + (average_level / 100.0)) ** 0.75
+        boost = (1.0 + (average_level / 100.0)) ** boostd["level_stat"]
         return boost
 
     def mutate_stats(self, boost_factor=None):
@@ -432,9 +454,9 @@ class JobObject(TableObject):
                      "move", "jump", "evade"]:
             value = getattr(self, attr)
             newvalue = value
-            if self.index not in range(0xE) + range(0x4A, 0x5E):
-                newvalue = randint(newvalue,
-                                   int(round(newvalue * boost_factor)))
+            newvalue = randint(newvalue,
+                               int(round(newvalue * boost_factor)))
+            newvalue = max(1, min(newvalue, 0xFD))
             if 1 <= newvalue <= 0xFD:
                 newvalue = mutate_normal(newvalue, minimum=1, maximum=0xFD)
                 if self.is_lucavi and newvalue < value:
@@ -650,10 +672,13 @@ class UnitObject(TableObject):
             self.gil = mutate_normal(self.gil, maximum=65000)
             self.gil = int(round(self.gil, -2))
         if self.trophy:
-            self.trophy = get_similar_item(self.trophy).index
+            self.trophy = get_similar_item(
+                self.trophy, boost_factor=boostd["trophy"]).index
 
     def mutate_secondary(self, base_job=None, jp_remaining=None,
-                         boost_factor=1.2):
+                         boost_factor=None):
+        if boost_factor is None:
+            boost_factor = boostd["jp"]
         if base_job is None:
             job = self.job
             if job in jobreq_indexdict:
@@ -803,7 +828,9 @@ class UnitObject(TableObject):
         named_jobs[self.name, oldjob] = self.job
         return True
 
-    def mutate(self, boost_factor=1.2, preserve_gender=False):
+    def mutate(self, boost_factor=None, preserve_gender=False):
+        if boost_factor is None:
+            boost_factor = boostd["jp"]
         self.mutate_stats()
 
         if self.is_lucavi:
@@ -925,8 +952,12 @@ class UnitObject(TableObject):
                 if value in [0, 0xFF]:
                     setattr(self, attr, random.choice([0xFF, 0xFE]))
                 elif value != 0xFE and random.choice([True, False]):
-                    value = get_similar_item(value, same_equip=True,
-                                             boost_factor=1.3).index
+                    if self.get_bit("team1"):
+                        bf = boostd["special_equipment"]
+                    else:
+                        bf = boostd["equipment"]
+                    value = get_similar_item(
+                        value, same_equip=True, boost_factor=bf).index
                     setattr(self, attr, value)
             elif random.choice([True, False]):
                 setattr(self, attr, 0xFE)
@@ -1494,7 +1525,7 @@ def mutate_job_level(filename):
 
     new_joblevel_jp = [0]
     for diff in jp_per_level:
-        diff = randint(diff, int(diff*1.5))
+        diff = randint(diff, int(diff*boostd["jp"]))
         diff = mutate_normal(diff, maximum=800)
         diff = int(round(diff*2, -2)) / 2
         new_joblevel_jp.append(new_joblevel_jp[-1] + diff)
@@ -1622,22 +1653,25 @@ def mutate_job_stats():
     jobs = get_jobs_kind("human")
     for j in jobs:
         j.mutate_stats()
-
-    abilities = get_abilities()
-    num_abilities = len(abilities)
-    learn_base = 100 / num_abilities
-    learn_factor = (100 - learn_base) / 2
-    for a in abilities:
-        if a.jp_cost > 0:
-            a.jp_cost = mutate_normal(a.jp_cost, maximum=9999)
-            if a.jp_cost > 200:
-                a.jp_cost = int(round(a.jp_cost*2, -2) / 2)
-            else:
-                a.jp_cost = int(round(a.jp_cost, -1))
-        if 1 <= a.learn_chance <= 99 or randint(1, 20) == 20:
-            a.learn_chance = (learn_base + randint(0, learn_factor)
-                              + randint(0, learn_factor))
-            assert 1 <= a.learn_chance <= 100
+        skillset = SkillsetObject.get(j.skillset)
+        abilities = skillset.actions + skillset.rsms
+        if not abilities:
+            continue
+        abilities = [AbilityObject.get(a) for a in abilities]
+        num_abilities = len(abilities)
+        learn_base = 100 / num_abilities
+        learn_factor = (100 - learn_base) / 2
+        for a in abilities:
+            if a.jp_cost > 0:
+                a.jp_cost = mutate_normal(a.jp_cost, maximum=9999)
+                if a.jp_cost > 200:
+                    a.jp_cost = int(round(a.jp_cost*2, -2) / 2)
+                else:
+                    a.jp_cost = int(round(a.jp_cost, -1))
+            if 1 <= a.learn_chance <= 99 or randint(1, 20) == 20:
+                a.learn_chance = (learn_base + randint(0, learn_factor)
+                                  + randint(0, learn_factor))
+                assert 0 <= a.learn_chance <= 100
 
 
 def mutate_job_innates():
@@ -1838,9 +1872,9 @@ def mutate_units_special(job_names):
     special_jobs = [j.index for j in special_jobs]
     for map_id in range(1, 0xFE) + range(0x180, 0x1D5):
         if map_id <= 0xFF:
-            boost_factor = 1.5
+            boost_factor = boostd["random_special_unit"]
         else:
-            boost_factor = 1.0
+            boost_factor = boostd["story_special_unit"]
 
         lucavi_special = False
         units = mapunits[map_id]
@@ -2007,8 +2041,10 @@ def get_similar_item(base_item, same_type=False, same_equip=False,
 
     index = items.index(base_item)
     reverse_index = len(items) - index - 1
-    reverse_index = randint(int(round(reverse_index / boost_factor)),
-                            reverse_index)
+    boost_index = int(round(reverse_index / boost_factor))
+    boost_index = max(0, min(boost_index, len(items)-1))
+    a, b = min(boost_index, reverse_index), max(boost_index, reverse_index)
+    reverse_index = randint(a, b)
     index = len(items) - reverse_index - 1
     index = mutate_normal(index, maximum=len(items)-1)
     replace_item = items[index]
@@ -2124,19 +2160,6 @@ def randomize():
         if len(argv) <= 1:
             sourcefile = raw_input("Filename? ").strip()
             print
-        print ("u  Randomize enemy and ally units.\n"
-               "j  Randomize job stats and JP required for skills.\n"
-               "i  Randomize innate properties of jobs.\n"
-               "s  Randomize job skillsets.\n"
-               "a  Randomize abilities, including CT, MP cost, etc.\n"
-               "r  Randomize job requirements and job level JP.\n"
-               "t  Randomize trophies, poaches, and move-find items.\n"
-               "p  Randomize item prices and shop availability.\n"
-               "m  Randomize monster stats and skills.\n"
-               "z  Enable special surprises.\n")
-        flags = raw_input("Flags? (blank for all) ").strip()
-        seed = raw_input("Seed? (blank for random) ").strip()
-        print
 
     srchash = get_md5_hash(sourcefile)
     stats = os.stat(sourcefile)
@@ -2159,6 +2182,34 @@ def randomize():
             pass
         else:
             sys.exit(0)
+
+    if len(argv) == 4:
+        difficulty = float(argv[3])
+    else:
+        difficulty = 1.0
+
+    if len(argv) <= 2:
+        print ("u  Randomize enemy and ally units.\n"
+               "j  Randomize job stats and JP required for skills.\n"
+               "i  Randomize innate properties of jobs.\n"
+               "s  Randomize job skillsets.\n"
+               "a  Randomize abilities, including CT, MP cost, etc.\n"
+               "r  Randomize job requirements and job level JP.\n"
+               "t  Randomize trophies, poaches, and move-find items.\n"
+               "p  Randomize item prices and shop availability.\n"
+               "m  Randomize monster stats and skills.\n"
+               "z  Enable special surprises.\n")
+        flags = raw_input("Flags? (blank for all) ").strip()
+        seed = raw_input("Seed? (blank for random) ").strip()
+        print "\nYou can adjust the difficulty of this randomizer."
+        difficulty = raw_input("CHAOS MULTIPLIER? (default: 1.0) ").strip()
+        if difficulty:
+            difficulty = float(difficulty)
+        else:
+            difficulty = 1.0
+        print
+
+    set_difficulty_factors(difficulty)
 
     if seed:
         seed = int(seed)
