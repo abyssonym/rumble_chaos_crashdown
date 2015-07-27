@@ -40,6 +40,7 @@ Y_FORMULAS = [0x8, 0x9, 0xC, 0xD, 0xE, 0xF, 0x10, 0x1A, 0x1B, 0x1E, 0x1F, 0x20,
 
 VALID_INNATE_STATUSES = 0xCAFCE92A10
 VALID_START_STATUSES = VALID_INNATE_STATUSES | 0x3402301000
+BENEFICIAL_STATUSES = 0xC278600000
 BANNED_SKILLSET_SHUFFLE = [0, 1, 2, 3, 6, 8, 0x11, 0x12, 0x13, 0x14, 0x15,
                            0x18, 0x34, 0x38, 0x39, 0x3B, 0x3E, 0x9C, 0xA1]
 BANNED_RSMS = [0x1BB, 0x1E1, 0x1E4, 0x1E5, 0x1F1]
@@ -458,30 +459,11 @@ class JobObject(TableObject):
             return True
 
         if random.choice([True, False]):
-            immune = mutate_bits(self.immune_status, 40)
-            for i in range(40):
-                mask = (1 << i)
-                if mask & immune:
-                    if randint(1, 50) == 50:
-                        self.immune_status ^= mask
-                    else:
-                        self.immune_status |= mask
-            not_innate = ((2**40)-1) ^ self.innate_status
-            not_start = ((2**40)-1) ^ self.start_status
-            self.immune_status &= not_innate
-            self.immune_status &= not_start
-
-            vulnerable = ((2**40)-1) ^ self.immune_status
-            innate = mutate_bits(self.innate_status, 40)
-            innate &= vulnerable
-            innate &= VALID_INNATE_STATUSES
-            not_innate2 = ((2**40)-1) ^ innate
-            start = mutate_bits(self.start_status, 40)
-            start &= vulnerable
-            start &= (not_innate & not_innate2)
-            start &= VALID_START_STATUSES
-            self.innate_status |= innate
-            self.start_status |= start
+            self.mutate_statuses()
+        if self.is_lucavi and random.choice([True, False]):
+            self.mutate_statuses()
+            if randint(1, 30) != 30:
+                self.unset_negative_statuses()
 
         if not self.is_lucavi and random.choice([True, False]):
             innate_cands = [a for a in get_abilities()
@@ -553,6 +535,36 @@ class JobObject(TableObject):
             assert all([isinstance(i, int) for i in self.innates])
 
         return True
+
+    def mutate_statuses(self):
+        immune = mutate_bits(self.immune_status, 40)
+        for i in range(40):
+            mask = (1 << i)
+            if mask & immune:
+                if mask & BENEFICIAL_STATUSES or randint(1, 50) == 50:
+                    self.immune_status ^= mask
+                else:
+                    self.immune_status |= mask
+        not_innate = ((2**40)-1) ^ self.innate_status
+        not_start = ((2**40)-1) ^ self.start_status
+        self.immune_status &= not_innate
+        self.immune_status &= not_start
+
+        vulnerable = ((2**40)-1) ^ self.immune_status
+        innate = mutate_bits(self.innate_status, 40)
+        innate &= vulnerable
+        innate &= VALID_INNATE_STATUSES
+        not_innate2 = ((2**40)-1) ^ innate
+        start = mutate_bits(self.start_status, 40)
+        start &= vulnerable
+        start &= (not_innate & not_innate2)
+        start &= VALID_START_STATUSES
+        self.innate_status |= innate
+        self.start_status |= start
+
+    def unset_negative_statuses(self):
+        self.innate_status &= BENEFICIAL_STATUSES
+        self.start_status &= BENEFICIAL_STATUSES
 
 
 class UnitObject(TableObject):
