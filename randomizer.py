@@ -436,7 +436,7 @@ class JobObject(TableObject):
             return 1.0
 
         units = [u for u in get_units() if u.job == self.index
-                 and u.get_bit("team1") and not u.level_normalized
+                 and u.get_bit("enemy_team") and not u.level_normalized
                  and 0x180 <= u.map_id <= 0x1D5]
         if not units:
             return boostd["default_stat"]
@@ -952,7 +952,7 @@ class UnitObject(TableObject):
                 if value in [0, 0xFF]:
                     setattr(self, attr, random.choice([0xFF, 0xFE]))
                 elif value != 0xFE and random.choice([True, False]):
-                    if self.get_bit("team1"):
+                    if self.get_bit("enemy_team"):
                         bf = boostd["special_equipment"]
                     else:
                         bf = boostd["equipment"]
@@ -1810,7 +1810,8 @@ def mutate_units():
     for key, value in mapsprites.items():
         generic = len([_ for (g, _) in value if g in (0x80, 0x81)])
         monster = len([_ for (g, _) in value if g == 0x82])
-        other = len([_ for (g, _) in value if g not in (0x80, 0x81, 0x82, 0x00)])
+        other = len([_ for (g, _) in value
+                     if g not in (0x80, 0x81, 0x82, 0x00)])
         if key in [0x19B, 0x1AA]:
             other = max(other, 3)
 
@@ -1896,7 +1897,7 @@ def mutate_units_special(job_names):
             continue
         if lucavi_special or randint(1, probval) == 1:
             candidates = [u for u in units if not u.named
-                          and u.get_bit("team1")
+                          and u.get_bit("enemy_team")
                           and 0x80 <= u.graphic <= 0x82]
             noncandidates = [u for u in units if u not in candidates]
             noncandjobs = [u.job for u in noncandidates
@@ -1981,7 +1982,7 @@ def mutate_units_special(job_names):
                             setattr(unit, attr, 0xFE)
                 for attr in copy_attrs:
                     setattr(unit, attr, getattr(chosen_unit, attr))
-                unit.set_bit("team1", True)
+                unit.set_bit("enemy_team", True)
                 if chosen_unit.named:
                     unit.name = chosen_unit.name
                 SUPER_SPECIAL.append(unit)
@@ -2117,7 +2118,7 @@ def setup_fiesta(filename):
             setattr(n, attr, 0xFF)
 
     for u in mapunits[0x183] | mapunits[0x184]:
-        if u.get_bit("team1"):
+        if u.get_bit("enemy_team"):
             u.righthand = 0x49
 
 
@@ -2168,7 +2169,8 @@ def randomize():
         resp = raw_input("WARNING! The file you provided is not a known "
                          "file size. Continue? (y/n) ")
         if resp and resp[0].lower() == 'y':
-            filesize = min(ISO_SIZES + RAW_SIZES, key=lambda s: abs(s-filesize))
+            filesize = min(ISO_SIZES + RAW_SIZES,
+                           key=lambda s: abs(s-filesize))
         else:
             sys.exit(0)
     elif srchash not in MD5HASHES + RAWMD5HASHES:
@@ -2324,7 +2326,7 @@ def randomize():
 
         # make Orbonne controllable
         for u in sorted(mapunits[0x183], key=lambda u: u.index):
-            if not u.get_bit("team1"):
+            if not u.get_bit("enemy_team"):
                 u.set_bit("control", True)
 
     if "fiesta" in activated_codes:

@@ -20,7 +20,7 @@ accessory,1
 righthand,1
 lefthand,1
 palette,1
-misc2,bit:z1 z2 immortal control team1 z3 randomly_present always_present
+misc2,bit:z1 z2 immortal control enemy_team z3 randomly_present always_present
 x,1
 y,1
 unknown2,3
