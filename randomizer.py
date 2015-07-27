@@ -53,7 +53,8 @@ LUCAVI_INNATES = (range(0x1A6, 0x1A9)
                   )
 
 
-LUCAVI_JOBS = [0x43, 0x3C, 0x3E, 0x45, 0x40, 0x41, 0x49, 0x97]
+LUCAVI_JOBS = [0x3C, 0x3E, 0x40, 0x41, 0x43, 0x45, 0x49, 0x97]
+LUCAVI_ORDER = [0x43, 0x3C, 0x3E, 0x45, 0x40, 0x41, 0x97, 0x49]
 BASIC_JOBS = range(0x4A, 0x5E)
 MONSTER_JOBS = range(0x5E, 0x8E) + [0x90, 0x91, 0x96, 0x97, 0x99, 0x9A]
 STORYLINE_RECRUITABLE_JOBS = [1, 2, 3, 0x16, 0x1E, 0x29, 0x1A, 0xD, 0x2A]
@@ -386,6 +387,12 @@ class SkillsetObject(TableObject):
 
 class JobObject(TableObject):
     @property
+    def crippled(self):
+        status = self.innate_status | self.start_status
+        bad_start = 0xFFFFFFFFFF ^ VALID_START_STATUSES
+        return bool(status & bad_start)
+
+    @property
     def can_invite(self):
         return not bool(self.immune_status & 0x4000)
 
@@ -526,6 +533,8 @@ class JobObject(TableObject):
             innate_cands = [AbilityObject.get(i) for i in LUCAVI_INNATES]
             innate_cands += innates
             innate_cands = [i.index for i in innate_cands if i.is_support]
+            if not self.is_altima:
+                innate_cands += [0, 0, 0]
             random.shuffle(innate_cands)
             new_innates = []
             while len(new_innates) < 4:
@@ -565,6 +574,10 @@ class UnitObject(TableObject):
     @property
     def is_lucavi(self):
         return self.job in LUCAVI_JOBS
+
+    @property
+    def is_altima(self):
+        return self.job in [0x41, 0x49]
 
     def has_similar_monster_graphic(self, other):
         if not (self.graphic == 0x82 and other.graphic == 0x82):
@@ -1184,14 +1197,55 @@ def make_rankings():
     print "Analyzing and ranking unit data."
     units = get_units()
     units = [u for u in units if u.graphic != 0]
+    banned_jobs = [j.index for j in JobObject.every
+                   if not any([u.job == j.index for u in units])]
+    good_jobs = [j for j in JobObject.every if j.index not in banned_jobs]
     units = [u for u in units
              if u.map_id in range(1, 0xFE) + range(0x180, 0x1D5)]
-    rankable_features = ["map_id", "unlocked", "unlocked_level",
-                         "righthand", "lefthand", "head", "body", "accessory",
-                         "job", "secondary", "reaction", "support", "movement",
-                         ]
+
+    rankable_job_features = [
+        "hpgrowth", "hpmult", "mpgrowth", "mpmult", "spdgrowth", "spdmult",
+        "pagrowth", "pamult", "magrowth", "mamult", "move", "jump", "evade"]
+    bottomhalf = ["move", "jump"]
+    feature_minmax = {}
+    for feature in rankable_job_features:
+        if feature in bottomhalf:
+            featurevals = [getattr(j, feature) & 0xF for j in good_jobs]
+        else:
+            featurevals = [getattr(j, feature) for j in good_jobs]
+        featurevals = [v for v in featurevals if v > 0]
+        minval, maxval = min(featurevals), max(featurevals)
+        feature_minmax[feature] = float(minval), float(maxval)
+    for j in good_jobs:
+        if j.index in banned_jobs:
+            continue
+        vals = [getattr(j, feature) for feature in rankable_job_features]
+        zerocount = vals.count(0)
+        if zerocount > (len(vals) / 2):
+            j.rank = 0 + (j.index * 0.0000001)
+            continue
+        scores = []
+        for feature in rankable_job_features:
+            value = getattr(j, feature)
+            if feature in bottomhalf:
+                value &= 0xF
+            if value == 0:
+                continue
+            minval, maxval = feature_minmax[feature]
+            score = (value - minval) / maxval
+            scores.append(score)
+        j.rank = sum(scores) / len(scores)
+        if j.crippled:
+            j.rank = j.rank / 10.0
+
+    rankable_features = [
+        "map_id", "unlocked", "unlocked_level", "righthand", "lefthand",
+        "head", "body", "accessory", "job", "secondary", "reaction", "support",
+        "movement"]
     unrankable_values = [0, 0xFE, 0xFF]
     rankdict = {}
+    for j in good_jobs:
+        rankdict["job", j.index] = j.rank
     for i in xrange(100):
         rankdict[("level", i)] = i
     for u in units:
@@ -1244,20 +1298,23 @@ def make_rankings():
             break
         oldstring = codestring
 
-    rankdict["job", 0x7B] = 30 + (0.001 * 0x7B)  # wildbow
-    jobs = get_jobs()
-    for j in jobs:
-        if j.index in range(0x4A, 0x5E):
-            if ("job", j.index) not in rankdict:
-                rankdict["job", j.index] = 24 + (0.001 * j.index)
+    for j in good_jobs:
+        rankdict["job", j.index] = j.rank
 
+    for j in good_jobs:
         key = ("secondary", j.skillset)
         if key not in rankdict:
             key2 = ("job", j.index)
-            if key2 in rankdict:
-                rankdict[key] = rankdict[key2]
-            else:
-                rankdict["secondary", j.skillset] = 24 + (0.001 * j.index)
+            jobrank = rankdict[key2]
+            jobranks = sorted([v for (k, v) in rankdict.items()
+                               if "job" in k])
+            secranks = sorted([v for (k, v) in rankdict.items()
+                               if "secondary" in k])
+            index = float(jobranks.index(jobrank)) / len(jobranks)
+            index = index * max(len(secranks)-1, 0)
+            index = min(int(index), len(secranks)-2)
+            secrank = (secranks[index] + secranks[index+1]) / 2
+            rankdict[key] = secrank
 
     return make_rankings()
 
@@ -1753,6 +1810,7 @@ def mutate_units_special(job_names):
     special_jobs = [j for j in get_jobs() if not 5 <= j.skillset <= 0x18
                     and not j.skillset == 0
                     and not 0x4A <= j.index <= 0x8F
+                    and not j.index >= 0x92
                     and job_names[j.index] not in mundane_job_names
                     and job_names[j.index]]
     special_jobs = [j.index for j in special_jobs]
@@ -1762,7 +1820,15 @@ def mutate_units_special(job_names):
         else:
             boost_factor = 1.0
 
-        if map_id == 1:
+        lucavi_special = False
+        units = mapunits[map_id]
+        if any([u.is_lucavi for u in units]):
+            if map_id == 0x1a9:
+                continue
+            lucavi_special = random.choice([True, False])
+            lucavi_unit = max([u for u in units if u.is_lucavi],
+                              key=lambda u2: u2.level)
+        elif map_id == 1:
             probval = 8
         elif map_id == 0x180:
             probval = 15
@@ -1772,8 +1838,7 @@ def mutate_units_special(job_names):
 
         if map_id in [0x183, 0x184, 0x185]:
             continue
-        if probval == 1 or randint(1, probval) == 1:
-            units = mapunits[map_id]
+        if lucavi_special or randint(1, probval) == 1:
             candidates = [u for u in units if not u.named
                           and u.get_bit("team1")
                           and 0x80 <= u.graphic <= 0x82]
@@ -1788,7 +1853,7 @@ def mutate_units_special(job_names):
                     else j for j in jobs]
             jobs = [j for j in jobs if (j & 0xFF) > 0]
             jobs = Counter(jobs)
-            if len(jobs.keys()) == 1:
+            if len(jobs.keys()) == 1 and not lucavi_special:
                 continue
 
             jobs = [key for key in jobs if jobs[key] == min(jobs.values())]
@@ -1800,8 +1865,18 @@ def mutate_units_special(job_names):
                 replace_job = sorted(replace_job)[0]
 
             cand_jobs = [j for j in ranked_jobs
-                         if j in special_jobs or j == replace_job]
+                         if j in special_jobs or j == replace_job
+                         or (lucavi_special and j == lucavi_unit.job)]
             index = cand_jobs.index(replace_job)
+            if lucavi_special:
+                lucorder_index = LUCAVI_ORDER.index(lucavi_unit.job)
+                badlucs = LUCAVI_ORDER[lucorder_index:]
+                cand_jobs = [c for c in cand_jobs if
+                             c == lucavi_unit.job or c not in badlucs]
+                lucavi_index = cand_jobs.index(lucavi_unit.job)
+                index = (index + lucavi_index) / 2
+                if lucavi_unit.job in cand_jobs and randint(1, 10) != 10:
+                    cand_jobs.remove(lucavi_unit.job)
             index = randint(index, int(round(index * boost_factor)))
             cand_jobs.remove(replace_job)
             index = mutate_normal(index, maximum=len(cand_jobs)-1)
@@ -1826,7 +1901,10 @@ def mutate_units_special(job_names):
                 change_units = [u for u in units if u.job == replace_job]
             else:
                 mg = get_job(replace_job).monster_portrait
-                assert mg > 0
+                try:
+                    assert mg > 0
+                except:
+                    import pdb; pdb.set_trace()
                 change_units = [u for u in units
                                 if get_job(u.job).monster_portrait == mg]
 
@@ -1837,9 +1915,20 @@ def mutate_units_special(job_names):
                 unit.graphic = chosen_unit.graphic
                 for bitname in ["monster", "female", "male", "hidden_stats"]:
                     unit.set_bit(bitname, chosen_unit.get_bit(bitname))
-                for attr in ["job", "graphic", "month", "day", "trophy", "gil",
-                             "brave", "faith", "palette"]:
+                copy_attrs = ["job", "graphic", "month", "day", "trophy",
+                              "gil", "brave", "faith", "palette", "secondary",
+                              "reaction", "support", "movement", "unlocked",
+                              "unlocked_level"]
+                if lucavi_special:
+                    for attr in ["lefthand", "righthand", "head", "body",
+                                 "accessory"]:
+                        if random.choice([True, False]):
+                            copy_attrs.append(attr)
+                        elif random.choice([True, False]):
+                            setattr(unit, attr, 0xFE)
+                for attr in copy_attrs:
                     setattr(unit, attr, getattr(chosen_unit, attr))
+                unit.set_bit("team1", True)
                 if chosen_unit.named:
                     unit.name = chosen_unit.name
                 SUPER_SPECIAL.append(unit)
@@ -1850,11 +1939,17 @@ def mutate_units_special(job_names):
                 unit = random.choice(change_units)
                 unit.set_bit("join_after_event", True)
 
+            #print "%x %x %s" % (map_id, job.index, len(change_units))
+
             if map_id >= 0x180:
-                special_jobs.remove(chosen_unit.job)
+                similar_graphic_jobs = [u.job for u in UnitObject.every
+                                        if u.graphic == chosen_unit.graphic]
+                special_jobs = [j for j in special_jobs
+                                if j not in similar_graphic_jobs]
                 if not special_jobs:
                     break
-                probval = max(probval, 15)
+                if not lucavi_special:
+                    probval = max(probval, 15)
             else:
                 probval = max(probval, 8)
 
