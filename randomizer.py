@@ -41,7 +41,7 @@ Y_FORMULAS = [0x8, 0x9, 0xC, 0xD, 0xE, 0xF, 0x10, 0x1A, 0x1B, 0x1E, 0x1F, 0x20,
 VALID_INNATE_STATUSES = 0xCAFCE92A10
 VALID_START_STATUSES = VALID_INNATE_STATUSES | 0x3402301000
 BANNED_SKILLSET_SHUFFLE = [0, 1, 2, 3, 6, 8, 0x11, 0x12, 0x13, 0x14, 0x15,
-                           0x18, 0x34, 0x38, 0x39, 0x3B, 0x3E, 0x9C]
+                           0x18, 0x34, 0x38, 0x39, 0x3B, 0x3E, 0x9C, 0xA1]
 BANNED_RSMS = [0x1BB, 0x1E1, 0x1E4, 0x1E5, 0x1F1]
 BANNED_ANYTHING = [0x18]
 LUCAVI_INNATES = (range(0x1A6, 0x1A9)
@@ -57,7 +57,8 @@ LUCAVI_JOBS = [0x3C, 0x3E, 0x40, 0x41, 0x43, 0x45, 0x49, 0x97]
 LUCAVI_ORDER = [0x43, 0x3C, 0x3E, 0x45, 0x40, 0x41, 0x97, 0x49]
 BASIC_JOBS = range(0x4A, 0x5E)
 MONSTER_JOBS = range(0x5E, 0x8E) + [0x90, 0x91, 0x96, 0x97, 0x99, 0x9A]
-STORYLINE_RECRUITABLE_JOBS = [1, 2, 3, 0x16, 0x1E, 0x29, 0x1A, 0xD, 0x2A]
+STORYLINE_RECRUITABLE_JOBS = [0xD, 0xF, 0x16, 0x1A, 0x1E, 0x1F,
+                              0x29, 0x2A, 0x90, 0x91]
 
 jobreq_namedict = {}
 jobreq_indexdict = {}
@@ -283,11 +284,7 @@ class ItemObject(TableObject):
 class SkillsetObject(TableObject):
     @property
     def num_free_actions(self):
-        for a in self.actions:
-            if get_ability(a).jp_cost == 0:
-                return True
-        else:
-            return False
+        return len([a for a in self.actions if get_ability(a).jp_cost == 0])
 
     @property
     def num_actions(self):
@@ -1643,7 +1640,12 @@ def mutate_skillsets():
     skillsets = get_skillsets()
     skillsets = [s for s in skillsets if s.has_learnable_actions
                  and s.index not in BANNED_SKILLSET_SHUFFLE]
+
     doing_skillsets = [s for s in skillsets if 5 <= s.index <= 0x18]
+    for j in STORYLINE_RECRUITABLE_JOBS:
+        j = JobObject.get(j)
+        doing_skillsets.append(SkillsetObject.get(j.skillset))
+
     done_actions = set([])
     for ss in doing_skillsets:
         done_actions |= set(ss.actions)
@@ -1652,10 +1654,10 @@ def mutate_skillsets():
     for ss in skillsets:
         if ss in doing_skillsets:
             continue
-        if set(ss.actions) & done_actions:
-            continue
-        doing_skillsets.append(ss)
-        done_actions |= set(ss.actions)
+        if set(ss.actions) - done_actions:
+            doing_skillsets.append(ss)
+            done_actions |= set(ss.actions)
+    random.shuffle(doing_skillsets)
     pulled_actions = {}
     for ss in doing_skillsets:
         num_to_pull = len(ss.actions) / 2
@@ -1669,15 +1671,23 @@ def mutate_skillsets():
                 ss.actions.remove(p)
             else:
                 pulled.remove(p)
-        pulled_actions[ss] = pulled
-    exchanges = list(doing_skillsets)
-    random.shuffle(exchanges)
-    for a, b in zip(doing_skillsets, exchanges):
+        if pulled or random.choice([True, False, False]):
+            pulled_actions[ss] = pulled
+    exchanges = [d for d in doing_skillsets if d in pulled_actions]
+    exchanges2 = list(exchanges)
+    random.shuffle(exchanges2)
+    for a, b in zip(exchanges, exchanges2):
         pulled = pulled_actions[b]
-        a.actions.extend(pulled)
-        if len(a.actions) > 16:
-            a.actions = random.sample(a.actions, 16)
-        a.actions = sorted(a.actions)
+        actions = list(a.actions)
+        actions.extend(pulled)
+        if len(actions) > 16:
+            actions = random.sample(actions, 16)
+        a_actions = sorted([x for x in actions if x in a.actions])
+        b_actions = sorted([x for x in actions if x in pulled])
+        if random.choice([True, False]):
+            a.actions = a_actions + b_actions
+        else:
+            a.actions = b_actions + a_actions
 
     skillsets = get_skillsets()
     abilities = get_abilities()
@@ -1728,7 +1738,7 @@ def mutate_skillsets():
             continue
         ss = get_skillset(index)
         for action in list(ss.actions):
-            if randint(1, 10) == 10:
+            if randint(1, 8) == 8:
                 ss.actions.remove(action)
 
 
@@ -1901,10 +1911,7 @@ def mutate_units_special(job_names):
                 change_units = [u for u in units if u.job == replace_job]
             else:
                 mg = get_job(replace_job).monster_portrait
-                try:
-                    assert mg > 0
-                except:
-                    import pdb; pdb.set_trace()
+                assert mg > 0
                 change_units = [u for u in units
                                 if get_job(u.job).monster_portrait == mg]
 
