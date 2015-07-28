@@ -539,16 +539,10 @@ class JobObject(TableObject):
                     if not value and randint(1, 2) == 2:
                         attr_cands = [a.index for a in innate_cands
                                       if a.is_support]
-                        ranked_jobs = get_ranked("job")
-                        if self.index not in ranked_jobs:
-                            continue
-                        index = ranked_jobs.index(self.index)
-                        index = float(index) / len(ranked_jobs)
-                        index = int(round(index * len(attr_cands)))
+                        index = len(attr_cands)/2
 
                     if index is not None:
-                        index = mutate_index(index, len(attr_cands),
-                                             [True, False], (-4, 5), (-3, 3))
+                        index = mutate_normal(index, len(attr_cands))
                         value = attr_cands[index]
                 innates.append(value)
             innates = reversed(sorted(innates))
