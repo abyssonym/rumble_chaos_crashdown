@@ -1226,6 +1226,7 @@ def get_poaches(filename=None):
 
 
 def get_abilities(filename=None):
+    AbilityObject.get(0x1F3).jp_cost = 9999
     return AbilityObject.every
 
 
