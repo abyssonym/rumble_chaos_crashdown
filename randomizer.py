@@ -12,7 +12,9 @@ from utils import (mutate_index, mutate_normal, mutate_bits, write_multi,
 from tablereader import TableObject, set_global_table_filename
 from uniso import remove_sector_metadata, inject_logical_sectors
 
-randint = random.randint
+
+def randint(a, b):
+    return random.randint(min(a, b), max(a, b))
 
 VERSION = "12"
 MD5HASHES = ["aefdf27f1cd541ad46b5df794f635f50",
@@ -825,10 +827,11 @@ class UnitObject(TableObject):
             self.job = named_jobs[self.name, self.job]
             return True
 
-        ranked_monster_jobs = get_ranked_monster_jobs()
+        all_ranked_monster_jobs = get_ranked_monster_jobs()
         if self.map_id not in monster_selection:
             assert self in mapunits[self.map_id]
             assert self.graphic == 0x82
+            ranked_monster_jobs = list(all_ranked_monster_jobs)
             map_monster_jobs = [JobObject.get(u.job)
                                 for u in mapunits[self.map_id]
                                 if monster_check(u)]
@@ -836,6 +839,7 @@ class UnitObject(TableObject):
             lowjob = min(map_monster_jobs,
                          key=lambda j: ranked_monster_jobs.index(j))
             index = ranked_monster_jobs.index(lowjob)
+            index = max(0, index-1)
             while index > 0 and random.choice([True, False]):
                 index -= 1
             ranked_monster_jobs = ranked_monster_jobs[index:]
@@ -854,19 +858,23 @@ class UnitObject(TableObject):
                                      (-1, 2), (-1, 1))
                 selected = temp_sprites[index]
                 selected_sprites.append(selected)
+
             selected_monsters = [m for m in ranked_monster_jobs
                                  if m.monster_portrait in selected_sprites]
+            if len(selected_monsters) <= 3:
+                selected_monsters = [m for m in all_ranked_monster_jobs
+                                     if m.monster_portrait in selected_sprites]
             monster_selection[self.map_id] = selected_monsters
 
         selection = monster_selection[self.map_id]
         myjob = get_job(self.job)
-        ranked_selection = [m for m in ranked_monster_jobs
+        ranked_selection = [m for m in all_ranked_monster_jobs
                             if m in selection or m == myjob]
         index = ranked_selection.index(myjob)
         if myjob not in selection:
             ranked_selection.remove(myjob)
         index = mutate_index(index, len(ranked_selection), [True, False],
-                             (-1, 2), (-1, 1))
+                             (0, 1), (-1, 1))
         newjob = ranked_selection[index]
         self.job = newjob.index
         named_jobs[self.name, oldjob] = self.job
@@ -1039,7 +1047,8 @@ class UnitObject(TableObject):
         if self.job <= 3 or self.graphic <= 3:
             return
 
-        if self.index <= 0xFFF and randint(1, 10) == 10:
+        if (self.index <= 0xFFF and self.get_bit("randomly_present")
+                and randint(1, 10) == 10):
             if not self.level_normalized:
                 self.level += randint(0, 10) + randint(0, 10)
                 self.level = min(self.level, 99)
@@ -1288,8 +1297,8 @@ def make_rankings():
              if u.map_id in range(1, 0xFE) + range(0x180, 0x1D5)]
 
     rankable_job_features = [
-        "hpgrowth", "hpmult", "mpgrowth", "mpmult", "spdgrowth", "spdmult",
-        "pagrowth", "pamult", "magrowth", "mamult", "move", "jump", "evade"]
+        "hpmult", "mpmult", "spdmult", "pamult", "mamult", "move", "evade",
+        "monster_portrait"]
     bottomhalf = ["move", "jump"]
     feature_minmax = {}
     for feature in rankable_job_features:
@@ -1316,11 +1325,20 @@ def make_rankings():
             if value == 0:
                 continue
             minval, maxval = feature_minmax[feature]
-            score = (value - minval) / maxval
+            value, maxval = (value - minval), (maxval - minval)
+            score = (value / maxval)
             scores.append(score)
+        scores = sorted(scores)[1:]  # drop lowest
         j.rank = sum(scores) / len(scores)
+        if j.is_lucavi:
+            j.rank *= 1.5
+        elif j.monster_portrait == 0:
+            j.rank *= 1.3
         if j.crippled:
             j.rank = j.rank / 10.0
+
+    ranked_jobs = sorted(good_jobs, key=lambda j: j.rank)
+    ranked_jobs = [j.index for j in ranked_jobs]
 
     rankable_features = [
         "map_id", "unlocked", "unlocked_level", "righthand", "lefthand",
@@ -1910,6 +1928,7 @@ def mutate_units_special(job_names):
                     and job_names[j.index] not in mundane_job_names
                     and job_names[j.index]]
     special_jobs = [j.index for j in special_jobs]
+    special_jobs = [j for j in ranked_jobs if j in special_jobs]
     for map_id in range(1, 0xFE) + range(0x180, 0x1D5):
         if map_id <= 0xFF:
             boost_factor = boostd["random_special_unit"]
@@ -1921,7 +1940,8 @@ def mutate_units_special(job_names):
         if any([u.is_lucavi for u in units]):
             if map_id == 0x1a9:
                 continue
-            lucavi_special = random.choice([True, False])
+            lucavi_special = (any([u.is_altima for u in units])
+                              or randint(1, 3) != 3)
             lucavi_unit = max([u for u in units if u.is_lucavi],
                               key=lambda u2: u2.level)
         elif map_id == 1:
@@ -2039,17 +2059,20 @@ def mutate_units_special(job_names):
                 if lucavi_special:
                     for attr in ["lefthand", "righthand", "head", "body",
                                  "accessory", "secondary"]:
-                        value = getattr(chosen_unit, attr)
-                        if 1 <= value <= 0xFE and random.choice([True, False]):
-                            setattr(unit, attr, value)
-                        elif value in [0, 0xFF]:
+                        chosenvalue = getattr(chosen_unit, attr)
+                        oldvalue = getattr(unit, attr)
+                        if (1 <= chosenvalue <= 0xFE and
+                                random.choice([True, False])):
+                            setattr(unit, attr, chosenvalue)
+                        elif oldvalue in [0, 0xFF]:
                             setattr(unit, attr, 0xFE)
                     for attr in ["reaction", "support", "movement"]:
-                        value = getattr(chosen_unit, attr)
-                        if (1 <= value <= 0x1FE
+                        chosenvalue = getattr(chosen_unit, attr)
+                        oldvalue = getattr(unit, attr)
+                        if (1 <= chosenvalue <= 0x1FE
                                 and random.choice([True, False])):
-                            setattr(unit, attr, value)
-                        elif value in [0, 0x1FF]:
+                            setattr(unit, attr, chosenvalue)
+                        elif oldvalue in [0, 0x1FF]:
                             setattr(unit, attr, 0x1FE)
                 unit.set_bit("enemy_team", True)
                 if chosen_unit.named:
