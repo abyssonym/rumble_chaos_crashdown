@@ -94,8 +94,7 @@ SUPER_SPECIAL = []
 
 def set_difficulty_factors(value):
     value = max(value, 0)
-    boostd["common_item"] = max(1.5 - (0.25 * value), 0.5)
-    boostd["rare_item"] = max(1.3 - (0.15 * value), 0.5)
+    boostd["common_item"] = max(2.0 - (0.5 * value), 0.5)
     boostd["trophy"] = max(1.5 - (0.5 * value), 0.25)
     boostd["default_stat"] = 1.0 + (0.2 * value)
     boostd["level_stat"] = 0.75 * value
@@ -221,8 +220,9 @@ class MoveFindObject(TableObject):
             self.common = get_similar_item(
                 self.common, boost_factor=boostd["common_item"]).index
         if self.rare != 0:
-            self.rare = get_similar_item(
-                self.rare, boost_factor=boostd["rare_item"]).index
+            common = ItemObject.get(self.common)
+            candidates = [i for i in ItemObject.every if i.rank > common.rank]
+            self.rare = random.choice(candidates).index
 
         if self.common or self.rare:
             trapvalue = random.choice([True, False])
@@ -240,8 +240,9 @@ class PoachObject(TableObject):
     def mutate(self):
         self.common = get_similar_item(
             self.common, boost_factor=boostd["common_item"]).index
-        self.rare = get_similar_item(
-            self.rare, boost_factor=boostd["rare_item"]).index
+        common = ItemObject.get(self.common)
+        candidates = [i for i in ItemObject.every if i.rank > common.rank]
+        self.rare = random.choice(candidates).index
 
 
 class AbilityAttributesObject(TableObject):
@@ -287,6 +288,24 @@ class AbilityObject(TableObject):
 
 
 class ItemObject(TableObject):
+    @property
+    def rank(self):
+        if self.index == 0:
+            return -1
+
+        rank = self.price
+        if self.priceless:
+            rank += 65000
+            rank += (self.enemy_level * 100)
+        return rank
+
+    @property
+    def priceless(self):
+        if self.price <= 10:
+            return True
+        elif self.index in [0x6A, 0x8F]:
+            return True
+
     def mutate_shop(self):
         self.price = mutate_normal(self.price, maximum=65000)
         self.price = int(round(self.price, -1))
@@ -295,7 +314,13 @@ class ItemObject(TableObject):
         if 1 <= self.time_available <= 16:
             self.time_available = mutate_normal(self.time_available,
                                                 maximum=16)
-        if self.enemy_level > 1:
+
+        if self.get_bit("rare") and randint(1, 4) != 4:
+            if self.enemy_level <= 5:
+                self.enemy_level = 50
+            self.set_bit("rare", False)
+
+        if self.enemy_level >= 1:
             self.enemy_level = int(round(
                 self.enemy_level / boostd["equipment"]))
             self.enemy_level = mutate_normal(self.enemy_level, minimum=1,
@@ -1428,13 +1453,8 @@ def get_ranked_secondaries():
 
 
 def get_ranked_items():
-    PRICELESS = [0x8F]
-    items = [i for i in get_items() if i.index > 0]
-    priceless = [i for i in items if i.price <= 10 or i.index in PRICELESS]
-    priced = [i for i in items if i not in priceless]
-    priced = sorted(priced, key=lambda i: i.price)
-    priceless = sorted(priceless, key=lambda i: i.enemy_level)
-    return priced + priceless
+    items = sorted(ItemObject.every, key=lambda i: i.rank)
+    return [i for i in items if i.index > 0]
 
 
 def get_ranked_skills(kind=None):
