@@ -60,6 +60,7 @@ BASIC_JOBS = range(0x4A, 0x5E)
 MONSTER_JOBS = range(0x5E, 0x8E) + [0x90, 0x91, 0x96, 0x97, 0x99, 0x9A]
 STORYLINE_RECRUITABLE_JOBS = [0xD, 0xF, 0x16, 0x1A, 0x1E, 0x1F,
                               0x29, 0x2A, 0x90, 0x91]
+USED_MAPS = range(0, 0x14B) + range(0x180, 0x1d6)
 
 jobreq_namedict = {}
 jobreq_indexdict = {}
@@ -782,7 +783,10 @@ class UnitObject(TableObject):
         return True
 
     def mutate_monster_job(self):
-        if self.job <= 0x5D or self.job in [0x91, 0x97]:
+        monster_check = lambda u: (u.graphic == 0x82 and u.job >= 0x5E
+                                   and u.job not in [0x91, 0x97]
+                                   and u.map_id <= 0x1d5)
+        if not monster_check(self):
             return True
 
         oldjob = self.job
@@ -792,22 +796,31 @@ class UnitObject(TableObject):
 
         ranked_monster_jobs = get_ranked_monster_jobs()
         if self.map_id not in monster_selection:
-            monster_jobs = [get_job(u.job) for u in mapunits[self.map_id]
-                            if u.has_monster_job]
-            monster_sprites = set([m.monster_portrait for m in monster_jobs])
+            assert self in mapunits[self.map_id]
+            assert self.graphic == 0x82
+            map_monster_jobs = [JobObject.get(u.job)
+                                for u in mapunits[self.map_id]
+                                if monster_check(u)]
+            assert JobObject.get(self.job) in map_monster_jobs
+            lowjob = min(map_monster_jobs,
+                         key=lambda j: ranked_monster_jobs.index(j))
+            index = ranked_monster_jobs.index(lowjob)
+            while index > 0 and random.choice([True, False]):
+                index -= 1
+            ranked_monster_jobs = ranked_monster_jobs[index:]
             ranked_monster_sprites = []
             for m in ranked_monster_jobs:
                 if m.monster_portrait not in ranked_monster_sprites:
                     ranked_monster_sprites.append(m.monster_portrait)
             selected_sprites = []
+            monster_sprites = set([m.monster_portrait
+                                   for m in map_monster_jobs])
             for s in sorted(monster_sprites):
                 temp_sprites = [t for t in ranked_monster_sprites
                                 if t not in selected_sprites or t == s]
                 index = temp_sprites.index(s)
-                if s in selected_sprites:
-                    temp_sprites.remove(s)
                 index = mutate_index(index, len(temp_sprites), [True, False],
-                                     (-2, 3), (-1, 1))
+                                     (-1, 2), (-1, 1))
                 selected = temp_sprites[index]
                 selected_sprites.append(selected)
             selected_monsters = [m for m in ranked_monster_jobs
@@ -1939,7 +1952,8 @@ def mutate_units_special(job_names):
             index = mutate_normal(index, maximum=len(cand_jobs)-1)
             new_job = cand_jobs[index]
 
-            jobunits = [u for u in get_units() if u.job == new_job]
+            jobunits = [u for u in get_units() if u.job == new_job
+                        and u.map_id in USED_MAPS]
             jobgraphics = Counter([u.graphic for u in jobunits])
             jobgraphics = [key for key in jobgraphics
                            if jobgraphics[key] == max(jobgraphics.values())]
@@ -1947,10 +1961,31 @@ def mutate_units_special(job_names):
                 continue
             graphic = random.choice(sorted(jobgraphics))
             jobunits = [u for u in jobunits if u.graphic == graphic]
-            tempunits = [u for u in jobunits
-                         if u.map_id in range(1, 0xFE) + range(0x180, 0x1D5)]
-            if tempunits:
-                jobunits = tempunits
+
+            def jobunit_filter(strength):
+                candidates = []
+                for u in jobunits:
+                    score = 0
+                    if u.get_bit("join_after_event"):
+                        score += 1
+                    for field in ["secondary", "lefthand", "righthand", "head",
+                                  "body", "accessory", "reaction", "support",
+                                  "movement"]:
+                        value = getattr(u, field) & 0xFF
+                        if 1 <= value <= 0xFD:
+                            score += 1
+                    if score > strength:
+                        candidates.append(u)
+                return candidates
+
+            threshold = randint(0, 5) + randint(0, 5)
+            while True:
+                tempunits = jobunit_filter(threshold)
+                if tempunits:
+                    break
+                threshold -= 1
+
+            jobunits = tempunits
             chosen_unit = random.choice(sorted(jobunits,
                                                key=lambda u: u.index))
 
@@ -1973,15 +2008,23 @@ def mutate_units_special(job_names):
                               "gil", "brave", "faith", "palette", "secondary",
                               "reaction", "support", "movement", "unlocked",
                               "unlocked_level"]
-                if lucavi_special:
-                    for attr in ["lefthand", "righthand", "head", "body",
-                                 "accessory"]:
-                        if random.choice([True, False]):
-                            copy_attrs.append(attr)
-                        elif random.choice([True, False]):
-                            setattr(unit, attr, 0xFE)
                 for attr in copy_attrs:
                     setattr(unit, attr, getattr(chosen_unit, attr))
+                if lucavi_special:
+                    for attr in ["lefthand", "righthand", "head", "body",
+                                 "accessory", "secondary"]:
+                        value = getattr(chosen_unit, attr)
+                        if 1 <= value <= 0xFE and random.choice([True, False]):
+                            setattr(unit, attr, value)
+                        elif value in [0, 0xFF]:
+                            setattr(unit, attr, 0xFE)
+                    for attr in ["reaction", "support", "movement"]:
+                        value = getattr(chosen_unit, attr)
+                        if (1 <= value <= 0x1FE
+                                and random.choice([True, False])):
+                            setattr(unit, attr, value)
+                        elif value in [0, 0x1FF]:
+                            setattr(unit, attr, 0x1FE)
                 unit.set_bit("enemy_team", True)
                 if chosen_unit.named:
                     unit.name = chosen_unit.name

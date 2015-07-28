@@ -153,6 +153,8 @@ class TableObject(object):
                 continue
 
             if isinstance(value, list):
+                if value and not isinstance(value[0], int):
+                    continue
                 value = " ".join(["%x" % v for v in value])
 
             if isinstance(value, int):
