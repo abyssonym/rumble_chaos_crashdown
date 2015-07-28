@@ -703,6 +703,9 @@ class UnitObject(TableObject):
 
     def mutate_secondary(self, base_job=None, jp_remaining=None,
                          boost_factor=None):
+        if self.is_lucavi and randint(1, 3) != 3:
+            return
+
         if boost_factor is None:
             boost_factor = boostd["jp"]
         if base_job is None:
@@ -770,21 +773,24 @@ class UnitObject(TableObject):
         self.unlocked_level = unlocked_level
         secondary_skillset = get_skillset(self.secondary)
         rss = get_ranked_secondaries()
-        if (self.secondary in rss and secondary_skillset
-                and secondary_skillset.num_free_actions >= 1
-                and random.choice([True, False])):
-            candidates = []
-            for rs in rss:
-                skillset = get_skillset(rs)
-                if skillset and skillset.num_free_actions >= 1:
-                    candidates.append(rs)
-                elif rs == self.secondary:
-                    candidates.append(rs)
-            index = candidates.index(self.secondary)
-            index = mutate_index(index, len(candidates), [True, False],
-                                 (-2, 3), (-2, 3))
-            self.secondary = candidates[index]
-        elif randint(1, 10) == 10:
+        if self.secondary in rss:
+            if self.is_lucavi or (secondary_skillset
+                                  and secondary_skillset.num_free_actions >= 1
+                                  and random.choice([True, False])):
+                candidates = []
+                for rs in rss:
+                    skillset = get_skillset(rs)
+                    if skillset and skillset.num_free_actions >= 1:
+                        candidates.append(rs)
+                    elif rs == self.secondary:
+                        candidates.append(rs)
+                index = candidates.index(self.secondary)
+                index = mutate_index(index, len(candidates), [True, False],
+                                     (-2, 3), (-2, 3))
+                self.secondary = candidates[index]
+                return True
+
+        if randint(1, 10) == 10:
             candidates = get_ranked_secondaries()
             base = get_job(self.job).skillset
             if self.secondary in candidates:
