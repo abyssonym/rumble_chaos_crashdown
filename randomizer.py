@@ -891,10 +891,14 @@ class UnitObject(TableObject):
             return
 
         if self.job >= 0x5E:
-            return self.mutate_monster_job()
+            self.mutate_monster_job()
+            return
 
         if self.job not in jobreq_indexdict:
-            return self.mutate_secondary()
+            self.mutate_equips()
+            self.mutate_rsm()
+            self.mutate_secondary()
+            return
 
         jp_remaining = self.jp_total
         jp_remaining = randint(jp_remaining, int(jp_remaining * boost_factor))
@@ -996,8 +1000,22 @@ class UnitObject(TableObject):
             print "ERROR: Sprite limit."
             import pdb; pdb.set_trace()
 
-        self.mutate_rsm()
+        if not self.has_special_graphic:
+            if gender == "male":
+                self.set_bit("male", True)
+                self.set_bit("female", False)
+                self.graphic = 0x80
+            elif gender == "female":
+                self.set_bit("female", True)
+                self.set_bit("male", False)
+                self.graphic = 0x81
 
+        self.mutate_equips()
+        self.mutate_rsm()
+        self.mutate_secondary()
+        return True
+
+    def mutate_equips(self):
         for attr in ["lefthand", "righthand", "head", "body", "accessory"]:
             if self.has_special_graphic:
                 value = getattr(self, attr)
@@ -1013,19 +1031,6 @@ class UnitObject(TableObject):
                     setattr(self, attr, value)
             elif random.choice([True, False]):
                 setattr(self, attr, 0xFE)
-
-        if not self.has_special_graphic:
-            if gender == "male":
-                self.set_bit("male", True)
-                self.set_bit("female", False)
-                self.graphic = 0x80
-            elif gender == "female":
-                self.set_bit("female", True)
-                self.set_bit("male", False)
-                self.graphic = 0x81
-
-        self.mutate_secondary()
-        return True
 
     def mutate_rsm(self):
         job = JobObject.get(self.job)
@@ -2074,6 +2079,10 @@ def mutate_units_special(job_names):
                             setattr(unit, attr, chosenvalue)
                         elif oldvalue in [0, 0x1FF]:
                             setattr(unit, attr, 0x1FE)
+                for method in ["mutate_equips", "mutate_rsm",
+                               "mutate_secondary"]:
+                    if random.choice([True, False]):
+                        getattr(unit, method)()
                 unit.set_bit("enemy_team", True)
                 if chosen_unit.named:
                     unit.name = chosen_unit.name
