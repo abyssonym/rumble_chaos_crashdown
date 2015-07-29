@@ -1054,10 +1054,7 @@ class UnitObject(TableObject):
         if job.is_altima:
             self.movement = 0x1F3
 
-    def mutate_stats(self):
-        if self.job <= 3 or self.graphic <= 3:
-            return
-
+    def mutate_level(self):
         if (self.index <= 0xFFF and self.get_bit("randomly_present")
                 and randint(1, 10) == 10):
             if not self.level_normalized:
@@ -1072,6 +1069,13 @@ class UnitObject(TableObject):
         if not self.level_normalized and 5 <= self.level <= 99:
             self.level = mutate_index(self.level, 99,
                                       (True, False), (-2, 3), (-1, 2))
+
+    def mutate_stats(self):
+        if self.job <= 3 or self.graphic <= 3:
+            return
+
+        self.mutate_level()
+
         for attr in ["brave", "faith"]:
             value = getattr(self, attr)
             if 0 <= value <= 100:
@@ -2103,7 +2107,7 @@ def mutate_units_special(job_names):
                         elif oldvalue in [0, 0x1FF]:
                             setattr(unit, attr, 0x1FE)
                 for method in ["mutate_equips", "mutate_rsm",
-                               "mutate_secondary"]:
+                               "mutate_secondary", "mutate_level"]:
                     if random.choice([True, False]):
                         getattr(unit, method)()
                 unit.set_bit("enemy_team", True)
