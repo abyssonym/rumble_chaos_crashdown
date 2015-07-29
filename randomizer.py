@@ -842,7 +842,7 @@ class UnitObject(TableObject):
                                 if t not in selected_sprites or t == s]
                 index = temp_sprites.index(s)
                 index = mutate_index(index, len(temp_sprites), [True, False],
-                                     (-1, 2), (-1, 1))
+                                     (-2, 3), (-1, 1))
                 selected = temp_sprites[index]
                 selected_sprites.append(selected)
 
