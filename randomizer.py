@@ -858,7 +858,7 @@ class UnitObject(TableObject):
         ranked_selection = [m for m in all_ranked_monster_jobs
                             if m in selection or m == myjob]
         if not self.get_bit("enemy_team"):
-            index = -1
+            index = -2
             while random.choice([True, False]):
                 index -= 1
             newjob = random.choice(ranked_selection[index:])
