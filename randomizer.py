@@ -857,12 +857,18 @@ class UnitObject(TableObject):
         myjob = get_job(self.job)
         ranked_selection = [m for m in all_ranked_monster_jobs
                             if m in selection or m == myjob]
-        index = ranked_selection.index(myjob)
-        if myjob not in selection:
-            ranked_selection.remove(myjob)
-        index = mutate_index(index, len(ranked_selection), [True, False],
-                             (0, 1), (-1, 1))
-        newjob = ranked_selection[index]
+        if not self.get_bit("enemy_team"):
+            index = -1
+            while random.choice([True, False]):
+                index -= 1
+            newjob = random.choice(ranked_selection[index:])
+        else:
+            index = ranked_selection.index(myjob)
+            if myjob not in selection:
+                ranked_selection.remove(myjob)
+            index = mutate_index(index, len(ranked_selection), [True, False],
+                                 (0, 1), (-1, 1))
+            newjob = ranked_selection[index]
         self.job = newjob.index
         named_jobs[self.name, oldjob] = self.job
         return True
