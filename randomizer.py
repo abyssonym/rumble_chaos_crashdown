@@ -96,15 +96,19 @@ SUPER_SPECIAL = []
 
 def set_difficulty_factors(value):
     value = max(value, 0)
-    boostd["common_item"] = max(2.0 - (0.5 * value), 0.5)
-    boostd["trophy"] = max(1.5 - (0.5 * value), 0.25)
-    boostd["default_stat"] = 1.0 + (0.2 * value)
-    boostd["level_stat"] = 0.75 * value
-    boostd["equipment"] = 1.0 + (0.2 * value)
-    boostd["special_equipment"] = 1.0 + (0.5 * value)
-    boostd["jp"] = 1.5 ** value
-    boostd["random_special_unit"] = 1.0 + (0.5 * value)
-    boostd["story_special_unit"] = 0.5 + (0.5 * value)
+    try:
+        boostd["common_item"] = max(2.0 - (0.5 * value), 0.5)
+        boostd["trophy"] = max(1.5 - (0.5 * value), 0.25)
+        boostd["default_stat"] = 1.2 ** value
+        boostd["level_stat"] = 0.75 * value
+        boostd["equipment"] = 1.2 ** value
+        boostd["special_equipment"] = 1.5 ** value
+        boostd["jp"] = 1.5 ** value
+        boostd["random_special_unit"] = 0.5 + (1.0 * value)
+        boostd["story_special_unit"] = 0.0 + (1.0 * value)
+    except OverflowError:
+        print "Max chaos multiplier exceeded. Using a multiplier of 500."
+        set_difficulty_factors(500.0)
 
 
 def get_rng_state():
