@@ -1008,7 +1008,8 @@ class UnitObject(TableObject):
                 value = getattr(self, attr)
                 if value in [0, 0xFF]:
                     setattr(self, attr, random.choice([0xFF, 0xFE]))
-                elif value != 0xFE and random.choice([True, False]):
+                elif (attr != "righthand" and value != 0xFE
+                        and random.choice([True, False])):
                     if self.get_bit("enemy_team"):
                         bf = boostd["special_equipment"]
                     else:
@@ -1016,6 +1017,8 @@ class UnitObject(TableObject):
                     value = get_similar_item(
                         value, same_equip=True, boost_factor=bf).index
                     setattr(self, attr, value)
+                elif randint(1, 3) == 3:
+                    setattr(self, attr, 0xFE)
             elif random.choice([True, False]):
                 setattr(self, attr, 0xFE)
 
