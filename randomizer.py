@@ -1022,13 +1022,19 @@ class UnitObject(TableObject):
     def mutate_rsm(self):
         job = JobObject.get(self.job)
         for attr in ["reaction", "support", "movement"]:
+            cands = [a for a in AbilityObject.every
+                     if getattr(a, "is_%s" % attr) is True]
             if self.is_lucavi:
-                cands = [a.index for a in AbilityObject.every
-                         if getattr(a, "is_%s" % attr) is True]
+                cands = [c.index for c in cands]
                 cands = [c for c in cands
                          if c in LUCAVI_INNATES and c not in job.innates
                          and c not in [0x1e2, 0x1e3]]
                 setattr(self, attr, random.choice(cands))
+            elif self.has_special_graphic and randint(1, 3) == 3:
+                cands = sorted(cands, key=lambda a: a.jp_cost)
+                index = len(cands) / 2
+                index = mutate_normal(index, maximum=len(cands)-1)
+                setattr(self, attr, cands[index].index)
             elif random.choice([True, False]):
                 setattr(self, attr, 0x1FE)
 
