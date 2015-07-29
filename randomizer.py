@@ -541,9 +541,10 @@ class JobObject(TableObject):
                                       if a.is_support]
                         index = len(attr_cands)/2
 
-                    if index is not None:
-                        index = mutate_normal(index, len(attr_cands))
+                    if attr_cands and index is not None:
+                        index = mutate_normal(index, maximum=len(attr_cands)-1)
                         value = attr_cands[index]
+
                 innates.append(value)
             innates = reversed(sorted(innates))
             for attr, innate in zip(innate_attrs, innates):
@@ -699,9 +700,6 @@ class UnitObject(TableObject):
 
     def mutate_secondary(self, base_job=None, jp_remaining=None,
                          boost_factor=None):
-        if self.is_lucavi and randint(1, 3) != 3:
-            return
-
         if boost_factor is None:
             boost_factor = boostd["jp"]
         if base_job is None:
@@ -763,47 +761,42 @@ class UnitObject(TableObject):
         while randint(1, 7) == 7:
             unlocked_level += 1
 
-        old_unlocked = self.unlocked
         unlocked_level = min(unlocked_level, 8)
         self.unlocked = unlocked_job.otherindex
         self.unlocked_level = unlocked_level
-        secondary_skillset = get_skillset(self.secondary)
-        rss = get_ranked_secondaries()
-        if self.secondary in rss:
-            if self.is_lucavi or (secondary_skillset
-                                  and secondary_skillset.num_free_actions >= 1
-                                  and random.choice([True, False])):
-                candidates = []
-                for rs in rss:
-                    skillset = get_skillset(rs)
-                    if skillset and skillset.num_free_actions >= 1:
-                        candidates.append(rs)
-                    elif rs == self.secondary:
-                        candidates.append(rs)
-                index = candidates.index(self.secondary)
-                index = mutate_index(index, len(candidates), [True, False],
-                                     (-2, 3), (-2, 3))
-                self.secondary = candidates[index]
-                return True
-
-        if randint(1, 10) == 10:
+        if self.is_lucavi and randint(1, 15) != 15:
             candidates = get_ranked_secondaries()
-            base = get_job(self.job).skillset
+            index = None
             if self.secondary in candidates:
-                base = random.choice([base, self.secondary])
-            if base not in candidates:
-                index = randint(0, 9)
-            else:
-                index = candidates.index(base)
-                candidates.remove(base)
-            index = max(index-1, 0)
-            index = mutate_index(index, len(candidates), [True, False],
-                                 (-4, 5), (-2, 3))
+                index = candidates.index(self.secondary)
+            elif randint(1, 5) == 5:
+                index = 2 * (len(candidates) / 3)
+            if index is not None and random.choice([True, False]):
+                index = mutate_normal(index, maximum=len(candidates)-1)
+                self.secondary = candidates[index]
+            return True
+
+        if randint(1, 20) == 20:
+            candidates = get_ranked_secondaries()
+            index = len(candidates) / 3
+            index = mutate_normal(index, maximum=len(candidates)-1)
             self.secondary = candidates[index]
         elif (unlocked_job != base_job and unlocked_level > 1
                 and randint(1, 3) != 3):
             assert unlocked_job.otherindex in range(0x14)
             self.secondary = unlocked_job.otherindex + 5
+        elif randint(1, 5) == 5:
+            cands = []
+            for name in JOBNAMES:
+                value = max(getattr(base_job, name) if base_job else 0,
+                            getattr(unlocked_job, name))
+                if value:
+                    cands.append(name)
+            if cands:
+                chosen = jobreq_namedict[random.choice(cands)]
+                self.secondary = chosen.otherindex + 5
+            else:
+                self.secondary = 0xFE
         elif self.secondary != 0 or random.choice([True, False]):
             self.secondary = 0xFE
 
@@ -1450,29 +1443,45 @@ def get_ranked_secondaries():
     if g_ranked_secondaries is not None:
         return list(g_ranked_secondaries)
 
+    def clean_ranks(ranking):
+        min_rank = min([b for (a, b) in ranking.items()])
+        max_rank = max([b for (a, b) in ranking.items()])
+        new_ranking = []
+        for a, b in ranking.items():
+            b = (b - min_rank) / (max_rank - min_rank)
+            new_ranking.append((a, b))
+        return dict(new_ranking)
+
     ranked = get_ranked("secondary", full=True)
+    ranked = clean_ranks(ranked)
     other_ranked = get_ranked("job", full=True)
+    other_ranked = clean_ranks(other_ranked)
     for job, rank in other_ranked.items():
         job = get_job(job)
-        if job.skillset not in ranked:
-            ranked[job.skillset] = rank
+        ranked[job.skillset] = rank
     candidates = {}
     for ss in get_skillsets():
         if ss.index in ranked:
             candidates[ss] = ranked[ss.index]
     for skillset, rank in candidates.items():
-        num_free = skillset.num_free_actions
-        if num_free:
-            rank = rank * 1.1
+        rank = rank * (skillset.num_actions / 8.0)
+        if rank > 0:
+            num_free = skillset.num_free_actions
+            abilities = [AbilityObject.get(a) for a in skillset.actions]
+            acosts = [a.jp_cost for a in abilities if 1 <= a.jp_cost <= 199]
+            if acosts:
+                average_jp_cost = sum(acosts) / len(acosts)
+                rank = rank * average_jp_cost
+            elif num_free == 0:
+                rank = 0
+            else:
+                rank = rank * 200
             for i in xrange(num_free):
-                rank += max(4-i, 0)
-            candidates[skillset] = rank
+                rank *= 1.1
+        candidates[skillset] = rank
 
     ranked = sorted(candidates, key=lambda c: (candidates[c], c.index))
-    g_ranked_secondaries = [r.index for r in ranked]
-    for index in get_ranked("secondary"):
-        if 0 < index <= 0xAF:
-            assert index in g_ranked_secondaries
+    g_ranked_secondaries = [r.index for r in ranked if candidates[r] > 0]
     return get_ranked_secondaries()
 
 
