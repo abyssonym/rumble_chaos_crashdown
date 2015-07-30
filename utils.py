@@ -62,6 +62,9 @@ def mutate_bits(value, size=8):
     return value
 
 
+BOOST_AMOUNT = 2.0
+
+
 def mutate_normal(value, minimum=0, maximum=0xFF,
                   reverse=False, smart=True, chain=True):
     if maximum-minimum < 5:
@@ -79,23 +82,33 @@ def mutate_normal(value, minimum=0, maximum=0xFF,
     else:
         value = value - minimum
 
-    odd = value % 2
-    value = value / 2
-    rval = max(value, 1)
-    value = value + random.randint(0, rval) + random.randint(0, rval)
-    if odd:
-        value += random.randint(0, 1)
+    BOOST_FLAG = False
+    if value < BOOST_AMOUNT:
+        value += BOOST_AMOUNT
+        if value > 0:
+            BOOST_FLAG = True
+        else:
+            value = 0
+
+    if value > 0:
+        half = value / 2.0
+        a, b = random.random(), random.random()
+        value = half + (half * a) + (half * b)
+
+    if BOOST_FLAG:
+        value -= BOOST_AMOUNT
 
     if rev:
         value = maximum - value
     else:
         value = value + minimum
 
-    value = max(minimum, min(value, maximum))
     if chain and random.randint(1, 10) == 10:
         return mutate_normal(value, minimum=minimum, maximum=maximum,
                              reverse=reverse, smart=smart, chain=True)
     else:
+        value = max(minimum, min(value, maximum))
+        value = int(round(value))
         return value
 
 
