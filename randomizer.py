@@ -141,8 +141,12 @@ def calculate_jp_total(joblevels):
 
 
 def rewrite_header(filename, message):
+    if len(message) > 0x20:
+        print "WARNING: Cannot write full seed info to rom."
+        message = message[:0x1F] + "~"
     while len(message) < 0x20:
         message += " "
+    assert len(message) == 0x20
     f = open(filename, 'r+b')
     f.seek(0x8028)
     f.write(message)
@@ -2469,7 +2473,10 @@ def randomize():
             obj.write_data()
 
     #unlock_jobs(TEMPFILE)
-    rewrite_header(TEMPFILE, "FFT RCC %s" % seed)
+    diffstr = str(difficulty)
+    if len(diffstr) > 10:
+        diffstr = diffstr[:9] + "?"
+    rewrite_header(TEMPFILE, "FFT RCC %s %s %s" % (VERSION, seed, diffstr))
 
     assert filesize in RAW_SIZES + ISO_SIZES
     if filesize in ISO_SIZES:
