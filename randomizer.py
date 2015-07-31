@@ -1098,9 +1098,22 @@ class UnitObject(TableObject):
 
 
 class JobReqObject(TableObject):
-    @property
-    def pretty_str(self):
-        s = "%s\n" % self.name.upper()
+    def __le__(self, other):
+        for attr in jobreq_namedict.keys():
+            if getattr(self, attr) > getattr(other, attr):
+                return False
+        return True
+
+    def same_reqs(self, other):
+        for attr in jobreq_namedict.keys():
+            if getattr(self, attr) != getattr(other, attr):
+                return False
+        return True
+
+    def __lt__(self, other):
+        return self <= other and not self.same_reqs(other)
+
+    def get_prereq_dict(self):
         prereq_dict = {}
         for attr in sorted(jobreq_namedict.keys()):
             value = getattr(self, attr)
@@ -1117,7 +1130,12 @@ class JobReqObject(TableObject):
                     prereq_dict[attr2] = 0
                     if attr2 != "squire":
                         removed.append(attr2)
+        return prereq_dict, removed
 
+    @property
+    def pretty_str(self):
+        prereq_dict, removed = self.get_prereq_dict()
+        s = "%s\n" % self.name.upper()
         for attr, value in prereq_dict.items():
             if value > 0:
                 s += "  %s %s\n" % (value, attr)
@@ -1125,6 +1143,13 @@ class JobReqObject(TableObject):
             s += "  Also: " + ", ".join(sorted(set(removed)))
 
         return s.strip()
+
+    @property
+    def total_levels(self):
+        total = 0
+        for attr in jobreq_namedict.keys():
+            total += getattr(self, attr)
+        return total
 
     def set_required_unlock_jp(self):
         self.remax_jobreqs()
@@ -1633,7 +1658,8 @@ def mutate_job_requirements():
     reqs = get_jobreqs()
     done = [r for r in reqs if r.name == "squire"]
     levels = ([randint(0, 1)] +
-              [randint(2, 3) for _ in range(4)] +
+              [randint(1, 2) for _ in range(2)] +
+              [randint(2, 3) for _ in range(2)] +
               [randint(3, 5) for _ in range(4)] +
               [randint(5, 8) for _ in range(4)] +
               [randint(8, 13) + randint(0, 8) for _ in range(3)] +
@@ -1733,7 +1759,7 @@ def mutate_job_requirements():
             r.remax_jobreqs()
         done.append(req)
         if req.name not in ["dancer", "bard"]:
-            if base_numlevels >= randint(2, 3):
+            if base_numlevels >= randint(0, 1) + randint(0, 1):
                 jobpool.add(req)
             else:
                 allpool.add(req)
@@ -2270,6 +2296,57 @@ def get_job_names(filename):
     return job_names
 
 
+def get_jobtree_str():
+    jobreqs = JobReqObject.every
+    jobreqs = sorted(jobreqs, key=lambda j: j.total_levels)
+    jobtree = {}
+    for j in jobreqs:
+        jobtree[j] = set([])
+
+    categorized = set([])
+    for j in jobreqs:
+        chosen = None
+        for j2 in jobreqs:
+            if j2 < j and getattr(j, j2.name) > 0:
+                if j2.name in ["dancer", "bard"]:
+                    continue
+                if not chosen or j2 > chosen:
+                    chosen = j2
+                elif j2 < chosen:
+                    pass
+                else:
+                    chosen = max([j2, chosen],
+                                 key=lambda j3: (j3.total_levels, j3.index))
+
+        if chosen is not None:
+            jobtree[chosen].add(j)
+            categorized.add(j)
+
+    def recurse(j):
+        s = "%s:" % j.name.upper()
+        prereqs, _ = j.get_prereq_dict()
+        for key in sorted(jobreq_namedict):
+            if key not in prereqs:
+                continue
+            value = prereqs[key]
+            if value > 0:
+                s += " %s %s," % (value, key[:3])
+        s = s.strip(",")
+        s += "\n"
+        for j2 in sorted(jobtree[j], key=lambda j3: j3.name):
+            s += recurse(j2) + "\n"
+        s = s.strip()
+        s = s.replace("\n", "\n    ")
+        return s
+
+    treestr = ""
+    for j in sorted(jobtree.keys(), key=lambda j3: j3.name):
+        if j not in categorized:
+            treestr += recurse(j) + "\n\n"
+    treestr = treestr.strip()
+    return treestr
+
+
 def randomize():
     print ('You are using the FFT RUMBLE CHAOS CRASHDOWN randomizer '
            'version "%s".' % VERSION)
@@ -2398,11 +2475,7 @@ def randomize():
         for u in get_units():
             u.set_backup_jp_total()
         mutate_job_requirements()
-        s = ""
-        for name in sorted(jobreq_namedict.keys()):
-            jr = jobreq_namedict[name]
-            s = "\n\n".join([s, jr.pretty_str])
-        s = s.strip()
+        s = get_jobtree_str()
         f = open("%s.txt" % seed, "w+")
         f.write(s)
         f.close()
