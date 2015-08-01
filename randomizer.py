@@ -2325,8 +2325,10 @@ def get_jobtree_str():
                 elif j2 < chosen:
                     pass
                 else:
-                    chosen = max([j2, chosen],
-                                 key=lambda j3: (j3.total_levels, j3.index))
+                    chosen = max(
+                        [j2, chosen],
+                        key=lambda j3: (j3.total_levels + getattr(j, j3.name),
+                                        getattr(j, j3.name), j3.index))
 
         if chosen is not None:
             jobtree[chosen].add(j)
