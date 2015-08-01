@@ -1514,20 +1514,19 @@ def get_ranked_secondaries():
         if ss.index in ranked:
             candidates[ss] = ranked[ss.index]
     for skillset, rank in candidates.items():
-        rank = rank * (skillset.num_actions / 8.0)
+        rank = rank * rank * skillset.num_actions
         if rank > 0:
             num_free = skillset.num_free_actions
             abilities = [AbilityObject.get(a) for a in skillset.actions]
-            acosts = [a.jp_cost for a in abilities if 1 <= a.jp_cost <= 199]
+            acosts = [min(a.jp_cost, 1000) if a.jp_cost > 0 else 1000
+                      for a in abilities]
             if acosts:
                 average_jp_cost = sum(acosts) / len(acosts)
                 rank = rank * average_jp_cost
             elif num_free == 0:
                 rank = 0
-            else:
-                rank = rank * 200
-            for i in xrange(num_free):
-                rank *= 1.1
+            if skillset.index <= 0x18:
+                rank = rank / 2
         candidates[skillset] = rank
 
     ranked = sorted(candidates, key=lambda c: (candidates[c], c.index))
