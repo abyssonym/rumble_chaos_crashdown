@@ -706,6 +706,9 @@ class UnitObject(TableObject):
 
     def mutate_secondary(self, base_job=None, jp_remaining=None,
                          boost_factor=None):
+        if self.get_bit("load_formation"):
+            return
+
         if boost_factor is None:
             boost_factor = boostd["jp"]
         if base_job is None:
@@ -1019,6 +1022,9 @@ class UnitObject(TableObject):
         return True
 
     def mutate_equips(self):
+        if self.get_bit("load_formation"):
+            return
+
         for attr in ["lefthand", "righthand", "head", "body", "accessory"]:
             if self.has_special_graphic:
                 value = getattr(self, attr)
@@ -1039,6 +1045,9 @@ class UnitObject(TableObject):
                 setattr(self, attr, 0xFE)
 
     def mutate_rsm(self):
+        if self.get_bit("load_formation"):
+            return
+
         job = JobObject.get(self.job)
         for attr in ["reaction", "support", "movement"]:
             cands = [a for a in AbilityObject.every
