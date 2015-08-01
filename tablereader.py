@@ -89,6 +89,10 @@ class TableObject(object):
     def every(cls):
         return get_table_objects(cls, filename=GLOBAL_FILENAME)
 
+    @classproperty
+    def ranked(cls):
+        return sorted(cls.every, key=lambda c: (c.rank, c.index))
+
     @classmethod
     def get(cls, index):
         return GRAND_OBJECT_DICT[cls, index]
