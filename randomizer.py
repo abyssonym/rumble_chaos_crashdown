@@ -872,8 +872,12 @@ class UnitObject(TableObject):
             index = ranked_selection.index(myjob)
             if myjob not in selection:
                 ranked_selection.remove(myjob)
-            index = mutate_index(index, len(ranked_selection), [True, False],
-                                 (0, 1), (-1, 1))
+            if self.get_bit("always_present"):
+                index = mutate_index(index, len(ranked_selection),
+                                     [True, False, False], (-1, 2), (-1, 1))
+            else:
+                index = mutate_index(index, len(ranked_selection),
+                                     [True, False], (-2, 3), (-1, 2))
             newjob = ranked_selection[index]
         self.job = newjob.index
         named_jobs[self.name, oldjob] = self.job
