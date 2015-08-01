@@ -1,6 +1,6 @@
 FFT Rumble Chaos Crashdown Randomizer
-Version:    13
-Date:       July 28, 2015
+Version:    14
+Date:       July 31, 2015
 URL:        https://github.com/abyssonym/rumble_chaos_crashdown
 Contact:    https://twitter.com/abyssonym
             https://www.twitch.tv/abyssonym
@@ -32,6 +32,9 @@ Flags:
 
 Seed value:
     Input a seed value here, or leave it blank if you don't care.
+
+Chaos multiplier:
+    This is a difficulty setting for RCC. It mainly affects enemy stats and the level of treasure you acquire. The standard difficulty is 1.0, with 0.5 being quite easy and 1.5 being quite hard. Difficulty scales quadratically with the chaos multiplier, so don't raise it too high!
 
 Output files:
     The randomizer will output a new, randomized ISO with the seed in the filename. If you choose to randomize job requirements, it will also output a text file with the new job requirements inside.

@@ -16,7 +16,7 @@ from uniso import remove_sector_metadata, inject_logical_sectors
 def randint(a, b):
     return random.randint(min(a, b), max(a, b))
 
-VERSION = "13"
+VERSION = "14"
 MD5HASHES = ["aefdf27f1cd541ad46b5df794f635f50",
              "b156ba386436d20fd5ed8d37bab6b624",
              ]
