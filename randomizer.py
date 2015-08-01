@@ -1845,11 +1845,13 @@ def mutate_skillsets():
         if len(actions) > 16:
             actions = random.sample(actions, 16)
         a_actions = sorted([x for x in actions if x in a.actions])
-        b_actions = sorted([x for x in actions if x in pulled])
+        b_actions = sorted([x for x in actions if x in pulled
+                            and x not in a_actions])
         if random.choice([True, False]):
             a.actions = a_actions + b_actions
         else:
             a.actions = b_actions + a_actions
+        assert len(a.actions) <= 16
 
     skillsets = get_skillsets()
     abilities = get_abilities()
