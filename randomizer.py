@@ -1658,6 +1658,11 @@ def mutate_job_level(filename):
 
 def mutate_job_requirements():
     print "Mutating job requirements."
+    for index in [0x7a, 0x7d]:
+        # don't let gariland ninjas throw shurikens and balls
+        i = ItemObject.get(index)
+        i.enemy_level = max(i.enemy_level, 5)
+
     reqs = get_jobreqs()
     done = [r for r in reqs if r.name == "squire"]
     levels = ([randint(0, 1)] +
