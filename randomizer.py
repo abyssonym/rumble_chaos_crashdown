@@ -7,7 +7,8 @@ from time import time
 from string import lowercase
 from collections import Counter
 
-from utils import (mutate_index, mutate_normal, mutate_bits, write_multi,
+from utils import (mutate_index, mutate_normal, mutate_bits,
+                   write_multi, classproperty,
                    utilrandom as random)
 from tablereader import TableObject, set_global_table_filename
 from uniso import remove_sector_metadata, inject_logical_sectors
@@ -45,6 +46,7 @@ VALID_START_STATUSES = VALID_INNATE_STATUSES | 0x3402301000
 BENEFICIAL_STATUSES = 0xC278600000
 BANNED_SKILLSET_SHUFFLE = [0, 1, 2, 3, 6, 8, 0x11, 0x12, 0x13, 0x14, 0x15,
                            0x18, 0x34, 0x38, 0x39, 0x3B, 0x3E, 0x9C, 0xA1]
+MATH_SKILLSETS = [0xA, 0xB, 0xC, 0x10]
 BANNED_RSMS = [0x1BB, 0x1E1, 0x1E4, 0x1E5, 0x1F1]
 BANNED_ANYTHING = [0x18]
 LUCAVI_INNATES = (range(0x1A6, 0x1A9)
@@ -338,6 +340,15 @@ class ItemObject(TableObject):
 
 
 class SkillsetObject(TableObject):
+    @classproperty
+    def math_menuable_skills(self):
+        math_skills = set([])
+        for skillset in MATH_SKILLSETS:
+            skillset = SkillsetObject.get(skillset)
+            for action in skillset.actions:
+                math_skills.add(action)
+        return sorted(math_skills)
+
     @property
     def num_free_actions(self):
         return len([a for a in self.actions if get_ability(a).jp_cost == 0])
@@ -1668,7 +1679,7 @@ def mutate_job_level(filename):
 
 
 def mutate_job_requirements():
-    print "Mutating job requirements."
+    print "Randomizing job requirements."
     for index in [0x7a, 0x7d]:
         # don't let gariland ninjas throw shurikens and balls
         i = ItemObject.get(index)
@@ -1925,11 +1936,24 @@ def mutate_skillsets():
             if randint(1, 8) == 8:
                 ss.actions.remove(action)
 
+    math_skills = SkillsetObject.math_menuable_skills
+    for aa in AbilityAttributesObject:
+        if aa.get_bit("math_skill") and aa.index not in math_skills:
+            aa.set_bit("math_skill", False)
+
 
 def mutate_abilities_attributes():
+    print "Mutating ability attributes."
     abilities_attributes = get_abilities_attributes()
     for aa in abilities_attributes:
         aa.mutate()
+
+    for index in MATH_SKILLSETS:
+        skillset = SkillsetObject.get(index)
+        for action in skillset.actions:
+            if randint(1, 15) == 15:
+                aa = AbilityAttributesObject.get(action)
+                aa.set_bit("math_skill", not aa.get_bit("math_skill"))
 
 
 def mutate_monsters():
@@ -2541,6 +2565,7 @@ def randomize():
         mutate_skillsets()
 
     if 'a' in flags:
+        # do after randomizing skillsets
         random.seed(seed)
         mutate_abilities_attributes()
 
