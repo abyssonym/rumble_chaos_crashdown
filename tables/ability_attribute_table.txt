@@ -2,11 +2,11 @@
 range,1
 effect,1
 vertical,1
-unknown1,1
-unknown2,1
-unknown3,1
-unknown4,1
-unknown5,1
+misc1,bit:dont_allow_self_target auto_target weapon_strike vertical_threshold linear_attack_maybe use_weapon_range zero1 zero2
+misc2,bit:dont_hit_caster 3_directions linear_attack random_hits dont_follow_target zero3 enemies_only_maybe allies_only_maybe
+misc3,bit:animate_on_miss quote performing normal_attack cant_mimic affected_by_silence math_skill reflectable
+misc4,bit:dont_select_target can_be_evaded require_materia_blade require_sword countergrasp stop_at_obstacle counter_magic counter_flood
+element,bit:dark holy water earth wind ice lightning fire
 formula,1
 xval,1
 yval,1
