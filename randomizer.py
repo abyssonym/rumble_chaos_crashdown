@@ -1373,7 +1373,7 @@ def make_rankings():
         vals = [getattr(j, feature) for feature in rankable_job_features]
         zerocount = vals.count(0)
         if zerocount > (len(vals) / 2):
-            j.rank = 0 + (j.index * 0.0000001)
+            j.rankval = 0 + (j.index * 0.0000001)
             continue
         scores = []
         for feature in rankable_job_features:
@@ -1387,15 +1387,15 @@ def make_rankings():
             score = (value / maxval)
             scores.append(score)
         scores = sorted(scores)[1:]  # drop lowest
-        j.rank = sum(scores) / len(scores)
+        j.rankval = sum(scores) / len(scores)
         if j.is_lucavi:
-            j.rank *= 1.5
+            j.rankval *= 1.5
         elif j.monster_portrait == 0:
-            j.rank *= 1.3
+            j.rankval *= 1.3
         if j.crippled:
-            j.rank = j.rank / 10.0
+            j.rankval = j.rankval / 10.0
 
-    ranked_jobs = sorted(good_jobs, key=lambda j: j.rank)
+    ranked_jobs = sorted(good_jobs, key=lambda j: j.rankval)
     ranked_jobs = [j.index for j in ranked_jobs]
 
     rankable_features = [
@@ -1405,11 +1405,11 @@ def make_rankings():
     unrankable_values = [0, 0xFE, 0xFF]
     rankdict = {}
     for j in good_jobs:
-        rankdict["job", j.index] = j.rank
+        rankdict["job", j.index] = j.rankval
     for i in xrange(100):
         rankdict[("level", i)] = i
     for u in units:
-        u.rank = None
+        u.rankval = None
 
     oldstring = ""
     for i in xrange(1000):
@@ -1441,9 +1441,9 @@ def make_rankings():
                             tempdict[key].append(rankdict[key])
                     tempdict[key].append(rank)
             if not u.level_normalized:
-                u.rank = u.level
+                u.rankval = u.level
             elif rank:
-                u.rank = rank
+                u.rankval = rank
 
         for key in tempdict:
             ranks = tempdict[key]
@@ -1451,15 +1451,15 @@ def make_rankings():
                 rank = float(sum(ranks)) / len(ranks)
                 rankdict[key] = rank
 
-        codestring = "".join([chr(int(round(u.rank))) for u in units
-                              if u.rank is not None])
+        codestring = "".join([chr(int(round(u.rankval))) for u in units
+                              if u.rankval is not None])
         #if len(codestring) == len(oldstring):
         if codestring == oldstring:
             break
         oldstring = codestring
 
     for j in good_jobs:
-        rankdict["job", j.index] = j.rank
+        rankdict["job", j.index] = j.rankval
 
     for j in good_jobs:
         key = ("secondary", j.skillset)
