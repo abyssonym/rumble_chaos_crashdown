@@ -1,4 +1,4 @@
-from utils import read_multi, write_multi, classproperty
+from utils import read_multi, write_multi, classproperty, mutate_normal
 from os import path
 
 
@@ -49,6 +49,11 @@ class TableSpecs:
 
 
 class TableObject(object):
+    class __metaclass__(type):
+        def __iter__(self):
+            for obj in self.ranked:
+                yield obj
+
     def __init__(self, filename=None, pointer=None):
         assert hasattr(self, "specs")
         assert self.total_size
@@ -89,13 +94,36 @@ class TableObject(object):
     def every(cls):
         return get_table_objects(cls, filename=GLOBAL_FILENAME)
 
+    @property
+    def rank(self):
+        return self.index
+
     @classproperty
     def ranked(cls):
         return sorted(cls.every, key=lambda c: (c.rank, c.index))
 
+    def get_similar(self):
+        if self.rank < 0:
+            return self
+        candidates = [c for c in self.ranked if c.rank >= 0]
+        index = candidates.index(self)
+        index = mutate_normal(index, maximum=len(candidates)-1)
+        return candidates[index]
+
     @classmethod
     def get(cls, index):
-        return GRAND_OBJECT_DICT[cls, index]
+        if isinstance(index, int):
+            return GRAND_OBJECT_DICT[cls, index]
+        elif isinstance(index, str) or isinstance(index, unicode):
+            objs = [o for o in cls.every if index in o.name]
+            if len(objs) == 1:
+                return objs[0]
+            elif len(objs) >= 2:
+                raise Exception("Too many matching objects.")
+            else:
+                raise Exception("No matching objects.")
+        else:
+            raise Exception("Bad index.")
 
     def get_bit(self, bitname):
         for key, value in sorted(self.bitnames.items()):
