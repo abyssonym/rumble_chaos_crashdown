@@ -1957,7 +1957,7 @@ def mutate_abilities_attributes():
         skillset = SkillsetObject.get(index)
         for action in skillset.actions:
             aa = AbilityAttributesObject.get(action)
-            if not aa.get_bit("math_skill") and randint(1, 10) == 10:
+            if not aa.get_bit("math_skill") and randint(1, 7) == 7:
                 aa.set_bit("math_skill", True)
 
 
