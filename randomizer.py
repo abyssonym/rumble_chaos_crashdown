@@ -1951,9 +1951,9 @@ def mutate_abilities_attributes():
     for index in MATH_SKILLSETS:
         skillset = SkillsetObject.get(index)
         for action in skillset.actions:
-            if randint(1, 15) == 15:
-                aa = AbilityAttributesObject.get(action)
-                aa.set_bit("math_skill", not aa.get_bit("math_skill"))
+            aa = AbilityAttributesObject.get(action)
+            if not aa.get_bit("math_skill") and randint(1, 10) == 10:
+                aa.set_bit("math_skill", True)
 
 
 def mutate_monsters():
