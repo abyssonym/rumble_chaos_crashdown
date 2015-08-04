@@ -50,14 +50,15 @@ utran = utilrandom
 random = utilrandom
 
 
-def mutate_bits(value, size=8):
+def mutate_bits(value, size=8, odds_multiplier=2.0):
     bits_set = bin(value).count('1')
     bits_unset = size - bits_set
     assert bits_unset >= 0
     lowvalue = min(bits_set, bits_unset)
     lowvalue = max(lowvalue, 1)
+    multiplied = int(round(size * odds_multiplier))
     for i in range(size):
-        if random.randint(1, size*2) <= lowvalue:
+        if random.randint(1, multiplied) <= lowvalue:
             value ^= (1 << i)
     return value
 

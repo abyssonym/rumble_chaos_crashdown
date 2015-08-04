@@ -513,8 +513,7 @@ class JobObject(TableObject):
         return True
 
     def mutate_innate(self):
-        if random.choice([True, False]):
-            self.equips = mutate_bits(self.equips, 32)
+        self.equips = mutate_bits(self.equips, 32, odds_multiplier=4.0)
 
         if random.choice([True, False]):
             self.nullify_elem = mutate_bits(self.nullify_elem)
@@ -527,10 +526,10 @@ class JobObject(TableObject):
         if self.index in [0x4A]:
             return True
 
-        if random.choice([True, False]):
-            self.mutate_statuses()
-        if self.is_lucavi and random.choice([True, False]):
-            self.mutate_statuses()
+        self.mutate_statuses()
+        if self.is_lucavi:
+            if random.choice([True, False]):
+                self.mutate_statuses()
             if randint(1, 30) != 30:
                 self.unset_negative_statuses()
 
@@ -601,10 +600,11 @@ class JobObject(TableObject):
         return True
 
     def mutate_statuses(self):
-        immune = mutate_bits(self.immune_status, 40)
+        immune = mutate_bits(self.immune_status, 40, odds_multiplier=4.0)
+        changed = immune ^ self.immune_status
         for i in range(40):
             mask = (1 << i)
-            if mask & immune:
+            if mask & changed:
                 if mask & BENEFICIAL_STATUSES or randint(1, 50) == 50:
                     self.immune_status ^= mask
                 else:
@@ -615,11 +615,11 @@ class JobObject(TableObject):
         self.immune_status &= not_start
 
         vulnerable = ((2**40)-1) ^ self.immune_status
-        innate = mutate_bits(self.innate_status, 40)
+        innate = mutate_bits(self.innate_status, 40, odds_multiplier=4.0)
         innate &= vulnerable
         innate &= VALID_INNATE_STATUSES
         not_innate2 = ((2**40)-1) ^ innate
-        start = mutate_bits(self.start_status, 40)
+        start = mutate_bits(self.start_status, 40, odds_multiplier=4.0)
         start &= vulnerable
         start &= (not_innate & not_innate2)
         start &= VALID_START_STATUSES
