@@ -2217,6 +2217,24 @@ def mutate_units_special(job_names):
                 probval = max(probval, 8)
 
 
+def randomize_ending():
+    used_graphics = sorted(set([u.graphic for u in UnitObject
+                                if u.named and 1 <= u.graphic <= 0x77]))
+    chosen = random.sample(used_graphics, 7)
+    priest, delita, princess, others = (chosen[0], chosen[1],
+                                        chosen[2], chosen[3:])
+    while len(others) < 7:
+        others.append(random.choice(others))
+    random.shuffle(others)
+    otherunits = [u for u in mapunits[0x134] if 0x1341 <= u.index <= 0x1347]
+    for u, g in zip(otherunits, others):
+        u.graphic = g
+
+    for u, g in zip([0x1348, 0x1330, 0x1331], [priest, delita, princess]):
+        u = UnitObject.get(u)
+        u.graphic = g
+
+
 def mutate_treasure():
     print "Mutating treasure."
     units = get_units()
@@ -2492,15 +2510,16 @@ def randomize():
 
     secret_codes = {}
     secret_codes['fiesta'] = "JOB FIESTA MODE"
+    secret_codes['easymodo'] = "EASY MODE"
     activated_codes = set([])
+    for key in secret_codes.keys():
+        if key in flags:
+            flags = flags.replace(key, '')
+            print "SECRET CODE: %s ACTIVATED" % secret_codes[key]
+            activated_codes.add(key)
+
     if not flags:
         flags = lowercase
-    else:
-        for key in secret_codes.keys():
-            if key in flags:
-                flags = flags.replace(key, '')
-                print "SECRET CODE: %s ACTIVATED" % secret_codes[key]
-                activated_codes.add(key)
 
     print "COPYING ROM IMAGE"
     copyfile(sourcefile, newsource)
@@ -2556,6 +2575,7 @@ def randomize():
     if 'z' in flags:
         random.seed(seed)
         mutate_units_special(get_job_names(TEMPFILE))
+        randomize_ending()
 
     if 'j' in flags:
         random.seed(seed)
@@ -2591,6 +2611,11 @@ def randomize():
 
     if "fiesta" in activated_codes:
         setup_fiesta(TEMPFILE)
+
+    if "easymodo" in activated_codes:
+        for u in UnitObject:
+            if u.get_bit("enemy_team"):
+                u.level = 1
 
     DOUBLE_SUPER = set(SUPER_LEVEL_BOOSTED) & set(SUPER_SPECIAL)
     #for unit in DOUBLE_SUPER:
