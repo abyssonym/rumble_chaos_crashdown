@@ -49,6 +49,7 @@ BANNED_SKILLSET_SHUFFLE = [0, 1, 2, 3, 6, 8, 0x11, 0x12, 0x13, 0x14, 0x15,
 MATH_SKILLSETS = [0xA, 0xB, 0xC, 0x10]
 BANNED_RSMS = [0x1BB, 0x1E1, 0x1E4, 0x1E5, 0x1F1]
 BANNED_ANYTHING = [0x18]
+BANNED_ITEMS = [0x49]
 LUCAVI_INNATES = (range(0x1A6, 0x1A9)
                   + range(0x1AA, 0x1B4) + [0x1B5, 0x1B6, 0x1BA, 0x1BD, 0x1BE]
                   + range(0x1C0, 0x1C6)
@@ -1051,6 +1052,10 @@ class UnitObject(TableObject):
                         bf = boostd["equipment"]
                     value = get_similar_item(
                         value, same_equip=True, boost_factor=bf).index
+                    if (value in BANNED_ITEMS
+                            and not self.get_bit("enemy_team")):
+                        # just an extra safeguard against Stone Gun
+                        continue
                     setattr(self, attr, value)
                 elif randint(1, 3) == 3:
                     setattr(self, attr, 0xFE)
