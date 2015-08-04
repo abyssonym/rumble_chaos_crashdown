@@ -2429,7 +2429,8 @@ def randomize():
     filesize = stats.st_size
     if filesize not in ISO_SIZES + RAW_SIZES:
         resp = raw_input("WARNING! The file you provided is not a known "
-                         "file size. Continue? (y/n) ")
+                         "file size.\nThe correct file size is approximately "
+                         "517 MB.\nContinue? (y/n) ")
         if resp and resp[0].lower() == 'y':
             filesize = min(ISO_SIZES + RAW_SIZES,
                            key=lambda s: abs(s-filesize))
