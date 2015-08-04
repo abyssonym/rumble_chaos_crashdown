@@ -1944,11 +1944,6 @@ def mutate_skillsets():
             if randint(1, 8) == 8:
                 ss.actions.remove(action)
 
-    math_skills = SkillsetObject.math_menuable_skills
-    for aa in AbilityAttributesObject:
-        if aa.get_bit("math_skill") and aa.index not in math_skills:
-            aa.set_bit("math_skill", False)
-
 
 def mutate_abilities_attributes():
     print "Mutating ability attributes."
