@@ -329,9 +329,12 @@ class ItemObject(TableObject):
                                                 maximum=16)
 
         if self.get_bit("rare") and randint(1, 4) != 4:
-            if self.enemy_level <= 5:
-                self.enemy_level = 50
-            self.set_bit("rare", False)
+            if self.index in BANNED_ITEMS and randint(1, 3) != 3:
+                pass
+            else:
+                if self.enemy_level <= 5:
+                    self.enemy_level = 50
+                self.set_bit("rare", False)
 
         if self.enemy_level >= 1:
             self.enemy_level = int(round(
