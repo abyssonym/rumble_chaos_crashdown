@@ -41,8 +41,8 @@ Y_FORMULAS = [0x8, 0x9, 0xC, 0xD, 0xE, 0xF, 0x10, 0x1A, 0x1B, 0x1E, 0x1F, 0x20,
               0x55, 0x56, 0x5B, 0x5C, 0x5E, 0x5F, 0x60, 0x61, 0x62
               ]
 
-VALID_INNATE_STATUSES = 0xCAFCE92A10
-VALID_START_STATUSES = VALID_INNATE_STATUSES | 0x3402300000
+VALID_INNATE_STATUSES = 0xCAFCE12A10
+VALID_START_STATUSES = VALID_INNATE_STATUSES | 0x1402100000
 BENEFICIAL_STATUSES = 0xC278600000
 BANNED_SKILLSET_SHUFFLE = [0, 1, 2, 3, 6, 8, 0x11, 0x12, 0x13, 0x14, 0x15,
                            0x18, 0x34, 0x38, 0x39, 0x3B, 0x3E, 0x9C, 0xA1]
@@ -1955,7 +1955,7 @@ def mutate_abilities_attributes():
         skillset = SkillsetObject.get(index)
         for action in skillset.actions:
             aa = AbilityAttributesObject.get(action)
-            if not aa.get_bit("math_skill") and randint(1, 7) == 7:
+            if not aa.get_bit("math_skill") and randint(1, 5) == 5:
                 aa.set_bit("math_skill", True)
 
 
