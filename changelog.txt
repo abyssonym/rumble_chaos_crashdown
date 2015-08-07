@@ -1,0 +1,42 @@
+Changelog - FFT RUMBLE CHAOS CRASHDOWN Randomizer
+
+Version 15: MUSTADIO
+- Abilities in Math Skill compatible skillsets might become usable through Math Skill (somewhat rare).
+- An ability's range/effect/vertical can now potentially become zero.
+- Innate status and equippable item randomization is both more likely and less extreme.
+- Confusion, Charm, and Berserk removed as a possible initial status (weird behavior).
+- Deployed units don't have their stuff randomized (possible source of glitches?)
+- Move-find items have been incentivized a bit more
+- Additional fun
+
+Version 14: DISCOVERY RACE
+- Job requirements are now shown in tree form
+- Monsters in mandatory fights are less aggressively randomized, with the exception of Boco.
+- Low level enemy ninjas (probably) can't throw shurikens or balls at Gariland anymore.
+- Ability randomization is both more likely and less extreme
+- Starting jobs have slightly lower requirements, to increase variety on both sides
+- Previously removed secondary skillsets, such as All Swordskill, were added back.
+- Fixed a bug where a skillset could exceed the 16 skills limit.
+- Information about version and difficulty setting is written to the rom
+
+Version 13: SERPENTARIUS
+- Fixed a bug in the ranking algorithm that caused high level monsters to frequently appear on Mandalia Plains.
+- Units with fixed equipment or fixed RSMs might now have those things randomized.
+- Teleport 2 appears less frequently as a monster's innate ability.
+- Innate job attribute randomization no longer scales with job rank; low ranking jobs are just as likely to receive a powerful innate as a high ranking job.
+- Secondary ability randomization more often results in useful abilities.
+- Boco is more likely to become an interesting monster.
+- Various minor changes related to balance.
+
+Version 12: ZODIAC BLITZ
+- In honor of version 12, the Zodiac Demon fights have been BEEFED UP.
+- Fixed the bug where items would appear in non-Item skillsets.
+- Linear (single-branch) job trees have been removed to increase variety in enemy units.
+- Difficulty can be adjusted on a sliding scale. The "normal" difficulty value is indicated.
+- More rewarding poaches and move-find items.
+- "Rare" poaches and move-find items are now randomized on a uniform distribution, meaning very powerful items can be obtained very early.
+- Skillset shuffling is handled in a more interesting way, instead of locking many skills into guest characters.
+- Jobs are ranked according to overall stats, instead of by units using those jobs.
+    (With other minor changes, more interesting encounters should result.)
+- Ability learn rates are randomized more arbitrarily, to create more variation in enemy's skills.
+- Slightly less rewarding war trophies.
