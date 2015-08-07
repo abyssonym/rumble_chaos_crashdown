@@ -1092,7 +1092,7 @@ class UnitObject(TableObject):
 
     def mutate_level(self):
         if (self.index <= 0xFFF and self.get_bit("randomly_present")
-                and randint(1, 10) == 10):
+                and randint(1, 15) == 15):
             if not self.level_normalized:
                 self.level += randint(0, 10) + randint(0, 10)
                 self.level = min(self.level, 99)
