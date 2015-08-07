@@ -1,5 +1,5 @@
 FFT Rumble Chaos Crashdown Randomizer
-Version:    14
+Version:    15
 Date:       July 31, 2015
 URL:        https://github.com/abyssonym/rumble_chaos_crashdown
 Contact:    https://twitter.com/abyssonym
@@ -10,11 +10,12 @@ Running the randomizer:
     Windows users may use the executable file, "fft_rcc.exe". Other users, please run "randomizer.py" using Python version 2.7.
 
 Source ISO file:
-    The randomizer will ask for a filename. Place your Final Fantasy Tactics ISO in the same directory as "fft_rcc.exe" and input the name of the file. Please note that the randomizer needs 1 GB of free space to create the randomized ISO. The ISOs used for testing have the following hashes:
+    The randomizer will ask for a filename. Place your Final Fantasy Tactics ISO in the same directory as "fft_rcc.exe" and input the name of the file. You must include the file extension (ex: fft.img). Please note that the randomizer needs 1 GB of free space to create the randomized ISO. The ISOs used for testing have the following hashes:
     MD5 - aefdf27f1cd541ad46b5df794f635f50
           b156ba386436d20fd5ed8d37bab6b624
     CRC32 - 8ab1b7b1
             377f6510
+    If your file is about 517 MB then it's probably correct.
 
 Flags:
     Input the following flags to customize your RUMBLE CHAOS CRASHDOWN experience.
