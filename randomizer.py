@@ -552,7 +552,7 @@ class JobObject(TableObject):
             if randint(1, 30) != 30:
                 self.unset_negative_statuses()
 
-        if not self.is_lucavi and random.choice([True, False]):
+        if not self.is_lucavi:
             innate_cands = [a for a in get_abilities()
                             if a.ability_type in [7, 8, 9]]
             innate_cands = sorted(innate_cands, key=lambda a: a.jp_cost)
@@ -560,8 +560,8 @@ class JobObject(TableObject):
             innates = []
             for attr in innate_attrs:
                 value = getattr(self, attr)
-                chance = randint(1, 10)
-                if chance == 10 or (self.is_monster_job and chance > 5):
+                chance = randint(1, 20)
+                if chance == 20 or (self.is_monster_job and chance > 10):
                     index = None
                     if value:
                         old_inn = AbilityObject.get(value)
