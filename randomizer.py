@@ -2455,7 +2455,8 @@ def randomize():
     srchash = get_md5_hash(sourcefile)
     stats = os.stat(sourcefile)
     filesize = stats.st_size
-    if filesize not in ISO_SIZES + RAW_SIZES:
+    if (srchash not in MD5HASHES + RAWMD5HASHES and
+            filesize not in ISO_SIZES + RAW_SIZES):
         resp = raw_input("WARNING! The file you provided is not a known "
                          "file size.\nThe correct file size is approximately "
                          "517 MB.\nContinue? (y/n) ")
