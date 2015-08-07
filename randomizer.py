@@ -226,22 +226,31 @@ class MoveFindObject(TableObject):
         return self.coordinates & 0xF
 
     def mutate(self):
-        if random.choice([True, False]):
+        special = random.choice([True, False])
+        if special:
             self.coordinates = randint(0, 0xFF)
 
         if self.common != 0:
-            self.common = get_similar_item(
-                self.common, boost_factor=boostd["common_item"]).index
+            if special:
+                self.common = random.choice(ItemObject.every).index
+            else:
+                self.common = get_similar_item(
+                    self.common, boost_factor=boostd["common_item"]).index
+
         if self.rare != 0:
-            common = ItemObject.get(self.common)
-            candidates = [i for i in ItemObject.every if i.rank > common.rank]
-            self.rare = random.choice(candidates).index
+            if special and random.choice([True, False]):
+                self.rare = self.common
+            else:
+                common = ItemObject.get(self.common)
+                candidates = [i for i in ItemObject.every
+                              if i.rank >= common.rank]
+                self.rare = random.choice(candidates).index
 
         if self.common or self.rare:
             trapvalue = random.choice([True, False])
             self.set_bit("disable_trap", not trapvalue)
             if trapvalue:
-                self.set_bit("always_trap", randint(1, 3) == 3)
+                self.set_bit("always_trap", randint(1, 5) == 5)
                 traptypes = ["sleeping_gas", "steel_needle",
                              "deathtrap", "degenerator"]
                 for traptype in traptypes:
@@ -250,12 +259,18 @@ class MoveFindObject(TableObject):
 
 
 class PoachObject(TableObject):
+    donerare = set([])
+
     def mutate(self):
         self.common = get_similar_item(
             self.common, boost_factor=boostd["common_item"]).index
         common = ItemObject.get(self.common)
         candidates = [i for i in ItemObject.every if i.rank > common.rank]
+        temp = [i for i in candidates if i.index not in self.donerare]
+        if temp:
+            candidates = temp
         self.rare = random.choice(candidates).index
+        self.donerare.add(self.rare)
 
 
 class AbilityAttributesObject(TableObject):
