@@ -369,6 +369,10 @@ class SkillsetObject(TableObject):
         return sorted(math_skills)
 
     @property
+    def is_generic(self):
+        return 5 <= self.index <= 0x18
+
+    @property
     def num_free_actions(self):
         return len([a for a in self.actions if get_ability(a).jp_cost == 0])
 
@@ -1830,18 +1834,24 @@ def mutate_job_requirements():
 def mutate_job_stats():
     print "Mutating job stats."
     jobs = get_jobs_kind("human")
-    random.shuffle(jobs)
-    jobs = ([j for j in jobs if not j.is_generic]
-            + [j for j in jobs if j.is_generic])
     for j in jobs:
         j.mutate_stats()
-        skillset = SkillsetObject.get(j.skillset)
+
+    skillsets = SkillsetObject.every
+    random.shuffle(skillsets)
+    skillsets = ([s for s in skillsets if not s.is_generic]
+                 + [s for s in skillsets if s.is_generic])
+    for skillset in skillsets:
         abilities = skillset.actions + skillset.rsms
         if not abilities:
             continue
         abilities = [AbilityObject.get(a) for a in abilities]
         num_abilities = len(abilities)
-        factors = [i / float(num_abilities-1) for i in xrange(num_abilities)]
+        if num_abilities == 1:
+            factors = [None]
+        else:
+            factors = [i / float(num_abilities-1)
+                       for i in xrange(num_abilities)]
         jp_costs = [a.jp_cost for a in abilities]
         average_jp_cost = sum(jp_costs) / len(jp_costs)
         for (factor, a) in zip(factors, abilities):
@@ -1852,11 +1862,18 @@ def mutate_job_stats():
                 else:
                     a.jp_cost = int(round(a.jp_cost, -1))
 
-                if 1 <= a.learn_chance <= 99 or randint(1, 20) == 20:
+                if num_abilities == 1:
+                    a.learn_chance = 100
+                elif 1 <= a.learn_chance <= 99 or randint(1, 20) == 20:
                     jp_factor = a.jp_cost / float(average_jp_cost)
+                    if average_jp_cost < 500:
+                        k = average_jp_cost / 500.0
+                    else:
+                        k = 1
                     learn_rate = ((factor * 110) +
                                   ((1-factor) * (25 / jp_factor)))
                     learn_rate = (learn_rate**2) / float(90)
+                    learn_rate = (k*learn_rate) + ((1-k)*100)
                     minimum = randint(10, 40)
                     learn_rate = min(90, max(learn_rate, minimum))
                     learn_rate = mutate_normal(learn_rate, maximum=100)
