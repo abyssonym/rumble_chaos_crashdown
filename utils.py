@@ -140,6 +140,14 @@ def line_wrap(things, width=16):
     return newthings
 
 
+def hexstring(value):
+    if type(value) is str:
+        value = "".join(["{0:0>2}".format("%x" % ord(c)) for c in value])
+    elif type(value) is int:
+        value = "{0:0>2}".format("%x" % value)
+    return value
+
+
 class classproperty(property):
     def __get__(self, inst, cls):
         return self.fget(cls)

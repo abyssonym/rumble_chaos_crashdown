@@ -664,6 +664,11 @@ class UnitObject(TableObject):
         return self.job >= 0x5E and self.job != 0x97
 
     @property
+    def monster_portrait(self):
+        job = JobObject.get(self.job)
+        return job.monster_portrait
+
+    @property
     def is_lucavi(self):
         return self.job in LUCAVI_JOBS
 
@@ -2078,13 +2083,22 @@ def mutate_units_special(job_names):
         if map_id in [0x183, 0x184, 0x185]:
             continue
         if lucavi_special or randint(1, probval) == 1:
-            candidates = [u for u in units if not u.named
-                          and u.get_bit("enemy_team")
-                          and 0x80 <= u.graphic <= 0x82]
+            candidates = [u for u in units if 0x80 <= u.graphic <= 0x82]
             noncandidates = [u for u in units if u not in candidates]
             noncandjobs = [u.job for u in noncandidates
                            if 0x80 <= u.graphic <= 0x82]
             candidates = [c for c in candidates if c.job not in noncandjobs]
+
+            for c in list(candidates):
+                if c.named or not c.get_bit("enemy_team"):
+                    if 0x5E <= c.job <= 0x8D or c.graphic == 0x82:
+                        candidates = [d for d in candidates if
+                                      d.monster_portrait != c.monster_portrait]
+                    elif c.graphic in [0x80, 0x81]:
+                        candidates = [d for d in candidates
+                                      if d.job != c.job]
+                    assert c not in candidates
+
             if not candidates:
                 continue
             jobs = [c.job for c in candidates]
@@ -2100,7 +2114,7 @@ def mutate_units_special(job_names):
             if replace_job >= 0x100:
                 replace_job &= 0xFF
                 replace_job = [c.job for c in candidates if
-                               get_job(c.job).monster_portrait == replace_job]
+                               c.monster_portrait == replace_job]
                 replace_job = sorted(replace_job)[0]
 
             cand_jobs = [j for j in ranked_jobs
@@ -2164,11 +2178,17 @@ def mutate_units_special(job_names):
                 mg = get_job(replace_job).monster_portrait
                 assert mg > 0
                 change_units = [u for u in units
-                                if get_job(u.job).monster_portrait == mg]
+                                if u.monster_portrait == mg]
 
             change_units = sorted(change_units, key=lambda u: u.index)
             old_job = change_units[0].job
             for unit in change_units:
+                try:
+                    assert not any([unit.named, unit.has_special_graphic,
+                                    not unit.get_bit("enemy_team")])
+                except:
+                    raise Exception("Invalid unit replacement.")
+
                 unit.job = chosen_unit.job
                 unit.graphic = chosen_unit.graphic
                 for bitname in ["monster", "female", "male", "hidden_stats"]:
