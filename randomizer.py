@@ -480,6 +480,10 @@ class JobObject(TableObject):
         return not bool(self.immune_status & 0x4000)
 
     @property
+    def is_generic(self):
+        return 0x4A <= self.index <= 0x5D
+
+    @property
     def is_monster_job(self):
         return self.index >= 0x5E and self.index != 0x97
 
@@ -1826,6 +1830,9 @@ def mutate_job_requirements():
 def mutate_job_stats():
     print "Mutating job stats."
     jobs = get_jobs_kind("human")
+    random.shuffle(jobs)
+    jobs = ([j for j in jobs if not j.is_generic]
+            + [j for j in jobs if j.is_generic])
     for j in jobs:
         j.mutate_stats()
         skillset = SkillsetObject.get(j.skillset)
@@ -1834,19 +1841,29 @@ def mutate_job_stats():
             continue
         abilities = [AbilityObject.get(a) for a in abilities]
         num_abilities = len(abilities)
-        learn_base = 100 / num_abilities
-        learn_factor = (100 - learn_base) / 2
-        for a in abilities:
+        factors = [i / float(num_abilities-1) for i in xrange(num_abilities)]
+        jp_costs = [a.jp_cost for a in abilities]
+        average_jp_cost = sum(jp_costs) / len(jp_costs)
+        for (factor, a) in zip(factors, abilities):
             if a.jp_cost > 0:
-                a.jp_cost = mutate_normal(a.jp_cost, maximum=9999)
+                a.jp_cost = mutate_normal(a.jp_cost, maximum=3000)
                 if a.jp_cost > 200:
                     a.jp_cost = int(round(a.jp_cost*2, -2) / 2)
                 else:
                     a.jp_cost = int(round(a.jp_cost, -1))
-            if 1 <= a.learn_chance <= 99 or randint(1, 20) == 20:
-                a.learn_chance = (learn_base + randint(0, learn_factor)
-                                  + randint(0, learn_factor))
-                assert 0 <= a.learn_chance <= 100
+
+                if 1 <= a.learn_chance <= 99 or randint(1, 20) == 20:
+                    jp_factor = a.jp_cost / float(average_jp_cost)
+                    learn_rate = ((factor * 110) +
+                                  ((1-factor) * (25 / jp_factor)))
+                    learn_rate = (learn_rate**2) / float(90)
+                    minimum = randint(10, 40)
+                    learn_rate = min(90, max(learn_rate, minimum))
+                    learn_rate = mutate_normal(learn_rate, maximum=100)
+                    a.learn_chance = learn_rate
+            else:
+                a.learn_chance = 100
+            assert 0 <= a.learn_chance <= 100
 
 
 def mutate_job_innates():
@@ -2611,7 +2628,17 @@ def randomize():
         mutate_units_special(get_job_names(TEMPFILE))
         randomize_ending()
 
+    if 's' in flags:
+        random.seed(seed)
+        mutate_skillsets()
+
+    if 'a' in flags:
+        # do after randomizing skillsets
+        random.seed(seed)
+        mutate_abilities_attributes()
+
     if 'j' in flags:
+        # do after randomizing skillsets
         random.seed(seed)
         mutate_job_stats()
 
@@ -2622,15 +2649,6 @@ def randomize():
     if 'p' in flags:
         random.seed(seed)
         mutate_shops()
-
-    if 's' in flags:
-        random.seed(seed)
-        mutate_skillsets()
-
-    if 'a' in flags:
-        # do after randomizing skillsets
-        random.seed(seed)
-        mutate_abilities_attributes()
 
     if set(flags) & set("rujimtpsaz"):
         random.seed(seed)
