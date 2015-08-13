@@ -68,8 +68,6 @@ BOOST_AMOUNT = 2.0
 
 def mutate_normal(value, minimum=0, maximum=0xFF,
                   reverse=False, smart=True, chain=True):
-    if maximum-minimum < 5:
-        raise Exception("Are you sure you want to do this?")
     value = max(minimum, min(value, maximum))
     rev = reverse
     if smart:

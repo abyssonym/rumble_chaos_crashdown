@@ -2057,6 +2057,7 @@ def mutate_units_special(job_names):
                     and job_names[j.index]]
     special_jobs = [j.index for j in special_jobs]
     special_jobs = [j for j in ranked_jobs if j in special_jobs]
+    backup_special_jobs = list(special_jobs)
     for map_id in range(1, 0xFE) + range(0x180, 0x1D5):
         if map_id <= 0xFF:
             boost_factor = boostd["random_special_unit"]
@@ -2076,6 +2077,7 @@ def mutate_units_special(job_names):
             probval = 8
         elif map_id == 0x180:
             probval = 15
+            special_jobs = list(backup_special_jobs)
         else:
             probval -= 1
             probval = max(probval, 2)
@@ -2234,13 +2236,14 @@ def mutate_units_special(job_names):
 
             #print "%x %x %s" % (map_id, job.index, len(change_units))
 
+            similar_graphic_jobs = [u.job for u in UnitObject.every
+                                    if u.graphic == chosen_unit.graphic]
+            special_jobs = [j for j in special_jobs
+                            if j not in similar_graphic_jobs]
+            if not special_jobs:
+                special_jobs = list(backup_special_jobs)
+
             if map_id >= 0x180:
-                similar_graphic_jobs = [u.job for u in UnitObject.every
-                                        if u.graphic == chosen_unit.graphic]
-                special_jobs = [j for j in special_jobs
-                                if j not in similar_graphic_jobs]
-                if not special_jobs:
-                    break
                 if not lucavi_special:
                     probval = max(probval, 15)
             else:
