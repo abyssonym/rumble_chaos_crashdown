@@ -2720,5 +2720,5 @@ if __name__ == "__main__":
     try:
         randomize()
     except Exception, e:
-        print "ERROR: %s" % e
+        print "ERROR: %s %s" % (e.__class__.__name__, e)
         raw_input("Press enter to quit. ")
