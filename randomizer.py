@@ -1927,22 +1927,34 @@ def mutate_skillsets():
         if set(ss.actions) - done_actions:
             doing_skillsets.append(ss)
             done_actions |= set(ss.actions)
+
     random.shuffle(doing_skillsets)
+    considered_actions = set([])
     pulled_actions = {}
     for ss in doing_skillsets:
-        num_to_pull = len(ss.actions) / 2
+        actions = [a for a in ss.actions if a not in considered_actions]
+        if len(actions) <= 1 and not 5 <= ss.index <= 0x18:
+            continue
+        num_to_pull = len(actions) / 2
         num_to_pull = randint(0, num_to_pull) + randint(0, num_to_pull)
-        if num_to_pull > len(ss.actions) / 2:
-            num_to_pull = len(ss.actions) - num_to_pull
-        pulled = random.sample(ss.actions, num_to_pull)
+        if num_to_pull > len(actions) / 2:
+            num_to_pull = len(actions) - num_to_pull
+        pulled = random.sample(actions, num_to_pull)
         for p in list(pulled):
             a = get_ability(p)
             if a.jp_cost > 0:
                 ss.actions.remove(p)
             else:
                 pulled.remove(p)
-        if pulled or random.choice([True, False, False]):
+        for a in actions:
+            if a not in considered_actions:
+                if random.choice([True, False]):
+                    considered_actions.add(a)
+                elif a in pulled and random.choice([True, False]):
+                    considered_actions.add(a)
+        if pulled or 5 <= ss.index <= 0x18 or randint(1, 4) == 4:
             pulled_actions[ss] = pulled
+
     exchanges = [d for d in doing_skillsets if d in pulled_actions]
     exchanges2 = list(exchanges)
     random.shuffle(exchanges2)
