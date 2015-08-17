@@ -2032,6 +2032,41 @@ def mutate_abilities_attributes():
     for aa in abilities_attributes:
         aa.mutate()
 
+    for skillset in SkillsetObject.every:
+        if skillset.index != 0x29:
+            for action in skillset.actions:
+                if not AbilityAttributesObject.has(action):
+                    continue
+                aa = AbilityAttributesObject.get(action)
+                if aa.get_bit("require_materia_blade"):
+                    aa.set_bit("require_materia_blade", False)
+                    aa.set_bit("require_sword", True)
+
+        if 5 <= skillset.index <= 0x17:
+            for action in skillset.actions:
+                if not AbilityAttributesObject.has(action):
+                    continue
+                aa = AbilityAttributesObject.get(action)
+                aa.set_bit("cant_mimic", False)
+
+    for ms in MonsterSkillsObject.every:
+        for attack in ms.attacks:
+            if not AbilityAttributesObject.has(attack):
+                continue
+            aa = AbilityAttributesObject.get(attack)
+            aa.set_bit("require_materia_blade", False)
+            aa.set_bit("require_sword", False)
+
+    for j in JobObject.every:
+        if j.is_lucavi:
+            ss = SkillsetObject.get(j.skillset)
+            for action in ss.actions:
+                if not AbilityAttributesObject.has(action):
+                    continue
+                aa = AbilityAttributesObject.get(action)
+                aa.set_bit("require_materia_blade", False)
+                aa.set_bit("require_sword", False)
+
     for index in MATH_SKILLSETS:
         skillset = SkillsetObject.get(index)
         for action in skillset.actions:
@@ -2749,8 +2784,6 @@ def randomize():
                   "\nPress enter to close this program. " % sourcefile)
 
 if __name__ == "__main__":
-    randomize()
-    exit()
     try:
         randomize()
     except Exception, e:
