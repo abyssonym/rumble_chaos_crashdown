@@ -50,7 +50,7 @@ BENEFICIAL_STATUSES = 0xC278600000
 BANNED_SKILLSET_SHUFFLE = [0, 1, 2, 3, 6, 8, 0x11, 0x12, 0x13, 0x14, 0x15,
                            0x18, 0x34, 0x38, 0x39, 0x3B, 0x3E, 0x9C, 0xA1]
 MATH_SKILLSETS = [0xA, 0xB, 0xC, 0x10]
-BANNED_RSMS = [0x1BB, 0x1E1, 0x1E4, 0x1E5, 0x1F1]
+BANNED_RSMS = [0x1BB, 0x1D7, 0x1E1, 0x1E4, 0x1E5, 0x1F1]
 BANNED_ANYTHING = [0x18]
 BANNED_ITEMS = [0x49]
 LUCAVI_INNATES = (range(0x1A6, 0x1A9)
@@ -1994,7 +1994,7 @@ def mutate_skillsets():
             chosens = chosens[:num_to_sample]
             skillset.rsms = sorted(set(chosens))
 
-    done = []
+    done = [0x1d7]
     for skillset in skillsets:
         # RSMs for basic classes
         if not (5 <= skillset.index <= 0x18):
@@ -2002,6 +2002,8 @@ def mutate_skillsets():
         if skillset.index in BANNED_ANYTHING:
             continue
         candidates = [a for a in abilities if a not in done]
+        if skillset.index == 0xE and len(candidates) < 4:
+            candidates = list(abilities)
         num_to_sample = min(len(candidates), 6)
         candidates = random.sample(candidates, num_to_sample)
         candidates += [a for a in skillset.rsms if a not in done]
@@ -2010,8 +2012,14 @@ def mutate_skillsets():
         if num_to_sample <= 4 and random.choice([True, False]):
             num_to_sample += 1
         num_to_sample = min(num_to_sample, len(candidates), 6)
-        chosens = random.sample(candidates, num_to_sample)
-        skillset.rsms = sorted(chosens)
+        if skillset.index == 0xE:
+            num_to_sample = max(num_to_sample, 4)
+            chosens = random.sample(candidates, num_to_sample)
+            chosens[3] = 0x1d7  # secret hunt
+            skillset.rsms = chosens
+        else:
+            chosens = random.sample(candidates, num_to_sample)
+            skillset.rsms = sorted(chosens)
         done.extend(skillset.rsms)
 
     for skillset in get_skillsets():
