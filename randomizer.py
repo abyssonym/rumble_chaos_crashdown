@@ -10,7 +10,8 @@ from collections import Counter
 from utils import (mutate_index, mutate_normal, mutate_bits,
                    write_multi, classproperty,
                    utilrandom as random)
-from tablereader import TableObject, set_global_table_filename
+from tablereader import (TableObject, set_global_table_filename,
+                         set_table_specs)
 from uniso import remove_sector_metadata, inject_logical_sectors
 
 
@@ -18,9 +19,11 @@ def randint(a, b):
     return random.randint(min(a, b), max(a, b))
 
 VERSION = "15"
-MD5HASHES = ["aefdf27f1cd541ad46b5df794f635f50",
-             "b156ba386436d20fd5ed8d37bab6b624",
+MD5HASHES = ["b156ba386436d20fd5ed8d37bab6b624",
+             "aefdf27f1cd541ad46b5df794f635f50",
              ]
+JPMD5HASHES = ["3bd1deebc5c5f08d036dc8651021affb"]
+JAPANESE_MODE = False
 RAWMD5HASHES = ["55a8e2ad81ee308b573a2cdfb0c3c270",
                 "4851a6f32d6546eed65319c319ea8b55",
                 ]
@@ -151,6 +154,7 @@ def rewrite_header(filename, message):
         message += " "
     assert len(message) == 0x20
     f = open(filename, 'r+b')
+    # pointer OK for both NA and JP
     f.seek(0x8028)
     f.write(message)
     f.close()
@@ -1381,6 +1385,8 @@ def get_jobreqs(filename=None):
 
 
 def unlock_jobs(outfile):
+    if JAPANESE_MODE:
+        raise NotImplemented
     f = open(outfile, 'r+b')
     f.seek(0x5a4f4)
     f.write("".join([chr(0) for _ in xrange(4)]))
@@ -1695,6 +1701,11 @@ def get_jobs_kind(kind):
 
 def mutate_job_level(filename):
     global JOBLEVEL_JP
+    if JAPANESE_MODE:
+        jbjp_pointer = 0x5fcd8
+    else:
+        jbjp_pointer = 0x62984
+
     jp_per_level = []
     for (a, b) in zip([0] + JOBLEVEL_JP, JOBLEVEL_JP):
         difference = b - a
@@ -1702,13 +1713,17 @@ def mutate_job_level(filename):
 
     new_joblevel_jp = [0]
     for diff in jp_per_level:
-        diff = randint(diff, int(diff*boostd["jp"]))
-        diff = mutate_normal(diff, maximum=800)
+        if JAPANESE_MODE:
+            maximum = 800
+        else:
+            maximum = 800
+            diff = randint(diff, int(diff*boostd["jp"]))
+        diff = mutate_normal(diff, maximum=maximum)
         diff = int(round(diff*2, -2)) / 2
         new_joblevel_jp.append(new_joblevel_jp[-1] + diff)
     JOBLEVEL_JP = new_joblevel_jp[1:]
     f = open(filename, 'r+b')
-    f.seek(0x62984)
+    f.seek(jbjp_pointer)
     for j in JOBLEVEL_JP:
         write_multi(f, j, length=2)
     f.close()
@@ -2347,6 +2362,8 @@ def get_similar_item(base_item, same_type=False, same_equip=False,
 
 
 def setup_fiesta(filename):
+    if JAPANESE_MODE:
+        return
     f = open(filename, 'r+b')
     f.seek(0x62978)
     f.write("".join([chr(i) for i in [0x88, 0x33, 0x44, 0x43, 0x44,
@@ -2417,6 +2434,7 @@ def setup_fiesta(filename):
 
 
 def get_job_names(filename):
+    # NA POINTER
     pointer = 0x2eed41
     job_names = []
     f = open(filename, "r+b")
@@ -2488,6 +2506,7 @@ def get_jobtree_str():
 
 
 def randomize():
+    global JAPANESE_MODE, JOBLEVEL_JP
     print ('You are using the FFT RUMBLE CHAOS CRASHDOWN randomizer '
            'version "%s".' % VERSION)
     flags, seed = None, None
@@ -2501,6 +2520,9 @@ def randomize():
                     seed = int(argv[2])
                 except ValueError:
                     flags = argv[2]
+            for a in argv:
+                if a.lower() == "japanese":
+                    JAPANESE_MODE = True
 
     if len(argv) <= 2:
         print ("NOTICE: This randomizer requires 1 GB of free space "
@@ -2512,7 +2534,10 @@ def randomize():
     srchash = get_md5_hash(sourcefile)
     stats = os.stat(sourcefile)
     filesize = stats.st_size
-    if (srchash not in MD5HASHES + RAWMD5HASHES and
+    if srchash in JPMD5HASHES:
+        JAPANESE_MODE = True
+
+    if (srchash not in JPMD5HASHES + MD5HASHES + RAWMD5HASHES and
             filesize not in ISO_SIZES + RAW_SIZES):
         resp = raw_input("WARNING! The file you provided is not a known "
                          "file size.\nThe correct file size is approximately "
@@ -2522,7 +2547,7 @@ def randomize():
                            key=lambda s: abs(s-filesize))
         else:
             sys.exit(0)
-    elif srchash not in MD5HASHES + RAWMD5HASHES:
+    elif srchash not in JPMD5HASHES + MD5HASHES + RAWMD5HASHES:
         print "WARNING! The file you provided has the following md5 hash: "
         print srchash
         print "\nThis randomizer was tested on a file with this hash: "
@@ -2533,6 +2558,9 @@ def randomize():
             pass
         else:
             sys.exit(0)
+        resp = raw_input("\nTreat this rom as the Japanese version? (y/n)")
+        if resp and resp[0].lower() == 'y':
+            JAPANESE_MODE = True
 
     if len(argv) == 4:
         difficulty = float(argv[3])
@@ -2600,6 +2628,12 @@ def randomize():
         copyfile(sourcefile, TEMPFILE)
 
     set_global_table_filename(TEMPFILE)
+
+    if JAPANESE_MODE:
+        set_table_specs("tables_list_jp.txt")
+        JOBLEVEL_JP = [100, 200, 400, 700, 1100, 1600, 2200, 3000]
+    else:
+        JOBLEVEL_JP = [100, 200, 350, 550, 800, 1150, 1550, 2100]
 
     all_objects = [g for g in globals().values()
                    if isinstance(g, type) and issubclass(g, TableObject)
@@ -2717,6 +2751,8 @@ def randomize():
                   "\nPress enter to close this program. " % sourcefile)
 
 if __name__ == "__main__":
+    randomize()
+    exit()
     try:
         randomize()
     except Exception, e:

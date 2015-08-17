@@ -291,22 +291,25 @@ def get_table_objects(objtype, filename=None):
     return get_table_objects(objtype, filename=filename)
 
 
-tablesfile = path.join(tblpath, "tables_list.txt")
-for line in open(tablesfile):
-    line = line.strip()
-    if line and line[0] == "#":
-        continue
+def set_table_specs(filename="tables_list.txt"):
+    tablesfile = path.join(tblpath, filename)
+    for line in open(tablesfile):
+        line = line.strip()
+        if line and line[0] == "#":
+            continue
 
-    while "  " in line:
-        line = line.replace("  ", " ")
-    line = line.split()
-    if len(line) == 5:
-        objname, tablefilename, pointer, count, grouped = tuple(line)
-        grouped = True if grouped.lower() == "true" else False
-    else:
-        objname, tablefilename, pointer, count = tuple(line)
-        grouped = False
-    pointer = int(pointer, 0x10)
-    count = int(count)
-    TABLE_SPECS[objname] = TableSpecs(path.join(tblpath, tablefilename),
-                                      pointer, count, grouped)
+        while "  " in line:
+            line = line.replace("  ", " ")
+        line = line.split()
+        if len(line) == 5:
+            objname, tablefilename, pointer, count, grouped = tuple(line)
+            grouped = True if grouped.lower() == "true" else False
+        else:
+            objname, tablefilename, pointer, count = tuple(line)
+            grouped = False
+        pointer = int(pointer, 0x10)
+        count = int(count)
+        TABLE_SPECS[objname] = TableSpecs(path.join(tblpath, tablefilename),
+                                          pointer, count, grouped)
+
+set_table_specs()
