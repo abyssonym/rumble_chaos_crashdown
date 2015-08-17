@@ -2023,6 +2023,8 @@ def mutate_abilities_attributes():
     for index in MATH_SKILLSETS:
         skillset = SkillsetObject.get(index)
         for action in skillset.actions:
+            if not AbilityAttributesObject.has(action):
+                continue
             aa = AbilityAttributesObject.get(action)
             if not aa.get_bit("math_skill") and randint(1, 5) == 5:
                 aa.set_bit("math_skill", True)

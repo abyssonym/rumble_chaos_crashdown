@@ -125,6 +125,14 @@ class TableObject(object):
         else:
             raise Exception("Bad index.")
 
+    @classmethod
+    def has(cls, index):
+        try:
+            cls.get(index)
+            return True
+        except KeyError:
+            return False
+
     def get_bit(self, bitname):
         for key, value in sorted(self.bitnames.items()):
             if bitname in value:
