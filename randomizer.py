@@ -2096,16 +2096,19 @@ def mutate_units():
         u.mutate()
 
 
-def mutate_units_special(job_names):
+def mutate_units_special():
     print "Adding special surprises."
-    mundane_job_names = job_names[0x4A:0x5E]
     ranked_jobs = get_ranked("job")
     special_jobs = [j for j in get_jobs() if not 5 <= j.skillset <= 0x18
                     and not j.skillset == 0
                     and not 0x4A <= j.index <= 0x8F
-                    and not j.index >= 0x92
-                    and job_names[j.index] not in mundane_job_names
-                    and job_names[j.index]]
+                    and not j.index >= 0x92]
+    for j in list(special_jobs):
+        for u in UnitObject.every:
+            if u.job == j.index and 1 <= u.graphic <= 0x7F:
+                break
+        else:
+            special_jobs.remove(j)
     special_jobs = [j.index for j in special_jobs]
     special_jobs = [j for j in ranked_jobs if j in special_jobs]
     backup_special_jobs = list(special_jobs)
@@ -2435,25 +2438,6 @@ def setup_fiesta(filename):
             u.righthand = 0x49
 
 
-def get_job_names(filename):
-    # NA POINTER
-    pointer = 0x2eed41
-    job_names = []
-    f = open(filename, "r+b")
-    f.seek(pointer)
-    for i in xrange(0xA0):
-        s = ""
-        while True:
-            c = f.read(1)
-            if ord(c) == 0xFE:
-                job_names.append(s)
-                break
-            else:
-                s += c
-    f.close()
-    return job_names
-
-
 def get_jobtree_str():
     jobreqs = JobReqObject.every
     jobreqs = sorted(jobreqs, key=lambda j: j.total_levels)
@@ -2678,7 +2662,7 @@ def randomize():
 
     if 'z' in flags:
         random.seed(seed)
-        mutate_units_special(get_job_names(TEMPFILE))
+        mutate_units_special()
         randomize_ending()
 
     if 's' in flags:
