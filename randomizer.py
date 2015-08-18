@@ -2300,6 +2300,9 @@ def mutate_units_special():
 
             if not 0x5E <= replace_job:
                 change_units = [u for u in units if u.job == replace_job]
+                if any([u.graphic == chosen_unit.graphic
+                        and not u.get_bit("enemy_team") for u in units]):
+                    continue
             else:
                 mg = get_job(replace_job).monster_portrait
                 assert mg > 0
