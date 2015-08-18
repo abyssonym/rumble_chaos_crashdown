@@ -405,6 +405,17 @@ class SkillsetObject(TableObject):
         else:
             return False
 
+    @property
+    def not_just_swordskills(self):
+        for action in self.actions:
+            if not AbilityAttributesObject.has(action):
+                return True
+            aa = AbilityAttributesObject.get(action)
+            if not (aa.get_bit("require_sword")
+                    or aa.get_bit("require_materia_blade")):
+                return True
+        return False
+
     def get_actual_actions(self):
         actuals = []
         actionbits = (self.actionbits1 << 8) | self.actionbits2
@@ -818,17 +829,24 @@ class UnitObject(TableObject):
             unlocked_job = random.choice(jobs)
 
         jp_remaining -= required_jp
-        unlocked_level = len([j for j in JOBLEVEL_JP if j <= jp_remaining])
-        if random.choice([True, False]):
-            unlocked_level += 1
-        while randint(1, 7) == 7:
-            unlocked_level += 1
+        if self.is_lucavi:
+            unlocked_level = 8
+        else:
+            unlocked_level = len([j for j in JOBLEVEL_JP if j <= jp_remaining])
+            if random.choice([True, False]):
+                unlocked_level += 1
+            while randint(1, 7) == 7:
+                unlocked_level += 1
 
         unlocked_level = min(unlocked_level, 8)
         self.unlocked = unlocked_job.otherindex
         self.unlocked_level = unlocked_level
         if self.is_lucavi and randint(1, 15) != 15:
+            self.unlocked = 0
             candidates = get_ranked_secondaries()
+            candidates = [SkillsetObject.get(c) for c in candidates]
+            candidates = [ss.index for ss in candidates
+                          if ss.not_just_swordskills]
             index = None
             if self.secondary in candidates:
                 index = candidates.index(self.secondary)
