@@ -107,6 +107,7 @@ def set_difficulty_factors(value):
         boostd["trophy"] = max(1.5 - (0.5 * value), 0.25)
         boostd["default_stat"] = 1.2 ** value
         boostd["level_stat"] = 0.75 * value
+        boostd["lucavi_stat"] = 0.9 * value
         boostd["equipment"] = 1.2 ** value
         boostd["special_equipment"] = 1.5 ** value
         boostd["jp"] = 1.5 ** value
@@ -521,7 +522,11 @@ class JobObject(TableObject):
         units = sorted(units, key=lambda u: u.level)
         units = units[-2:]
         average_level = sum([u.level for u in units]) / float(len(units))
-        boost = (1.0 + (average_level / 100.0)) ** boostd["level_stat"]
+        if self.is_lucavi:
+            boost = boostd["lucavi_stat"]
+        else:
+            boost = boostd["level_stat"]
+        boost = (1.0 + (average_level / 100.0)) ** boost
         return boost
 
     def mutate_stats(self, boost_factor=None):
@@ -1134,9 +1139,19 @@ class UnitObject(TableObject):
                 self.level += randint(0, 10) + randint(0, 10)
                 self.level = min(self.level, 199)
             SUPER_LEVEL_BOOSTED.append(self)
-        if not self.level_normalized and 5 <= self.level <= 99:
-            self.level = mutate_index(self.level, 99,
-                                      (True, False), (-2, 3), (-1, 2))
+            return
+        if not self.level_normalized:
+            if self.is_lucavi:
+                level = mutate_normal(self.level, minimum=1, maximum=99)
+                level = int(round((level + self.level) / 2))
+                if level < self.level:
+                    self.level += (self.level - level)
+                else:
+                    self.level = level
+            if 5 <= self.level <= 99:
+                self.level = mutate_index(self.level, 99,
+                                          (True, False), (-2, 3), (-1, 2))
+            self.level = min(99, max(1, self.level))
 
     def mutate_stats(self):
         if self.job <= 3 or self.graphic <= 3:
@@ -1386,7 +1401,7 @@ def get_jobreqs(filename=None):
 
 def unlock_jobs(outfile):
     if JAPANESE_MODE:
-        raise NotImplemented
+        raise NotImplementedError
     f = open(outfile, 'r+b')
     f.seek(0x5a4f4)
     f.write("".join([chr(0) for _ in xrange(4)]))
@@ -2291,6 +2306,7 @@ def mutate_units_special():
                 change_units = [u for u in units
                                 if u.monster_portrait == mg]
 
+            change_units = [u for u in change_units if u.graphic > 0]
             change_units = sorted(change_units, key=lambda u: u.index)
             old_job = change_units[0].job
             for unit in change_units:
@@ -2495,7 +2511,7 @@ def setup_fiesta(filename):
 
 def disable_random_battles(filename):
     if JAPANESE_MODE:
-        raise NotImplemented
+        raise NotImplementedError
     f = open(filename, 'r+b')
     '''
     f.seek(0xa44bf0a)
@@ -2776,7 +2792,7 @@ def randomize():
 
         try:
             disable_random_battles(TEMPFILE)
-        except NotImplemented:
+        except NotImplementedError:
             pass
 
     if "fiesta" in activated_codes:
