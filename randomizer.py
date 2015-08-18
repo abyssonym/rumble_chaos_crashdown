@@ -2493,6 +2493,27 @@ def setup_fiesta(filename):
             u.righthand = 0x49
 
 
+def disable_random_battles(filename):
+    if JAPANESE_MODE:
+        raise NotImplemented
+    f = open(filename, 'r+b')
+    '''
+    f.seek(0xa44bf0a)
+    f.write(chr(0))
+    '''
+    # credit to Xifanie of ffhacktics for this "Smart Encounters" patch
+    # http://ffhacktics.com/smf/index.php?topic=953.msg189610#msg189610
+    f.seek(0xa44c988)
+    f.write("".join([chr(b) for b in [
+        0x0D, 0x80, 0x03, 0x3c, 0x80, 0x0b, 0x62, 0x8c,
+        0x00, 0x00, 0x00, 0x00, 0x7c, 0x0b, 0x63, 0x8c,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x2d, 0x00, 0x43, 0x14,
+        ]]))
+    f.close()
+
+
 def get_jobtree_str():
     jobreqs = JobReqObject.every
     jobreqs = sorted(jobreqs, key=lambda j: j.total_levels)
@@ -2752,6 +2773,11 @@ def randomize():
         for u in sorted(mapunits[0x183], key=lambda u: u.index):
             if not u.get_bit("enemy_team"):
                 u.set_bit("control", True)
+
+        try:
+            disable_random_battles(TEMPFILE)
+        except NotImplemented:
+            pass
 
     if "fiesta" in activated_codes:
         setup_fiesta(TEMPFILE)

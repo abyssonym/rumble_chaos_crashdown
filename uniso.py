@@ -75,8 +75,9 @@ def inject_logical_sectors(sourcefile, outfile):
 
 
 if __name__ == "__main__":
-    SOURCE = "hack.img"
+    from sys import argv
+    SOURCE = argv[1]
     TEMPFILE = "unheadered.img"
     remove_sector_metadata(SOURCE, TEMPFILE)
-    inject_logical_sectors(TEMPFILE, SOURCE)
-    remove(TEMPFILE)
+    #inject_logical_sectors(TEMPFILE, SOURCE)
+    #remove(TEMPFILE)
