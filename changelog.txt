@@ -1,5 +1,17 @@
 Changelog - FFT RUMBLE CHAOS CRASHDOWN Randomizer
 
+Version 16: BALMAFULA
+- The randomizer now supports the Japanese version of FFT.
+- Random battles have been removed from the NA version. Move to a green dot to fight a battle there.
+- Fixed a bug where Boco could become an enemy unit, and was impossible to save.
+- Only Thieves have access to secret hunt (not sure, but I believe this is necessary because the fur shop is hard-coded)
+- Cloud's Limit skills, if shuffled into a new skillset, no longer require the Materia Blade to use.
+- Monsters can use sword skills even without a sword.
+- Made REV randomization even more common
+- Adjusted ability learn rates so that learned abilities aren't all clustered near the top of the list.
+- Adjusted skill shuffling so that sword skills don't get swapped into other skillsets so often.
+- Various minor fixes and balance changes.
+
 Version 15: MUSTADIO
 - Abilities in Math Skill compatible skillsets might become usable through Math Skill (somewhat rare).
 - An ability's range/effect/vertical can now potentially become zero.
