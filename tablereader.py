@@ -1,5 +1,6 @@
 from utils import read_multi, write_multi, classproperty, mutate_normal
 from os import path
+import string
 
 
 try:
@@ -98,6 +99,10 @@ class TableObject(object):
     def rank(self):
         return self.index
 
+    @property
+    def catalogue_index(self):
+        return self.index
+
     @classproperty
     def ranked(cls):
         return sorted(cls.every, key=lambda c: (c.rank, c.index))
@@ -162,7 +167,7 @@ class TableObject(object):
             self.name = "%x" % self.index
         if isinstance(self.name, int):
             return "%x" % self.name
-        return "".join([c for c in self.name if ord(c) > 0])
+        return "".join([c for c in self.name if c in string.printable])
 
     @property
     def description(self):
@@ -204,6 +209,21 @@ class TableObject(object):
         s = ", ".join(["%s: %s" % (a, b) for (a, b) in s])
         s = "%x - %s" % (self.index, s)
         return s
+
+    @classproperty
+    def catalogue(self):
+        logs = []
+        for obj in sorted(self.every, key=lambda o: o.catalogue_index):
+            logs.append(obj.log.strip())
+
+        if any(["\n" in log for log in logs]):
+            return "\n\n".join(logs)
+        else:
+            return "\n".join(logs)
+
+    @property
+    def log(self):
+        return str(self)
 
     def __repr__(self):
         return self.description
