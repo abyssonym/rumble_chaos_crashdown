@@ -7,12 +7,12 @@ from time import time
 from string import lowercase
 from collections import Counter
 
-from utils import (mutate_index, mutate_normal, mutate_bits,
-                   write_multi, classproperty,
-                   utilrandom as random)
-from tablereader import (TableObject, set_global_table_filename,
-                         set_table_specs)
-from uniso import remove_sector_metadata, inject_logical_sectors
+from randomtools.utils import (
+    mutate_index, mutate_normal, mutate_bits, write_multi, classproperty,
+    utilrandom as random)
+from randomtools.tablereader import (
+    TableObject, set_global_table_filename, set_table_specs)
+from randomtools.uniso import remove_sector_metadata, inject_logical_sectors
 
 
 def randint(a, b):

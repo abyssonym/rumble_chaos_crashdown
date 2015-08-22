@@ -1,0 +1,3 @@
+[submodule "randomtools"]
+	path = randomtools
+	url = https://github.com/abyssonym/randomtools.git
