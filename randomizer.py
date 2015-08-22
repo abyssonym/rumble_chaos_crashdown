@@ -106,8 +106,8 @@ def set_difficulty_factors(value):
         boostd["common_item"] = max(2.0 - (0.5 * value), 0.5)
         boostd["trophy"] = max(1.5 - (0.5 * value), 0.25)
         boostd["default_stat"] = 1.2 ** value
-        boostd["level_stat"] = 0.75 * value
-        boostd["lucavi_stat"] = 0.9 * value
+        boostd["level_stat"] = 0.5 * value
+        boostd["lucavi_stat"] = 0.65 * value
         boostd["equipment"] = 1.2 ** value
         boostd["special_equipment"] = 1.5 ** value
         boostd["jp"] = 1.5 ** value
@@ -547,13 +547,17 @@ class JobObject(TableObject):
                      "spdmult", "pagrowth", "pamult", "magrowth", "mamult",
                      "move", "jump", "evade"]:
             value = getattr(self, attr)
-            newvalue = value
-            newvalue = randint(newvalue,
-                               int(round(newvalue * boost_factor)))
+            if "growth" in attr:
+                newvalue = value
+            else:
+                newvalue = value * boost_factor
             newvalue = max(1, min(newvalue, 0xFD))
             if 1 <= newvalue <= 0xFD:
                 newvalue = mutate_normal(newvalue, minimum=1, maximum=0xFD)
-                if self.is_lucavi and newvalue < value:
+                if self.is_lucavi and newvalue > value and "growth" in attr:
+                    newvalue = value - abs(value - newvalue)
+                elif (self.is_lucavi and newvalue < value
+                        and "growth" not in attr):
                     newvalue = value + abs(value - newvalue)
                 setattr(self, attr, newvalue)
 
