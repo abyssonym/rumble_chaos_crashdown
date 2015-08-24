@@ -1,9 +1,10 @@
 from shutil import copyfile
 import os
-from os import remove
+from os import remove, path
 import sys
 from sys import argv
 from time import time
+import string
 from string import lowercase
 from collections import Counter
 
@@ -13,6 +14,16 @@ from randomtools.utils import (
 from randomtools.tablereader import (
     TableObject, set_global_table_filename, set_table_specs)
 from randomtools.uniso import remove_sector_metadata, inject_logical_sectors
+
+
+try:
+    from sys import _MEIPASS
+    tblpath = path.join(_MEIPASS, "tables")
+except ImportError:
+    tblpath = "tables"
+
+
+NAMESFILE = path.join(tblpath, "generic_names.txt")
 
 
 def randint(a, b):
@@ -98,6 +109,23 @@ rng_report_counter = 0
 
 SUPER_LEVEL_BOOSTED = []
 SUPER_SPECIAL = []
+
+
+chartable = enumerate(string.digits + string.uppercase + string.lowercase)
+chartable = list(chartable) + [(0xFA, " "), (0xD9, '~'),
+                               (0xB6, '.'), (0xC1, "'")]
+chartable += [(v, k) for (k, v) in chartable]
+chartable = dict(chartable)
+
+
+def name_to_bytes(name):
+    name = "".join([chr(chartable[c]) for c in name])
+    return name
+
+
+def bytes_to_name(data):
+    name = "".join([chartable[i] for i in data])
+    return name
 
 
 def set_difficulty_factors(value):
@@ -2608,6 +2636,99 @@ def get_jobtree_str():
     return treestr
 
 
+def get_new_names(basenames):
+    candnamesdict = {}
+    for name in basenames:
+        if len(name) not in candnamesdict:
+            candnamesdict[len(name)] = []
+
+    def remove_char(line):
+        removables = [i for (i, c) in enumerate(line) if i > 0 and c.lower() in "aeiou"]
+        i = len(line) - 1
+        if i not in removables:
+            removables.append(i)
+        i = random.choice(removables)
+        line = line[:i] + line[i+1:]
+        return line
+
+    for line in open(NAMESFILE):
+        line = line.replace("_", " ")
+        line = line.strip()
+        if len(line) not in candnamesdict and " " in line:
+            line = line.replace(" ", "")
+        if len(line) not in candnamesdict:
+            while len(line) not in candnamesdict:
+                line = remove_char(line)
+                if len(line) == 0:
+                    break
+            if len(line)-1 in candnamesdict and random.choice([True, False]):
+                line = remove_char(line)
+        line = line.strip()
+        if len(line) in candnamesdict:
+            candnamesdict[len(line)].append(line)
+
+    transitions = {}
+    randomnames = list(basenames)
+    random.shuffle(randomnames)
+    for name in randomnames:
+        candidates = list(candnamesdict[len(name)])
+        if not candidates:
+            result = None
+        else:
+            candidates = candidates[:random.randint(1, len(candidates))]
+            ss = random.choice(candidates)
+            candnamesdict[len(name)].remove(ss)
+            result = []
+            ss = ss.split()
+            for s in ss:
+                if s == s.lower():
+                    s = s[0].upper() + s[1:]
+                result += [s]
+            result = " ".join(result)
+        transitions[name] = result
+    data = ""
+    for name in basenames:
+        if data:
+            data += chr(0xFE)
+        newname = transitions[name]
+        data += name_to_bytes(newname)
+    return data
+
+
+def get_all_names(filename, pointer=0x3E83C7):
+    f = open(filename, "r+b")
+    f.seek(pointer)
+    seenbytes = []
+    names = []
+    while True:
+        if len(names) == 3 * 256:
+            break
+        c = ord(f.read(1))
+        if c == 0xFE:
+            try:
+                name = bytes_to_name(seenbytes)
+            except KeyError:
+                import pdb; pdb.set_trace()
+            names.append(name)
+            seenbytes = []
+        else:
+            seenbytes.append(c)
+    f.close()
+    return names
+
+
+def replace_generic_names(filename):
+    if JAPANESE_MODE:
+        return
+    names = get_all_names(filename, 0x3e83c7)
+    newdata = get_new_names(names)
+    for pointer in [0x3e83c7, 0x4d660b, 0xded46b, 0xdeeccf, 0xe0c362]:
+        f = open(filename, "r+b")
+        f.seek(pointer)
+        f.write(newdata)
+        f.close()
+
+
 def randomize():
     global JAPANESE_MODE, JOBLEVEL_JP
     print ('You are using the FFT RUMBLE CHAOS CRASHDOWN randomizer '
@@ -2781,6 +2902,7 @@ def randomize():
         random.seed(seed)
         mutate_units_special()
         randomize_ending()
+        replace_generic_names(TEMPFILE)
 
     if 's' in flags:
         random.seed(seed)
