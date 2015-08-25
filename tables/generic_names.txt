@@ -74,7 +74,6 @@ cecilff2
 wellsjc
 pxtfd
 raeken_zayt
-Tide|SuperisSiam
 deln
 myself086
 sevenredreturns
@@ -205,7 +204,6 @@ mattrick
 mystykz
 buckminst
 spaceb0t
-Tide|SuperisNergal
 swed7
 pinkpajamas
 kyoslilmonster
@@ -286,7 +284,6 @@ spectacleg
 syntacticalardour
 elminster45
 skitzophrenik
-Tide|SuperisKnoll
 kylekanos
 dsharper
 snufflemuffins
@@ -315,7 +312,6 @@ hentaiusmaximus
 willgallant
 shonicth
 setz
-Tide|JimisSolidSnake
 rujasu55
 djtifaheart
 botwoon
@@ -492,7 +488,6 @@ windmanv3
 lunaraia
 glassesnhoodie
 tak_ada
-Tide|GrefterisUltros
 tolkien_1988
 yagamoth
 kaffemyers
@@ -706,7 +701,6 @@ ken1099
 iamsomeone3
 blitzdragon777
 renku_walker
-Tide|SageisMarvintheMartian
 lordalu
 rob0x
 shizan
@@ -828,7 +822,6 @@ awaytohit
 puri_puri
 rayofspeed
 kriegspyre
-Tide|Talisgitgud
 einbert
 kevin_ha
 thirdpoliceman
@@ -1071,7 +1064,6 @@ satxtan
 harris0n
 bakedpotato12
 uraniumanchor
-Tide|cha0sisBagus
 rocketpineapple
 ginko420
 gobliz86
@@ -1124,7 +1116,6 @@ hungry04
 joeykobalt
 zeraxl14
 keizaron
-Tide|SuperisGato
 ldr100
 kaganash
 aela_brighteyes
@@ -1357,7 +1348,6 @@ drock91384
 kixelated
 shirayasha
 lavicz
-Tide|IsnotplayingGrandia2
 japanmanx3
 finaldragoon
 jbird103
@@ -1669,7 +1659,6 @@ mrbuzzman
 spacecadet102
 jayman951
 lightning55
-Tide|AithereisPJSalt
 povondra
 barbiexedge
 benjaminforever
@@ -1726,7 +1715,6 @@ monstertactics
 devilishmew
 alkaidism
 blitz0x
-Tide|SuperistheDeathCorp
 masterzkirby
 imoogle
 tifakitteh
@@ -1779,7 +1767,6 @@ flyagaric
 e_mister
 angelisxruns
 hidden__place
-Tide|Talisgitgude
 seelbreaker
 crowsu
 sixotanaka
@@ -4183,7 +4170,6 @@ otrae
 sonicshadowsilver2
 wishdom
 infphealer
-Tide|CKisKhaaaan
 spritemichaeler
 cshbz
 ehnoon
@@ -4381,7 +4367,6 @@ drlemon12
 void646
 gworkag
 ornisis
-Tide|SnowFireisZalmo
 malkasaur
 darklightboco
 lordadmirallee
@@ -5419,7 +5404,6 @@ mystelf
 fookmahlaifyoudonteven
 muraelm
 dracsa
-Tide|SuperisAlbel
 rivalsz
 bunnydoidoifan
 crak_atak
@@ -6442,7 +6426,6 @@ nick_9109
 danandstacie
 mistrrl0ve
 xmrepicmannx
-ZzZz|FlanKitty
 ahoyhoy562
 justawizard96
 nyeahz
