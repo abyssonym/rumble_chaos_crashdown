@@ -1,5 +1,9 @@
 Changelog - FFT RUMBLE CHAOS CRASHDOWN Randomizer
 
+Version 17: TETA
+- A mistake in stat growth randomization was fixed
+- Unit names are now randomized
+
 Version 16: BALMAFULA
 - The randomizer now supports the Japanese version of FFT.
 - Random battles have been removed from the NA version. Move to a green dot to fight a battle there.
