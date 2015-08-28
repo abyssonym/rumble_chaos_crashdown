@@ -939,6 +939,7 @@ class UnitObject(TableObject):
             map_monster_jobs = [JobObject.get(u.job)
                                 for u in mapunits[self.map_id]
                                 if monster_check(u)]
+            map_monster_jobs = sorted(map_monster_jobs, key=lambda u: u.index)
             assert JobObject.get(self.job) in map_monster_jobs
             lowjob = min(map_monster_jobs,
                          key=lambda j: ranked_monster_jobs.index(j))
@@ -2167,7 +2168,8 @@ def mutate_monsters():
 
 def mutate_units():
     units = get_units()
-    for key, value in mapsprites.items():
+    for key, value in sorted(mapsprites.items()):
+        value = sorted(value)
         generic = len([_ for (g, _) in value if g in (0x80, 0x81)])
         monster = len([_ for (g, _) in value if g == 0x82])
         other = len([_ for (g, _) in value
@@ -2243,7 +2245,7 @@ def mutate_units_special():
             boost_factor = boostd["story_special_unit"]
 
         lucavi_special = False
-        units = mapunits[map_id]
+        units = sorted(mapunits[map_id], key=lambda u: u.index)
         if any([u.is_lucavi for u in units]):
             if map_id == 0x1a9:
                 continue
@@ -2442,6 +2444,7 @@ def randomize_ending():
         others.append(random.choice(others))
     random.shuffle(others)
     otherunits = [u for u in mapunits[0x134] if 0x1341 <= u.index <= 0x1347]
+    otherunits = sorted(otherunits, key=lambda u: u.index)
     for u, g in zip(otherunits, others):
         u.graphic = g
 
@@ -2756,6 +2759,8 @@ def randomize():
         print ("NOTICE: This randomizer requires 1 GB of free space "
                "to create a new rom file.\n")
         if len(argv) <= 1:
+            print ("Include the filename extension when entering the filename "
+                   "of your Final Fantasy Tactics iso.")
             sourcefile = raw_input("Filename? ").strip()
             print
 
