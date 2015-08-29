@@ -1,0 +1,63 @@
+ファイナルファンタジータクティクス「Rumble Chaos Crashdown」ランダマイザ
+バージョン:     17
+日:             August 28, 2015
+ダウンロード:   https://github.com/abyssonym/rumble_chaos_crashdown/archive/master.zip
+連絡先:         https://twitter.com/abyssonym
+                https://www.twitch.tv/abyssonym
+
+すみませんが日本語が下手のです。
+このソフトは、ノースアメリカ版のために作りましたけど、日本版によく似るので適応することが出来ました。
+
+「ランダマイザ」と言うのは、ゲームの改造版を作るためにゲームのROMを無作為に変更するソフトです。
+プログラムを実行する度にユニーク改造版が出ます。
+
+ランダマイザを使うのには:
+    FFTのISO(517MB)が必要です。正しいISOは、このハッシュです。
+        MD5 - 3bd1deebc5c5f08d036dc8651021affb
+        CRC32 - a6361fd1
+    fft_rcc.exeと同じディレクトリに入れて下さい。ランダマイザは1GBくらい必要で、注意して下さい。
+    fft_rcc.exeを実行すると、情報を要求されます。
+    「Filename?」て言ってから、ISOのファイル名を入力して下さい。(拡張子も)
+    「Flags?」と言うのは、オプションです。何も入力しないと、全部選ばれます。下記参照。
+        u   ユニットは全員を変更します
+        j   ジョブのステータス
+        i   ジョブのメリットアビリティなど
+        s   ジョブのアビリティ
+        a   アビリティの特徴
+        r   ジョブの必要ジョブLV
+        t   アイテム可用性:　密漁、埋蔵、利
+        p   アイテム可用性:　店
+        m   モンスターのステータス
+        z   特別な驚き
+    「Seed?」と言うのは、乱数発生器の種です。空白のままにしても大丈夫です。
+    「CHAOS MULTIPLIER?」と言うのは、難易度設定です。1.0は推奨設定です。
+
+出力:
+    パッチが適用されたISOが出ます。
+    オプションによって、TXTファイルも出ます。内容はジョブの必要ジョブLVです。
+    英語だけあるから、ここでは、翻訳です。
+        ARCHER (arc)        弓使い
+        BARD (bar)          吟遊詩人
+        CALCULATOR (cal)    算術士
+        CHEMIST (che)       アイテム士
+        DANCER (dan)        踊り子
+        GEOMANCER (geo)     風水士
+        KNIGHT (kni)        ナイト
+        LANCER (lan)        竜騎士
+        MEDIATOR (med)      話術士
+        MIME (mim)          ものまね士
+        MONK (mon)          モンク
+        NINJA (nin)         忍者
+        ORACLE (ora)        陰陽士
+        PRIEST (pri)        白魔導士
+        SAMURAI (sam)       侍
+        SQUIRE (squ)        見習い戦士
+        SUMMONER (sum)      召喚士
+        THIEF (thi)         シーフ
+        TIMEMAGE (tim)      時魔導士
+        WIZARD (wiz)        黒魔導士
+
+他の作品
+    英語でも大丈夫だったら、私の他のプロジェクトを試してみませんか。
+    「Beyond Chaos」と言うFF6のランダマイザー:
+        https://github.com/abyssonym/beyondchaos
