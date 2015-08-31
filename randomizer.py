@@ -2571,6 +2571,7 @@ def setup_fiesta(filename):
 
 def disable_random_battles(filename):
     if JAPANESE_MODE:
+        #  0xa2fcc78
         raise NotImplementedError
     f = open(filename, 'r+b')
     '''
@@ -2772,26 +2773,19 @@ def randomize():
 
     if (srchash not in JPMD5HASHES + MD5HASHES + RAWMD5HASHES and
             filesize not in ISO_SIZES + RAW_SIZES):
-        resp = raw_input("WARNING! The file you provided is not a known "
-                         "file size.\nThe correct file size is approximately "
-                         "517 MB.\nContinue? (y/n) ")
-        if resp and resp[0].lower() == 'y':
-            filesize = min(ISO_SIZES + RAW_SIZES,
-                           key=lambda s: abs(s-filesize))
-        else:
-            sys.exit(0)
-    elif srchash not in JPMD5HASHES + MD5HASHES + RAWMD5HASHES:
+        filesize = min(ISO_SIZES + RAW_SIZES,
+                       key=lambda s: abs(s-filesize))
+    if srchash not in JPMD5HASHES + MD5HASHES + RAWMD5HASHES:
         print "WARNING! The file you provided has the following md5 hash: "
         print srchash
-        print "\nThis randomizer was tested on a file with this hash: "
-        print MD5HASHES[0]
-        resp = raw_input("\nContinuing might have unexpected results. "
+        print "\nThis is not a known hash value. See the README."
+        resp = raw_input("Continuing might have unexpected results. "
                          "Proceed? (y/n) ")
         if resp and resp[0].lower() == 'y':
             pass
         else:
             sys.exit(0)
-        resp = raw_input("\nTreat this rom as the Japanese version? (y/n)")
+        resp = raw_input("\nTreat this rom as the Japanese version? (y/n) ")
         if resp and resp[0].lower() == 'y':
             JAPANESE_MODE = True
 
