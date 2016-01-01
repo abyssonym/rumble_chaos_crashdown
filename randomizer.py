@@ -58,6 +58,7 @@ Y_FORMULAS = [0x8, 0x9, 0xC, 0xD, 0xE, 0xF, 0x10, 0x1A, 0x1B, 0x1E, 0x1F, 0x20,
 VALID_INNATE_STATUSES = 0xCAFCE12A10
 VALID_START_STATUSES = VALID_INNATE_STATUSES | 0x1402100000
 BENEFICIAL_STATUSES = 0xC278600000
+BANNED_SKILLS = range(0x165, 0x16F)
 BANNED_SKILLSET_SHUFFLE = [0, 1, 2, 3, 6, 8, 0x11, 0x12, 0x13, 0x14, 0x15,
                            0x18, 0x34, 0x38, 0x39, 0x3B, 0x3E, 0x9C, 0xA1]
 MATH_SKILLSETS = [0xA, 0xB, 0xC, 0x10]
@@ -505,6 +506,8 @@ class SkillsetObject(TableObject):
                             a.jp_cost = 100 + randint(0, 700) + randint(0, 700)
                             a.jp_cost = int(round(a.jp_cost*2, -2) / 2)
                         self.actions[i] = a.index
+        for a in self.actions:
+            assert a not in BANNED_SKILLS
 
         candidates = [a for a in get_abilities() if 7 <= a.ability_type <= 9]
         for i, a in enumerate(self.rsms):
@@ -1400,7 +1403,7 @@ def get_poaches(filename=None):
 
 def get_abilities(filename=None):
     AbilityObject.get(0x1F3).jp_cost = 9999
-    return AbilityObject.every
+    return [a for a in AbilityObject.every if a.index not in BANNED_SKILLS]
 
 
 def get_abilities_attributes(filename=None):
