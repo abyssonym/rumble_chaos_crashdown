@@ -1,5 +1,10 @@
 Changelog - FFT RUMBLE CHAOS CRASHDOWN Randomizer
 
+Version 18: SIMON
+- Removed enemy Ramzas from mandatory battles (too glitchy)
+- Removed some skills that will crash the game if used
+- Updated unit names
+
 Version 17: TETA
 - A mistake in stat growth randomization was fixed
 - Unit names are now randomized

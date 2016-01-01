@@ -29,7 +29,7 @@ NAMESFILE = path.join(tblpath, "generic_names.txt")
 def randint(a, b):
     return random.randint(min(a, b), max(a, b))
 
-VERSION = "17"
+VERSION = "18"
 MD5HASHES = ["b156ba386436d20fd5ed8d37bab6b624",
              "aefdf27f1cd541ad46b5df794f635f50",
              ]
