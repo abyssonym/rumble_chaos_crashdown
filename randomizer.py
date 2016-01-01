@@ -2302,6 +2302,8 @@ def mutate_units_special():
             cand_jobs = [j for j in ranked_jobs
                          if j in special_jobs or j == replace_job
                          or (lucavi_special and j == lucavi_unit.job)]
+            if map_id >= 0x180:
+                cand_jobs = [j for j in cand_jobs if j > 3]
             index = cand_jobs.index(replace_job)
             if lucavi_special:
                 lucorder_index = LUCAVI_ORDER.index(lucavi_unit.job)
