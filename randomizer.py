@@ -521,6 +521,18 @@ class SkillsetObject(TableObject):
 
 class JobObject(TableObject):
     @property
+    def guaranteed_female(self):
+        units = [u for u in UnitObject.every
+                 if u.job == self.index
+                 and 0x180 <= u.map_id <= 0x1d5]
+        if not units:
+            return False
+        if (any([u.get_bit("female") for u in units])
+                and not any([u.get_bit("male") for u in units])):
+            return True
+        return False
+
+    @property
     def crippled(self):
         status = self.innate_status | self.start_status
         bad_start = 0xFFFFFFFFFF ^ VALID_START_STATUSES
@@ -1063,6 +1075,9 @@ class UnitObject(TableObject):
                                  or len(selection) < generic_r):
             if gender is None:
                 gender = random.choice(["male", "female"])
+                if self.map_id in [0x10d, 0x190, 0x1a8]:
+                    # wiegraf
+                    gender = "female"
 
             cands = [j for j in jobs if j not in done_jobs]
             if not cands:
@@ -2305,6 +2320,11 @@ def mutate_units_special():
             cand_jobs = [j for j in ranked_jobs
                          if j in special_jobs or j == replace_job
                          or (lucavi_special and j == lucavi_unit.job)]
+            if map_id in [0x10d, 0x190, 0x1a8, 0x1b0]:
+                cand_jobs = [j for j in cand_jobs
+                             if JobObject.get(j).guaranteed_female
+                             or j == replace_job
+                             or (lucavi_special and j == lucavi_unit.job)]
             if map_id >= 0x180:
                 cand_jobs = [j for j in cand_jobs if j > 3]
             index = cand_jobs.index(replace_job)
@@ -2319,6 +2339,9 @@ def mutate_units_special():
                     cand_jobs.remove(lucavi_unit.job)
             index = randint(index, int(round(index * boost_factor)))
             cand_jobs.remove(replace_job)
+            if len(cand_jobs) >= 7:
+                index = min(index, len(cand_jobs)-4)
+                index = max(index, 3)
             index = mutate_normal(index, maximum=len(cand_jobs)-1)
             new_job = cand_jobs[index]
 
@@ -2989,8 +3012,11 @@ def randomize():
                   "\nPress enter to close this program. " % sourcefile)
 
 if __name__ == "__main__":
-    try:
+    if "test" in argv:
         randomize()
-    except Exception, e:
-        print "ERROR: %s %s" % (e.__class__.__name__, e)
-        raw_input("Press enter to quit. ")
+    else:
+        try:
+            randomize()
+        except Exception, e:
+            print "ERROR: %s %s" % (e.__class__.__name__, e)
+            raw_input("Press enter to quit. ")
