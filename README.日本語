@@ -1,6 +1,6 @@
 ファイナルファンタジータクティクス「Rumble Chaos Crashdown」ランダマイザ
-バージョン: 18
-日: December 31, 2015
+バージョン: 19
+日: January 3, 2016
 ダウンロード:
     https://github.com/abyssonym/rumble_chaos_crashdown/archive/master.zip
 連絡先:
@@ -30,6 +30,7 @@
         t   アイテム可用性:　密漁、埋蔵、利
         p   アイテム可用性:　店
         m   モンスターのステータス
+        c   音楽
         z   特別な驚き
     「Seed?」と言うのは乱数発生器の種です。空白のままにしても大丈夫です。
     「CHAOS MULTIPLIER?」と言うのは難易度設定です。1.0は推奨設定です。

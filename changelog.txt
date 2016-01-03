@@ -1,5 +1,11 @@
 Changelog - FFT RUMBLE CHAOS CRASHDOWN Randomizer
 
+Version 19: LARG
+- Battle formations, weather, and music are randomized.
+- Cutscene autoplay feature added to the NA version.
+- Wiegraf is always accompanied by female units.
+- Minor adjustments to improve variety.
+
 Version 18: SIMON
 - Removed enemy Ramzas from mandatory battles (too glitchy)
 - Removed some skills that will crash the game if used
