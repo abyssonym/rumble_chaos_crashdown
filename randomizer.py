@@ -195,6 +195,8 @@ TEMPFILE = "_fftrandom.tmp"
 
 
 class EncounterObject(TableObject):
+    used_music = set([])
+
     @property
     def is_event(self):
         return (0x100 <= self.entd <= 0x1d5
@@ -210,6 +212,17 @@ class EncounterObject(TableObject):
         return [FormationObject.get(g) for g in [self.grid, self.grid2]
                 if g or g == self.grid]
 
+    def randomize_weather(self):
+        if self.weather <= 4:
+            if random.randint(1, 7) == 7:
+                self.night = 1
+            else:
+                self.night = 0
+            if random.randint(1, 4) == 4:
+                self.weather = random.choice([1, 2, 3, 4])
+            else:
+                self.weather = 0
+
     def randomize_music(self):
         sneaky_events = [0x186, 0x187, 0x188, 0x189, 0x18a, 0x18c, 0x18d,
                          0x18e, 0x196, 0x198, 0x19c, 0x1a2, 0x1a5, 0x1a9,
@@ -222,8 +235,13 @@ class EncounterObject(TableObject):
                   51, 52, 53, 54, 55, 56, 57, 59, 63, 64, 65,
                   69, 70, 72, 73, 74, 75, 79, 98]
         allowed = [s for s in range(100) if s not in banned]
-        self.music = [m if m in banned else random.choice(allowed)
+        temp = [s for s in allowed if s not in self.used_music]
+        if not temp:
+            self.used_music = set([])
+            temp = allowed
+        self.music = [m if m in banned else random.choice(temp)
                       for m in self.music]
+        self.used_music |= set(self.music)
 
 
 class FormationObject(TableObject):
@@ -2989,6 +3007,8 @@ def randomize():
         mutate_units_special()
         randomize_ending()
         replace_generic_names(TEMPFILE)
+        for e in EncounterObject.every:
+            e.randomize_weather()
 
     if 's' in flags:
         random.seed(seed)
