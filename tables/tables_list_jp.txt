@@ -8,4 +8,6 @@ MonsterSkillsObject     monster_skills_table.txt    5f718   48
 PoachObject             poach_table.txt             5fbb8   48
 JobReqObject            job_reqs_table.txt          5fc18   19
 MoveFindObject          move_find_table.txt         282e18  512
+FormationObject         formation_table.txt         4d3be4  768
+EncounterObject         encounter_table.txt         4d8f0c  480
 UnitObject              unit_table.txt              75e0800 8192
