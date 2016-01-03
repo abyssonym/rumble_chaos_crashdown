@@ -1,0 +1,8 @@
+bitmap,4
+x,1
+z,1
+zero,1
+orientation,1
+num_characters,1
+map_number,1
+id_number,2

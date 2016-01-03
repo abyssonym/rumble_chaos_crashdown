@@ -1,0 +1,12 @@
+scenario,2
+map_id,1
+weather,1
+night,1
+music,2,list
+entd,2
+grid,2
+grid2,2
+unknown0,4
+unknown1,1
+unknown2,4
+event,2

@@ -9,8 +9,8 @@ from string import lowercase
 from collections import Counter
 
 from randomtools.utils import (
-    mutate_index, mutate_normal, mutate_bits, write_multi, classproperty,
-    utilrandom as random)
+    mutate_index, mutate_normal, mutate_bits, read_multi, write_multi,
+    classproperty, utilrandom as random)
 from randomtools.tablereader import (
     TableObject, set_global_table_filename, set_table_specs)
 from randomtools.uniso import remove_sector_metadata, inject_logical_sectors
@@ -24,6 +24,7 @@ except ImportError:
 
 
 NAMESFILE = path.join(tblpath, "generic_names.txt")
+MESSAGESFILE = path.join(tblpath, "message_pointers.txt")
 
 
 def randint(a, b):
@@ -191,6 +192,27 @@ def rewrite_header(filename, message):
 
 
 TEMPFILE = "_fftrandom.tmp"
+
+
+class EncounterObject(TableObject):
+    @property
+    def is_event(self):
+        return (0x100 <= self.entd <= 0x1d5
+                and (self.event != 0 or self.entd == 0x100))
+
+    @property
+    def is_fake_event(self):
+        fake = (0x101 <= self.entd <= 0x1d5 and self.event == 0)
+        return fake
+
+    @property
+    def grids(self):
+        return [FormationObject.get(g) for g in [self.grid, self.grid2]
+                if g or g == self.grid]
+
+
+class FormationObject(TableObject):
+    pass
 
 
 class MonsterSkillsObject(TableObject):
@@ -2619,6 +2641,22 @@ def disable_random_battles(filename):
     f.close()
 
 
+def auto_mash(filename):
+    if JAPANESE_MODE:
+        raise NotImplementedError
+    f = open(filename, "r+b")
+    for line in open(MESSAGESFILE):
+        line = line.strip()
+        if not line or line[0] == "#":
+            continue
+        pointer = int(line.split()[0], 0x10)
+        f.seek(pointer+2)
+        c = ord(f.read(1))
+        f.seek(pointer+2)
+        f.write(chr(c & 0x8F))
+    f.close()
+
+
 def get_jobtree_str():
     jobreqs = JobReqObject.every
     jobreqs = sorted(jobreqs, key=lambda j: j.total_levels)
@@ -2832,7 +2870,8 @@ def randomize():
                "t  Randomize trophies, poaches, and move-find items.\n"
                "p  Randomize item prices and shop availability.\n"
                "m  Randomize monster stats and skills.\n"
-               "z  Enable special surprises.\n")
+               "z  Enable special surprises.\n"
+               "o  Enable autoplay cutscenes.\n")
         flags = raw_input("Flags? (blank for all) ").strip()
         seed = raw_input("Seed? (blank for random) ").strip()
         print "\nYou can adjust the difficulty of this randomizer."
@@ -2956,6 +2995,12 @@ def randomize():
     if 'p' in flags:
         random.seed(seed)
         mutate_shops()
+
+    if 'o' in flags:
+        try:
+            auto_mash(TEMPFILE)
+        except NotImplementedError:
+            pass
 
     if set(flags) & set("rujimtpsaz"):
         random.seed(seed)
