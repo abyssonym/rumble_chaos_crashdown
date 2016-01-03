@@ -211,7 +211,11 @@ class EncounterObject(TableObject):
                 if g or g == self.grid]
 
     def randomize_music(self):
-        if 0xFC < self.entd < 0x180:
+        sneaky_events = [0x186, 0x187, 0x188, 0x189, 0x18a, 0x18c, 0x18d,
+                         0x18e, 0x196, 0x198, 0x19c, 0x1a2, 0x1a5, 0x1a9,
+                         0x1ab, 0x1ad, 0x1b2, 0x1b5, 0x1be, 0x1c3, 0x1c7,
+                         0x1ca, 0x1d3, 0x1d5]
+        if 0xFC < self.entd < 0x180 or self.entd in sneaky_events:
             return
         banned = [0, 17, 18, 19, 20, 21, 22, 23, 24,
                   41, 42, 43, 44, 45, 46, 47, 48, 49, 50,
