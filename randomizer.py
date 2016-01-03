@@ -210,6 +210,17 @@ class EncounterObject(TableObject):
         return [FormationObject.get(g) for g in [self.grid, self.grid2]
                 if g or g == self.grid]
 
+    def randomize_music(self):
+        if 0xFC < self.entd < 0x180:
+            return
+        banned = [0, 17, 18, 19, 20, 21, 22, 23, 24,
+                  41, 42, 43, 44, 45, 46, 47, 48, 49, 50,
+                  51, 52, 53, 54, 55, 56, 57, 59, 63, 64, 65,
+                  69, 70, 72, 73, 74, 75, 79, 98]
+        allowed = [s for s in range(100) if s not in banned]
+        self.music = [m if m in banned else random.choice(allowed)
+                      for m in self.music]
+
 
 class FormationObject(TableObject):
     pass
@@ -2870,6 +2881,7 @@ def randomize():
                "t  Randomize trophies, poaches, and move-find items.\n"
                "p  Randomize item prices and shop availability.\n"
                "m  Randomize monster stats and skills.\n"
+               "c  Randomize battle music.\n"
                "z  Enable special surprises.\n"
                "o  Enable autoplay cutscenes.\n")
         flags = raw_input("Flags? (blank for all) ").strip()
@@ -2995,6 +3007,12 @@ def randomize():
     if 'p' in flags:
         random.seed(seed)
         mutate_shops()
+
+    if 'c' in flags:
+        random.seed(seed)
+        print "Randomizing music."
+        for e in EncounterObject.every:
+            e.randomize_music()
 
     if 'o' in flags:
         try:
