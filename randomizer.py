@@ -247,10 +247,19 @@ class EncounterObject(TableObject):
 
 class FormationObject(TableObject):
     def mutate(self):
+        gariland = [e for e in EncounterObject.every
+                    if e.is_event and e.entd == 0x184][0]
+        if self in gariland.grids:
+            return
         if boostd["difficulty_factor"] >= 1.0:
+            if boostd["difficulty_factor"] > 1.0:
+                dings = 0
+            else:
+                dings = 1
             while self.num_characters > 1:
-                prob = self.num_characters ** 3
-                if random.randint(1, 1000) <= prob:
+                prob = self.num_characters ** 4
+                prob = int(prob * (0.5 ** dings))
+                if random.randint(1, 1250) <= prob:
                     self.num_characters -= 1
                     continue
                 break
