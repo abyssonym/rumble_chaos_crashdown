@@ -133,6 +133,7 @@ def bytes_to_name(data):
 def set_difficulty_factors(value):
     value = max(value, 0)
     try:
+        boostd["difficulty_factor"] = value
         boostd["common_item"] = max(2.0 - (0.5 * value), 0.5)
         boostd["trophy"] = max(1.5 - (0.5 * value), 0.25)
         boostd["default_stat"] = 1.2 ** value
@@ -245,7 +246,27 @@ class EncounterObject(TableObject):
 
 
 class FormationObject(TableObject):
-    pass
+    def mutate(self):
+        if boostd["difficulty_factor"] >= 1.0:
+            while self.num_characters > 1:
+                prob = self.num_characters ** 3
+                if random.randint(1, 1000) <= prob:
+                    self.num_characters -= 1
+                    continue
+                break
+
+            while True:
+                bits = bin(self.bitmap).count("1")
+                if bits <= self.num_characters:
+                    break
+                prob = (bits - self.num_characters) ** 2
+                if random.randint(1, 20) <= prob:
+                    while bin(self.bitmap).count("1") >= bits:
+                        mask = 1 << random.randint(0, 31)
+                        if self.bitmap & mask:
+                            self.bitmap ^= mask
+                else:
+                    break
 
 
 class MonsterSkillsObject(TableObject):
@@ -3009,6 +3030,8 @@ def randomize():
         replace_generic_names(TEMPFILE)
         for e in EncounterObject.every:
             e.randomize_weather()
+        for f in FormationObject.every:
+            f.mutate()
 
     if 's' in flags:
         random.seed(seed)
