@@ -734,8 +734,11 @@ class MoveFindObject(TableObject):
     def mutate(self):
         special = random.choice([True, False])
         if special:
-            length = self.my_map.length
-            width = self.my_map.width
+            try:
+                length = self.my_map.length
+                width = self.my_map.width
+            except IndexError:
+                return
             while True:
                 x = randint(0, width-1)
                 y = randint(0, length-1)
