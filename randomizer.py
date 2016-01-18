@@ -768,7 +768,7 @@ class MoveFindObject(TableObject):
                 self.rare = random.choice(candidates).index
 
         if self.common or self.rare:
-            trapvalue = random.choice([True, False])
+            trapvalue = random.choice([True, False, False])
             self.set_bit("disable_trap", not trapvalue)
             if trapvalue:
                 self.set_bit("always_trap", randint(1, 5) == 5)
