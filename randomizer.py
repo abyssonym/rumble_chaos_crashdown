@@ -25,10 +25,17 @@ except ImportError:
 
 NAMESFILE = path.join(tblpath, "generic_names.txt")
 MESSAGESFILE = path.join(tblpath, "message_pointers.txt")
+MESHESFILE = path.join(tblpath, "mesh_pointers.txt")
 
 
 def randint(a, b):
     return random.randint(min(a, b), max(a, b))
+
+
+def slice_array_2d(data, x=0, width=0, y=0, length=0):
+    newdata = [row[x:x+width] for row in data]
+    return newdata[y:y+length]
+
 
 VERSION = "19"
 MD5HASHES = ["b156ba386436d20fd5ed8d37bab6b624",
@@ -195,6 +202,123 @@ def rewrite_header(filename, message):
 TEMPFILE = "_fftrandom.tmp"
 
 
+class TileObject:
+    def __init__(self, bytestring):
+        bytestring = [ord(c) for c in bytestring]
+        self.terrain_type = bytestring[0] & 0x3F
+        self.height = bytestring[2]
+        self.depth = bytestring[3] >> 5
+        self.slope_height = bytestring[3] & 0x1F
+        self.slope_type = bytestring[4]
+        self.impassable = (bytestring[6] >> 1) & 1
+        self.uncursorable = bytestring[6] & 1
+        self.bad = self.impassable | self.uncursorable
+
+
+class MapObject:
+    map_objects = []
+
+    def __init__(self, map_id, p):
+        self.map_id = map_id
+        f = open(TEMPFILE, 'r+b')
+        f.seek(p + 0x68)
+        terrain_addr = read_multi(f, 4)
+        if terrain_addr < 0xb4:
+            return
+        offset = p + terrain_addr
+        f.seek(offset)
+        self.width = ord(f.read(1))
+        f.seek(offset + 1)
+        self.length = ord(f.read(1))
+        self.tiles = []
+        for i in xrange(512):
+            f.seek(offset + 2 + (i*8))
+            self.tiles.append(TileObject(f.read(8)))
+        f.close()
+        self.map_objects.append(self)
+
+    @staticmethod
+    def get_certain_values_map_id(map_id, attribute):
+        maps = MapObject.get_by_map_id(map_id)
+        width = min([m.width for m in maps])
+        length = min([m.length for m in maps])
+        grid = []
+        for y in range(length):
+            grid.append([])
+            for x in range(width):
+                values = [m.get_tile_value(x, y, attribute) for m in maps]
+                values = sorted(set(values))
+                if len(values) == 1:
+                    grid[y].append(values[0])
+                else:
+                    grid[y].append(None)
+        return grid
+
+    def get_pretty_values_grid(self, attribute):
+        tile_values = [getattr(t, attribute) for t in self.tiles]
+        maxval = max(tile_values)
+        hexify, pad = False, False
+        if maxval >= 16:
+            hexify = True
+            pad = True
+        elif maxval >= 10:
+            hexify = True
+        values_grid = self.get_values_grid(attribute)
+        s = ""
+        for row in values_grid:
+            for value in row:
+                if hexify:
+                    value = "%x" % value
+                if pad:
+                    value = "{0:2}".format(value)
+                value = str(value)
+                s += value + " "
+            s = s.strip() + "\n"
+        return s.strip()
+
+    def get_values_grid(self, attribute):
+        grid = []
+        for row in self.tile_grid:
+            grid.append([getattr(t, attribute) for t in row])
+        return grid
+
+    def get_tile(self, x, y):
+        return self.tile_grid[y][x]
+
+    def get_tile_value(self, x, y, attribute):
+        return getattr(self.get_tile(x, y), attribute)
+
+    @property
+    def tile_grid(self):
+        grid = []
+        for z in xrange(self.length):
+            tiles = self.tiles[z*self.width:(z+1)*self.width]
+            grid.append(tiles)
+        return grid
+
+    @staticmethod
+    def get_by_map_id(map_id):
+        return [m for m in MapObject.every if m.map_id == map_id]
+
+    @staticmethod
+    def get_map(map_id, index=0):
+        return MapObject.get_by_map_id(map_id)[index]
+
+    @classproperty
+    def every(cls):
+        if len(cls.map_objects) > 0:
+            return cls.map_objects
+        for line in open(MESHESFILE):
+            line = line.strip()
+            map_id, pointers = line.split()
+            map_id = int(map_id)
+            pointers = pointers.split(",")
+            for p in pointers:
+                p = int(p, 0x10)
+                MapObject(map_id, p)
+        return cls.every
+
+
 class EncounterObject(TableObject):
     used_music = set([])
 
@@ -212,6 +336,203 @@ class EncounterObject(TableObject):
     def grids(self):
         return [FormationObject.get(g) for g in [self.grid, self.grid2]
                 if g or g == self.grid]
+
+    @property
+    def num_characters(self):
+        return min(sum([g.num_characters for g in self.grids]), 5)
+
+    @staticmethod
+    def get_by_entd(entd):
+        candidates = [e for e in EncounterObject.every if e.entd == entd]
+        if len(candidates) > 1:
+            candidates = [c for c in candidates if c.event]
+        if len(candidates) > 1:
+            candidates = [c for c in candidates if c.ramza]
+        if len(candidates) > 1:
+            raise Exception("More than one with that ENTD.")
+        return candidates[0]
+
+    def generate_formations(self):
+        heights = MapObject.get_certain_values_map_id(self.map_id, "height")
+        depths = MapObject.get_certain_values_map_id(self.map_id, "depth")
+        bads = MapObject.get_certain_values_map_id(self.map_id, "bad")
+        length = len(heights)
+        width = len(heights[0])
+        if length * width == 0:
+            return
+
+        if self.num_characters < 2:
+            num_formations = 1
+        else:
+            num_formations = random.choice([1, 1, 2])
+
+        # begin generate function
+        def gen():
+            winwidth = 5
+            winlength = 5
+            placewidth = width - 4
+            placelength = length - 4
+            halfwidth, halflength = placewidth/2, placelength/2
+            x = randint(0, halfwidth) + randint(0, halfwidth)
+            x = (x + halfwidth) % placewidth
+            y = randint(0, halflength) + randint(0, halflength)
+            y = (y + halflength) % placelength
+            assert 0 <= x <= placewidth
+            assert 0 <= y <= placelength
+            lines_deleted = 0
+            while True:
+                xmargin = min(x, width - (x+winwidth+1))
+                ymargin = min(y, length - (y+winlength+1))
+                xpoints, ypoints = winwidth, winlength
+                if xmargin > ymargin:
+                    xpoints *= 2
+                elif ymargin > xmargin:
+                    ypoints *= 2
+                value = randint(0, xpoints + ypoints)
+                if value < xpoints:
+                    winwidth -= 1
+                    if x > halfwidth:
+                        x += 1
+                else:
+                    winlength -= 1
+                    if y > halflength:
+                        y += 1
+
+                if winwidth == 1 or winlength == 1:
+                    break
+                if lines_deleted >= 6:
+                    break
+                if random.choice([True, False, False, False]):
+                    break
+            height_tolerance = 0
+            while random.choice([True, False]):
+                height_tolerance += 1
+            winheights = slice_array_2d(heights, x, winwidth, y, winlength)
+            winbads = slice_array_2d(bads, x, winwidth, y, winlength)
+            windepths = slice_array_2d(depths, x, winwidth, y, winlength)
+            heightlist = sorted(set([h for row in winheights for h in row]))
+            heightlist = [h for h in heightlist if h is not None]
+            if not heightlist:
+                return None
+            if len(heightlist) > 1:
+                heightlist = heightlist[:randint(1, len(heightlist))]
+            base_height = random.choice(heightlist)
+            if height_tolerance and base_height - height_tolerance <= 0:
+                allow_depths = random.choice([True, False])
+            else:
+                allow_depths = False
+
+            winvalid = []
+            for j in range(winlength):
+                winvalid.append([])
+                for i in range(winwidth):
+                    height = winheights[j][i]
+                    bad = winbads[j][i]
+                    if height is None or bad is None:
+                        winvalid[j].append(0)
+                        continue
+                    valid = 1
+                    if bad:
+                        valid = 0
+                    if not (base_height <= height <=
+                            base_height + height_tolerance):
+                        depth = windepths[j][i]
+                        if depth == 0:
+                            valid = 0
+                        if height <= base_height - height_tolerance:
+                            valid = 0
+                        if not allow_depths:
+                            valid = 0
+                    winvalid[j].append(valid)
+            try:
+                while not any(winvalid[0]):
+                    winvalid = winvalid[1:]
+                    y += 1
+                    winlength -= 1
+                while not any(winvalid[-1]):
+                    winvalid = winvalid[:-1]
+                    winlength -= 1
+                while not any(zip(*winvalid)[0]):
+                    winvalid = zip(*zip(*(winvalid))[1:])
+                    x += 1
+                    winwidth -= 1
+                while not any(zip(*winvalid)[-1]):
+                    winvalid = zip(*zip(*(winvalid))[:-1])
+                    winwidth -= 1
+            except IndexError:
+                return None
+            winvalid = [list(row) for row in winvalid]
+            xmargin = min(x, width - (x+winwidth+1))
+            ymargin = min(y, length - (y+winlength+1))
+            if ((winlength > winwidth and xmargin > ymargin) or
+                    (winwidth > winlength and ymargin > xmargin)):
+                if random.randint(1, 10) != 10:
+                    return None
+            assert 0 <= x <= width - winwidth
+            assert 0 <= y <= length - winlength
+            if winwidth * winlength <= 2:
+                return None
+            return x, y, winvalid
+        # end generate function
+
+        chars = []
+        if num_formations > 1:
+            chars.append(randint(1, self.num_characters-1))
+            chars.append(self.num_characters-chars[0])
+        else:
+            chars = [self.num_characters]
+
+        saved = None
+        for k, subchars in enumerate(chars):
+            while True:
+                result = gen()
+                if result is None:
+                    continue
+                x, y, window = result
+                numvalid = len([v for row in window for v in row if v])
+                if numvalid >= subchars:
+                    if saved is None:
+                        saved = (x, y, [list(row) for row in window])
+                    else:
+                        # collision detection
+                        saved_x, saved_y, saved_window = saved
+                        if (saved_x <= x <= saved_x + len(saved_window[0]) or
+                                x <= saved_x <= x + len(window[0]) or
+                                saved_y <= y <= saved_y + len(saved_window) or
+                                y <= saved_y <= y + len(window)):
+                            continue
+                    break
+            for row in window:
+                while len(row) < 5:
+                    row.append(0)
+            while len(window) < 5:
+                window.append([0, 0, 0, 0, 0])
+            '''
+            if self.entd == 0x184:
+                print MapObject.get_map(self.map_id).get_pretty_values_grid("height")
+                print
+                print "%x %x" % (x, y), "%s/%s" % (subchars, numvalid)
+                for row in window:
+                    print " ".join([str(v) for v in row])
+                print
+                import pdb; pdb.set_trace()
+            '''
+            bitmap = 0
+            valids = [v for row in zip(*window) for v in row]
+            for l, v in enumerate(valids):
+                bitmap |= (v << l)
+            f = FormationObject.get_unused()
+            f.map_number = self.map_id
+            f.bitmap = bitmap
+            f.x = x + 2  # Center tile! D'oh!
+            f.z = y + 2
+            f.orientation = 0
+            f.pick_correct_orientation()
+            f.num_characters = subchars
+            if k == 0:
+                self.grid = f.id_number
+            elif k == 1:
+                self.grid2 = f.id_number
 
     def randomize_weather(self):
         if self.weather <= 4:
@@ -246,6 +567,61 @@ class EncounterObject(TableObject):
 
 
 class FormationObject(TableObject):
+    @staticmethod
+    def get_unused():
+        return [f for f in FormationObject.every if f.bitmap == 0
+                and f.index != 0][-1]
+
+    @property
+    def pretty_facing(self):
+        value = self.rotation + self.facing
+        value = value % 4
+        return {0: "west", 1: "south", 2: "east", 3: "north"}[value]
+
+    @property
+    def facing(self):
+        # values with 0 rotation
+        # rotate counterclockwise with rotation
+        # 0: west
+        # 1: south
+        # 2: east
+        # 3: north
+        return self.orientation >> 4
+
+    @property
+    def rotation(self):
+        # North is greater Z, East is greater X
+        # first == least significant
+        # 0: first bit in SW corner
+        # 1: first bit in SE corner
+        # 2: first bit in NE corner
+        # 3: first bit in NW corner
+        return self.orientation & 0xf
+
+    def pick_correct_orientation(self):
+        margin_x = min(self.x, self.my_map.width - (self.x + 1))
+        margin_z = min(self.z, self.my_map.length - (self.z + 1))
+        if (margin_x > margin_z or
+                (margin_x == margin_z and random.choice([True, False]))):
+            if self.z < (self.my_map.length / 2):
+                # face north
+                value = 3
+            else:
+                # south
+                value = 1
+        else:
+            if self.x < (self.my_map.width / 2):
+                # east
+                value = 2
+            else:
+                # west
+                value = 0
+        self.orientation = value
+
+    @property
+    def my_map(self):
+        return MapObject.get_map(self.map_number)
+
     def mutate(self):
         gariland = [e for e in EncounterObject.every
                     if e.is_event and e.entd == 0x184][0]
@@ -3041,6 +3417,10 @@ def randomize():
             e.randomize_weather()
         for f in FormationObject.every:
             f.mutate()
+        random.seed(seed)
+        for e in EncounterObject.every:
+            if e.entd and e.event and e.grid:
+                e.generate_formations()
 
     if 's' in flags:
         random.seed(seed)
