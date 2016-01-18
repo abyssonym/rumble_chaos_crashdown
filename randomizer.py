@@ -777,6 +777,8 @@ class MoveFindObject(TableObject):
                 for traptype in traptypes:
                     self.set_bit(traptype, False)
                 self.set_bit(random.choice(traptypes), True)
+            if randint(1, 10) == 10:
+                self.common, self.rare = self.rare, self.common
 
 
 class PoachObject(TableObject):
