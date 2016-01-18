@@ -466,7 +466,7 @@ class EncounterObject(TableObject):
             ymargin = min(y, length - (y+winlength+1))
             if ((winlength > winwidth and xmargin > ymargin) or
                     (winwidth > winlength and ymargin > xmargin)):
-                if random.randint(1, 10) != 10:
+                if randint(1, 10) != 10:
                     return None
             assert 0 <= x <= width - winwidth
             assert 0 <= y <= length - winlength
@@ -536,11 +536,11 @@ class EncounterObject(TableObject):
 
     def randomize_weather(self):
         if self.weather <= 4:
-            if random.randint(1, 7) == 7:
+            if randint(1, 7) == 7:
                 self.night = 1
             else:
                 self.night = 0
-            if random.randint(1, 4) == 4:
+            if randint(1, 4) == 4:
                 self.weather = random.choice([1, 2, 3, 4])
             else:
                 self.weather = 0
@@ -635,7 +635,7 @@ class FormationObject(TableObject):
             while self.num_characters > 1:
                 prob = self.num_characters ** 4
                 prob = int(prob * (0.5 ** dings))
-                if random.randint(1, 1250) <= prob:
+                if randint(1, 1250) <= prob:
                     self.num_characters -= 1
                     continue
                 break
@@ -645,9 +645,9 @@ class FormationObject(TableObject):
                 if bits <= self.num_characters:
                     break
                 prob = (bits - self.num_characters) ** 2
-                if random.randint(1, 20) <= prob:
+                if randint(1, 20) <= prob:
                     while bin(self.bitmap).count("1") >= bits:
-                        mask = 1 << random.randint(0, 31)
+                        mask = 1 << randint(0, 31)
                         if self.bitmap & mask:
                             self.bitmap ^= mask
                 else:
@@ -720,10 +720,36 @@ class MoveFindObject(TableObject):
     def y(self):
         return self.coordinates & 0xF
 
+    @property
+    def map_id(self):
+        return self.index / 4
+
+    @property
+    def my_map(self):
+        return MapObject.get_map(self.map_id)
+
+    def set_coordinates(self, x, y):
+        self.coordinates = (x << 4) | y
+
     def mutate(self):
         special = random.choice([True, False])
         if special:
-            self.coordinates = randint(0, 0xFF)
+            length = self.my_map.length
+            width = self.my_map.width
+            while True:
+                x = randint(0, width-1)
+                y = randint(0, length-1)
+                bad = (MapObject.get_certain_values_mapid(
+                       self.map_id, "bad")[y][x])
+                lava = (MapObject.get_certain_values_mapid(
+                        self.map_id, "terrain_type")[y][x])
+                lava = (lava == 0x12)
+                deep = (MapObject.get_certain_values_mapid(
+                        self.map_id, "depth")[y][x])
+                deep = (deep >= 3)
+                if bad or lava or deep:
+                    continue
+            self.set_coordinates(x, y)
 
         if self.common != 0:
             if special:
@@ -3188,7 +3214,7 @@ def get_new_names(basenames):
         if not candidates:
             result = None
         else:
-            candidates = candidates[:random.randint(1, len(candidates))]
+            candidates = candidates[:randint(1, len(candidates))]
             ss = random.choice(candidates)
             candnamesdict[len(name)].remove(ss)
             result = []
