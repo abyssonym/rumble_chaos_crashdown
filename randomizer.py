@@ -739,12 +739,12 @@ class MoveFindObject(TableObject):
             while True:
                 x = randint(0, width-1)
                 y = randint(0, length-1)
-                bad = (MapObject.get_certain_values_mapid(
+                bad = (MapObject.get_certain_values_map_id(
                        self.map_id, "bad")[y][x])
-                lava = (MapObject.get_certain_values_mapid(
+                lava = (MapObject.get_certain_values_map_id(
                         self.map_id, "terrain_type")[y][x])
                 lava = (lava == 0x12)
-                deep = (MapObject.get_certain_values_mapid(
+                deep = (MapObject.get_certain_values_map_id(
                         self.map_id, "depth")[y][x])
                 deep = (deep >= 3)
                 if bad or lava or deep:
