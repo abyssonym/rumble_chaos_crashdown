@@ -749,6 +749,7 @@ class MoveFindObject(TableObject):
                 deep = (deep >= 3)
                 if bad or lava or deep:
                     continue
+                break
             self.set_coordinates(x, y)
 
         if self.common != 0:
