@@ -6,7 +6,7 @@ from sys import argv
 from time import time
 import string
 from string import lowercase
-from collections import Counter
+from collections import Counter, defaultdict
 
 from randomtools.utils import (
     mutate_index, mutate_normal, mutate_bits, read_multi, write_multi,
@@ -26,6 +26,7 @@ except ImportError:
 NAMESFILE = path.join(tblpath, "generic_names.txt")
 MESSAGESFILE = path.join(tblpath, "message_pointers.txt")
 MESHESFILE = path.join(tblpath, "mesh_pointers.txt")
+MAPMOVESFILE = path.join(tblpath, "map_movements.txt")
 
 
 def randint(a, b):
@@ -212,13 +213,25 @@ class TileObject:
         self.slope_type = bytestring[4]
         self.impassable = (bytestring[6] >> 1) & 1
         self.uncursorable = bytestring[6] & 1
-        self.bad = self.impassable | self.uncursorable
+        self.occupied = 0
+
+    @property
+    def bad(self):
+        return self.impassable | self.uncursorable | self.occupied
+
+    def set_occupied(self, occupied=1):
+        self.occupied = occupied
 
 
 class MapObject:
     map_objects = []
+    map_move_units = defaultdict(list)
+    all_map_movements = defaultdict(list)
 
     def __init__(self, map_id, p):
+        if not self.all_map_movements:
+            MapObject.populate_map_movements()
+
         self.map_id = map_id
         f = open(TEMPFILE, 'r+b')
         f.seek(p + 0x68)
@@ -234,8 +247,50 @@ class MapObject:
         for i in xrange(512):
             f.seek(offset + 2 + (i*8))
             self.tiles.append(TileObject(f.read(8)))
+        for x, y in self.map_movements:
+            self.set_occupied(x, y)
+        self.check_entd_occupied()
         f.close()
         self.map_objects.append(self)
+
+    def set_occupied(self, x, y):
+        index = (y * self.width) + x
+        self.tiles[index].set_occupied()
+
+    def check_entd_occupied(self):
+        es = [e for e in EncounterObject if e.entd and e.map_id == self.map_id]
+        if not es:
+            return
+        es = [e.entd for e in es]
+        for entd in sorted(set(es)):
+            units = [u for u in UnitObject
+                     if u.map_id == entd and u.graphic > 0]
+            for u in units:
+                self.set_occupied(u.x, u.y)
+
+    @property
+    def map_movements(self):
+        return self.all_map_movements[self.map_id]
+
+    @property
+    def moving_units(self):
+        return self.map_move_units[self.map_id]
+
+    @staticmethod
+    def populate_map_movements():
+        for line in open(MAPMOVESFILE):
+            line = line.strip()
+            if not line or line[0] == "#":
+                continue
+            map_id, data = line.split()
+            map_id = int(map_id, 0x10)
+            unit, x, y = data.split(",")
+            MapObject.all_map_movements[map_id].append((int(x), int(y)))
+            MapObject.map_move_units[map_id].append(int(unit, 0x10))
+            MapObject.all_map_movements[map_id] = sorted(set(
+                MapObject.all_map_movements[map_id]))
+            MapObject.map_move_units[map_id] = sorted(set(
+                MapObject.map_move_units[map_id]))
 
     @staticmethod
     def get_certain_values_map_id(map_id, attribute):
@@ -321,6 +376,16 @@ class MapObject:
 
 class EncounterObject(TableObject):
     used_music = set([])
+
+    @property
+    def next_enc(self):
+        if self.following != 0x81:
+            return None
+        if self.next_scene == 0:
+            return None
+        else:
+            return [e for e in EncounterObject
+                    if e.scenario == self.next_scene][0]
 
     @property
     def is_event(self):
@@ -481,6 +546,7 @@ class EncounterObject(TableObject):
             chars.append(self.num_characters-chars[0])
         else:
             chars = [self.num_characters]
+            self.grid2 = 0
 
         saved = None
         for k, subchars in enumerate(chars):

@@ -8,5 +8,7 @@ grid,2
 grid2,2
 unknown0,4
 ramza,1
-unknown1,4
+next_scene,2
+following,1
+unknown1,1
 event,2
