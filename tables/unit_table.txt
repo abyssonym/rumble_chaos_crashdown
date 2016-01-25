@@ -23,7 +23,9 @@ palette,1
 misc2,bit:z1 z2 immortal control enemy_team z3 randomly_present always_present
 x,1
 y,1
-unknown2,3
+# MSB of facing is the floor level
+facing,1
+unknown2,2
 trophy,1
 gil,1
 unit_id,1

@@ -255,7 +255,6 @@ class MapObject:
             self.tiles.append(TileObject(f.read(8)))
         for unit, x, y in self.map_movements:
             self.set_occupied(x, y)
-        self.check_entd_occupied()
         f.close()
         self.map_objects.append(self)
 
@@ -1333,6 +1332,20 @@ class UnitObject(TableObject):
     @property
     def is_altima(self):
         return self.job in [0x41, 0x49]
+
+    def fix_facing(self, m):
+        # 0: south, 1: west, 2: north, 3: east
+        dirdict = {
+            "west": self.x, "south": self.y,
+            "east": m.width - self.x, "north": m.length - self.y}
+        facedict = {
+            "west": 3, "south": 2, "east": 1, "north": 0}
+        lowest = min(dirdict.values())
+        candidates = [v for (k, v) in facedict.items()
+                      if dirdict[k] == lowest]
+        chosen = random.choice(candidates)
+        self.facing &= 0xFC
+        self.facing |= chosen
 
     def has_similar_monster_graphic(self, other):
         if not (self.graphic == 0x82 and other.graphic == 0x82):
@@ -3107,6 +3120,13 @@ def randomize_enemy_formations():
                     candidates.append((x, y))
         x, y = random.choice(candidates)
         example_unit.x, example_unit.y = x, y
+        example_unit.fix_facing(m)
+        if random.choice([True, True, True, False]):
+            example_unit.facing |= 0x80
+        else:
+            example_unit.facing &= 0x7F
+        #units on the lower level for now
+        example_unit.facing &= 0x7F
         return heatmap
 
     for e in es:
@@ -3114,7 +3134,6 @@ def randomize_enemy_formations():
         units = [u for u in UnitObject.every
                  if u.map_id == entd and u.graphic > 0]
         m = MapObject.get_map(e.map_id)
-        m.move_units
         if any([v & 0x80 for v in m.move_units]):
             units = [u for u in units if u.graphic <= 0x7F]
         units = [u for u in units if u.graphic not in m.move_units]
