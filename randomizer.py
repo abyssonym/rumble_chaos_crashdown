@@ -624,6 +624,9 @@ class EncounterObject(TableObject):
                     continue
                 x, y, window = result
                 numvalid = len([v for row in window for v in row if v])
+                if (numvalid == subchars and
+                        random.choice([True, True, False])):
+                    continue
                 if numvalid >= subchars:
                     if saved is None:
                         saved = (x, y, [list(row) for row in window])
@@ -677,7 +680,7 @@ class EncounterObject(TableObject):
             elif k == 1:
                 self.grid2 = f.id_number
 
-        if self.grid2 and random.choice([True, False]):
+        if self.grid2 and subchars > 1 and random.choice([True, False]):
             self.grid, self.grid2 = self.grid2, self.grid
 
     def randomize_weather(self):
