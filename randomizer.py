@@ -2,7 +2,7 @@ from shutil import copyfile
 import os
 from os import remove, path
 import sys
-from sys import argv
+from sys import argv, stdout
 from time import time
 import string
 from string import lowercase
@@ -36,6 +36,23 @@ def randint(a, b):
 def slice_array_2d(data, x=0, width=0, y=0, length=0):
     newdata = [row[x:x+width] for row in data]
     return newdata[y:y+length]
+
+
+progress_length = None
+
+
+def set_progress_counter(length):
+    global progress_length
+    progress_length = length
+
+
+def check_progress_counter(index):
+    n = (index * 10) / progress_length
+    if n != ((index-1) * 10) / progress_length:
+        stdout.write("%s " % (10-n))
+        if n == 9:
+            stdout.write("\n")
+    stdout.flush()
 
 
 VERSION = "19"
@@ -255,6 +272,7 @@ class MapObject:
             self.tiles.append(TileObject(f.read(8)))
         for unit, x, y in self.map_movements:
             self.set_occupied(x, y)
+        self.set_entd_occupied_movers()
         f.close()
         self.map_objects.append(self)
 
@@ -265,16 +283,37 @@ class MapObject:
         else:
             self.tiles[index].set_occupied()
 
-    def check_entd_occupied(self):
-        es = [e for e in EncounterObject if e.entd and e.map_id == self.map_id]
-        if not es:
-            return
-        es = [e.entd for e in es]
-        for entd in sorted(set(es)):
-            units = [u for u in UnitObject
-                     if u.map_id == entd and u.graphic > 0]
-            for u in units:
-                self.set_occupied(u.x, u.y)
+    @property
+    def encounter(self):
+        es = [e for e in EncounterObject if
+              e.event and e.entd and e.grid and e.map_id == self.map_id]
+        if es:
+            return es[0]
+        return None
+
+    @property
+    def units(self):
+        if not self.encounter:
+            return []
+        return sorted([u for u in mapunits[self.encounter.entd]
+                       if u.graphic > 0], key=lambda u2: u2.index)
+
+    @property
+    def nonmoving_units(self):
+        units = self.units
+        if any([v & 0x80 for v in self.move_units]):
+            units = [u for u in units if u.graphic <= 0x7F]
+        units = [u for u in units if u.graphic not in self.move_units]
+        return units
+
+    @property
+    def moving_units(self):
+        units = self.units
+        return [u for u in units if u not in self.nonmoving_units]
+
+    def set_entd_occupied_movers(self):
+        for u in self.moving_units:
+            self.set_occupied(u.x, u.y)
 
     @property
     def map_movements(self):
@@ -347,7 +386,7 @@ class MapObject:
         return grid
 
     def get_tile(self, x, y):
-        return self.tile_grid[y][x]
+        return self.tiles[x + (self.width * y)]
 
     def get_tile_value(self, x, y, attribute):
         return getattr(self.get_tile(x, y), attribute)
@@ -708,9 +747,10 @@ class FormationObject(TableObject):
         return MapObject.get_map(self.map_number)
 
     def mutate(self):
-        gariland = [e for e in EncounterObject.every
-                    if e.is_event and e.entd == 0x184][0]
-        if self in gariland.grids:
+        if self.num_characters == 0 or self.bitmap == 0:
+            return
+        if self.index == 0x100:
+            # gariland formation
             return
         if boostd["difficulty_factor"] >= 1.0:
             if boostd["difficulty_factor"] > 1.0:
@@ -1341,8 +1381,8 @@ class UnitObject(TableObject):
         facedict = {
             "west": 3, "south": 2, "east": 1, "north": 0}
         lowest = min(dirdict.values())
-        candidates = [v for (k, v) in facedict.items()
-                      if dirdict[k] == lowest]
+        candidates = sorted([v for (k, v) in facedict.items()
+                             if dirdict[k] == lowest])
         chosen = random.choice(candidates)
         self.facing &= 0xFC
         self.facing |= chosen
@@ -2145,7 +2185,9 @@ def make_rankings():
         u.rankval = None
 
     oldstring = ""
-    for i in xrange(1000):
+    set_progress_counter(300)
+    for i in xrange(300):
+        check_progress_counter(i)
         tempdict = {}
         for feature in rankable_features:
             tempdict[feature] = []
@@ -2186,7 +2228,6 @@ def make_rankings():
 
         codestring = "".join([chr(int(round(u.rankval))) for u in units
                               if u.rankval is not None])
-        #if len(codestring) == len(oldstring):
         if codestring == oldstring:
             break
         oldstring = codestring
@@ -2366,6 +2407,9 @@ def sort_mapunits():
             mapunits[u.map_id] = set([])
         mapsprites[u.map_id].add((u.graphic, u.job))
         mapunits[u.map_id].add(u)
+    for map_id in mapunits.keys():
+        mapunits[map_id] = sorted(mapunits[map_id], key=lambda u: u.index)
+        mapsprites[map_id] = sorted(mapsprites[map_id], key=lambda u: u.index)
 
 
 def get_jobs_kind(kind):
@@ -2828,7 +2872,10 @@ def mutate_units():
             u.job_mutated = True
 
     random.shuffle(units)
-    for u in [u for u in units if u.has_special_graphic or not u.named]:
+    unnamed = [u for u in units if u.has_special_graphic or not u.named]
+    set_progress_counter(len(unnamed))
+    for i, u in enumerate(unnamed):
+        check_progress_counter(i)
         u.mutate()
 
 
@@ -3108,7 +3155,7 @@ def randomize_enemy_formations():
                             pass
         values = sorted(set([v for row in heatmap for v in row]))
         values = dict([(k, v) for (v, k) in enumerate(values)])
-        valids = values.values()
+        valids = sorted(values.values())
         valids = valids[randint(0, len(valids)-1):]
         if random.choice([True, False]):
             valids = valids[randint(0, len(valids)-1):]
@@ -3129,14 +3176,11 @@ def randomize_enemy_formations():
         example_unit.facing &= 0x7F
         return heatmap
 
-    for e in es:
-        entd = e.entd
-        units = [u for u in UnitObject.every
-                 if u.map_id == entd and u.graphic > 0]
+    set_progress_counter(len(es))
+    for n, e in enumerate(es):
+        check_progress_counter(n)
         m = MapObject.get_map(e.map_id)
-        if any([v & 0x80 for v in m.move_units]):
-            units = [u for u in units if u.graphic <= 0x7F]
-        units = [u for u in units if u.graphic not in m.move_units]
+        units = m.nonmoving_units
         random.shuffle(units)
         for i in xrange(len(units)):
             ex = units[i]
@@ -3274,7 +3318,7 @@ def setup_fiesta(filename):
         for attr in ["lefthand", "head", "body", "accessory"]:
             setattr(n, attr, 0xFF)
 
-    for u in mapunits[0x183] | mapunits[0x184]:
+    for u in set(mapunits[0x183]) | set(mapunits[0x184]):
         if u.get_bit("enemy_team"):
             u.righthand = 0x49
 
@@ -3591,6 +3635,7 @@ def randomize():
     else:
         JOBLEVEL_JP = [100, 200, 350, 550, 800, 1150, 1550, 2100]
 
+    print "Reading game data."
     all_objects = [g for g in globals().values()
                    if isinstance(g, type) and issubclass(g, TableObject)
                    and g is not TableObject]
@@ -3612,6 +3657,7 @@ def randomize():
         f = open("%s.txt" % seed, "w+")
         f.write(s)
         f.close()
+        del(f)
 
     for req in get_jobreqs():
         req.set_required_unlock_jp()
@@ -3641,12 +3687,15 @@ def randomize():
     if 'f' in flags:
         print "Randomizing formations."
         random.seed(seed)
-        for f in FormationObject.every:
+        fs = [f for f in FormationObject.every
+              if f.bitmap and f.num_characters]
+        for i, f in enumerate(fs):
             f.mutate()
         random.seed(seed)
-        for e in EncounterObject.every:
-            if e.map_id and e.entd and e.event and e.grid:
-                e.generate_formations()
+        es = [e for e in EncounterObject.every
+              if e.map_id and e.entd and e.event and e.grid]
+        for i, e in enumerate(es):
+            e.generate_formations()
         randomize_enemy_formations()
 
     if 's' in flags:
