@@ -231,7 +231,7 @@ class TileObject:
 
 class MapObject:
     map_objects = []
-    map_move_units = defaultdict(list)
+    all_move_units = defaultdict(list)
     all_map_movements = defaultdict(list)
 
     def __init__(self, map_id, p):
@@ -282,8 +282,8 @@ class MapObject:
         return self.all_map_movements[self.map_id]
 
     @property
-    def moving_units(self):
-        return self.map_move_units[self.map_id]
+    def move_units(self):
+        return self.all_move_units[self.map_id]
 
     @staticmethod
     def populate_map_movements():
@@ -296,11 +296,11 @@ class MapObject:
             unit, x, y = data.split(",")
             unit = int(unit, 0x10)
             MapObject.all_map_movements[map_id].append((unit, int(x), int(y)))
-            MapObject.map_move_units[map_id].append(unit)
+            MapObject.all_move_units[map_id].append(unit)
             MapObject.all_map_movements[map_id] = sorted(set(
                 MapObject.all_map_movements[map_id]))
-            MapObject.map_move_units[map_id] = sorted(set(
-                MapObject.map_move_units[map_id]))
+            MapObject.all_move_units[map_id] = sorted(set(
+                MapObject.all_move_units[map_id]))
 
     @staticmethod
     def get_certain_values_map_id(map_id, attribute):
@@ -3044,6 +3044,85 @@ def mutate_units_special():
 def randomize_enemy_formations():
     es = [e for e in EncounterObject.every
           if e.map_id and e.entd and e.event and e.grid]
+
+    def generate_heatmap(m, example_unit, done_units=None):
+        enemy_units = [u for u in done_units if u.get_bit("enemy_team")]
+        ally_units = [u for u in done_units if u not in enemy_units]
+        if not example_unit.get_bit("enemy_team"):
+            enemy_units, ally_units = ally_units, enemy_units
+        heatmap = [list([100 for _ in range(m.width)])
+                   for _ in range(m.length)]
+        for y in xrange(len(heatmap)):
+            for x in xrange(len(heatmap[0])):
+                if m.get_tile_value(x, y, "bad"):
+                    if example_unit.x != x or example_unit.y != y:
+                        heatmap[y][x] = -999999999
+                        continue
+                for u in done_units:
+                    if u.x == x and u.y == y:
+                        heatmap[y][x] = -999999999
+                        break
+                if heatmap[y][x] <= -99999999:
+                    continue
+                if x == 0 or x == len(heatmap[0])-1:
+                    heatmap[y][x] -= 2
+                if y == 0 or y == len(heatmap)-1:
+                    heatmap[y][x] -= 2
+                for i in xrange(-9, 10):
+                    for j in xrange(-9, 10):
+                        if min(x+i, y+j) < 0:
+                            continue
+                        dist = abs(i) + abs(j)
+                        if dist > 9:
+                            continue
+                        if dist <= 2:
+                            for u in enemy_units:
+                                if u.x == x+i and u.y == y+j:
+                                    heatmap[y][x] -= (16 / max(dist, 1))
+                        if dist >= 4:
+                            for u in enemy_units:
+                                if u.x == x+i and u.y == y+j:
+                                    heatmap[y][x] += max(14 - dist, 0)
+                        try:
+                            party = m.get_tile_value(x+i, y+j, "party")
+                            if party:
+                                distval = max(10 - dist, 0)
+                                if example_unit.get_bit("enemy_team"):
+                                    heatmap[y][x] -= distval
+                                else:
+                                    heatmap[y][x] += distval
+                        except IndexError:
+                            pass
+        values = sorted(set([v for row in heatmap for v in row]))
+        values = dict([(k, v) for (v, k) in enumerate(values)])
+        valids = values.values()
+        valids = valids[randint(0, len(valids)-1):]
+        if random.choice([True, False]):
+            valids = valids[randint(0, len(valids)-1):]
+        candidates = []
+        for y, row in enumerate(heatmap):
+            for x, v in enumerate(row):
+                heatmap[y][x] = values[heatmap[y][x]]
+                if heatmap[y][x] in valids:
+                    candidates.append((x, y))
+        x, y = random.choice(candidates)
+        example_unit.x, example_unit.y = x, y
+        return heatmap
+
+    for e in es:
+        entd = e.entd
+        units = [u for u in UnitObject.every
+                 if u.map_id == entd and u.graphic > 0]
+        m = MapObject.get_map(e.map_id)
+        m.move_units
+        if any([v & 0x80 for v in m.move_units]):
+            units = [u for u in units if u.graphic <= 0x7F]
+        units = [u for u in units if u.graphic not in m.move_units]
+        random.shuffle(units)
+        for i in xrange(len(units)):
+            ex = units[i]
+            done = units[:i]
+            generate_heatmap(m, ex, done)
 
 
 def randomize_ending():
