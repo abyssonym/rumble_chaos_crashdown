@@ -232,10 +232,15 @@ class TileObject:
         self.uncursorable = bytestring[6] & 1
         self.occupied = 0
         self.party = 0
+        self.upper = 0
 
     @property
     def bad(self):
-        return self.impassable | self.uncursorable | self.occupied
+        if self.impassable | self.uncursorable | self.occupied:
+            return 1
+        if self.slope_height > 2:
+            return 1
+        return 0
 
     def set_occupied(self, occupied=1):
         self.occupied = occupied
@@ -266,10 +271,16 @@ class MapObject:
         self.width = ord(f.read(1))
         f.seek(offset + 1)
         self.length = ord(f.read(1))
-        self.tiles = []
-        for i in xrange(512):
+        self.tiles, self.upper = [], []
+        for i in xrange(256):
             f.seek(offset + 2 + (i*8))
             self.tiles.append(TileObject(f.read(8)))
+        for i in xrange(256, 512):
+            f.seek(offset + 2 + (i*8))
+            self.upper.append(TileObject(f.read(8)))
+        for t, u in zip(self.tiles, self.upper):
+            if u.height and not u.bad:
+                t.upper = 1
         for unit, x, y in self.map_movements:
             self.set_occupied(x, y)
         self.set_entd_occupied_movers()
@@ -631,6 +642,17 @@ class EncounterObject(TableObject):
             while len(window) < 5:
                 window.append([0, 0, 0, 0, 0])
 
+            '''
+            if self.entd == 0x193:
+                    print MapObject.get_map(self.map_id).get_pretty_values_grid("height")
+                    print
+                    print "%x %x" % (x, y), "%s/%s" % (subchars, numvalid)
+                    for row in window:
+                        print " ".join([str(v) for v in row])
+                    print
+                    import pdb; pdb.set_trace()
+            '''
+
             for j, row in enumerate(window):
                 for i, v in enumerate(row):
                     if v:
@@ -867,14 +889,17 @@ class MoveFindObject(TableObject):
             while True:
                 x = randint(0, width-1)
                 y = randint(0, length-1)
-                bad = (MapObject.get_certain_values_map_id(
-                       self.map_id, "bad")[y][x])
-                lava = (MapObject.get_certain_values_map_id(
-                        self.map_id, "terrain_type")[y][x])
-                lava = (lava == 0x12)
-                deep = (MapObject.get_certain_values_map_id(
-                        self.map_id, "depth")[y][x])
-                deep = (deep >= 3)
+                try:
+                    bad = (MapObject.get_certain_values_map_id(
+                           self.map_id, "bad")[y][x])
+                    lava = (MapObject.get_certain_values_map_id(
+                            self.map_id, "terrain_type")[y][x])
+                    lava = (lava == 0x12)
+                    deep = (MapObject.get_certain_values_map_id(
+                            self.map_id, "depth")[y][x])
+                    deep = (deep >= 3)
+                except IndexError:
+                    continue
                 if bad or lava or deep:
                     continue
                 break
@@ -3168,12 +3193,10 @@ def randomize_enemy_formations():
         x, y = random.choice(candidates)
         example_unit.x, example_unit.y = x, y
         example_unit.fix_facing(m)
-        if random.choice([True, True, True, False]):
-            example_unit.facing |= 0x80
-        else:
-            example_unit.facing &= 0x7F
-        #units on the lower level for now
         example_unit.facing &= 0x7F
+        if m.get_tile_value(x, y, "upper"):
+            if random.choice([True, True, True, False]):
+                example_unit.facing |= 0x80
         return heatmap
 
     set_progress_counter(len(es))
