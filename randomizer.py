@@ -214,6 +214,7 @@ class TileObject:
         self.impassable = (bytestring[6] >> 1) & 1
         self.uncursorable = bytestring[6] & 1
         self.occupied = 0
+        self.party = 0
 
     @property
     def bad(self):
@@ -221,6 +222,11 @@ class TileObject:
 
     def set_occupied(self, occupied=1):
         self.occupied = occupied
+
+    def set_party(self, party=1):
+        assert not self.occupied
+        self.party = party
+        self.set_occupied()
 
 
 class MapObject:
@@ -247,15 +253,18 @@ class MapObject:
         for i in xrange(512):
             f.seek(offset + 2 + (i*8))
             self.tiles.append(TileObject(f.read(8)))
-        for x, y in self.map_movements:
+        for unit, x, y in self.map_movements:
             self.set_occupied(x, y)
         self.check_entd_occupied()
         f.close()
         self.map_objects.append(self)
 
-    def set_occupied(self, x, y):
+    def set_occupied(self, x, y, party=False):
         index = (y * self.width) + x
-        self.tiles[index].set_occupied()
+        if party:
+            self.tiles[index].set_party()
+        else:
+            self.tiles[index].set_occupied()
 
     def check_entd_occupied(self):
         es = [e for e in EncounterObject if e.entd and e.map_id == self.map_id]
@@ -285,8 +294,9 @@ class MapObject:
             map_id, data = line.split()
             map_id = int(map_id, 0x10)
             unit, x, y = data.split(",")
-            MapObject.all_map_movements[map_id].append((int(x), int(y)))
-            MapObject.map_move_units[map_id].append(int(unit, 0x10))
+            unit = int(unit, 0x10)
+            MapObject.all_map_movements[map_id].append((unit, int(x), int(y)))
+            MapObject.map_move_units[map_id].append(unit)
             MapObject.all_map_movements[map_id] = sorted(set(
                 MapObject.all_map_movements[map_id]))
             MapObject.map_move_units[map_id] = sorted(set(
@@ -421,6 +431,8 @@ class EncounterObject(TableObject):
         heights = MapObject.get_certain_values_map_id(self.map_id, "height")
         depths = MapObject.get_certain_values_map_id(self.map_id, "depth")
         bads = MapObject.get_certain_values_map_id(self.map_id, "bad")
+        occupieds = MapObject.get_certain_values_map_id(self.map_id,
+                                                        "occupied")
         length = len(heights)
         width = len(heights[0])
         if length * width == 0:
@@ -475,6 +487,10 @@ class EncounterObject(TableObject):
             winheights = slice_array_2d(heights, x, winwidth, y, winlength)
             winbads = slice_array_2d(bads, x, winwidth, y, winlength)
             windepths = slice_array_2d(depths, x, winwidth, y, winlength)
+            winoccs = slice_array_2d(occupieds, x, winwidth, y, winlength)
+            if [v for row in winoccs for v in row if v == 1]:
+                if random.choice([True, True, False]):
+                    return None
             heightlist = sorted(set([h for row in winheights for h in row]))
             heightlist = [h for h in heightlist if h is not None]
             if not heightlist:
@@ -542,11 +558,14 @@ class EncounterObject(TableObject):
 
         chars = []
         if num_formations > 1:
-            chars.append(randint(1, self.num_characters-1))
-            chars.append(self.num_characters-chars[0])
+            half = self.num_characters / 2
+            first = randint(0, half) + randint(0, half)
+            first = min(1, max(first, self.num_characters-1))
+            chars.append(first)
+            chars.append(self.num_characters-first)
+            chars = sorted(chars, reverse=True)
         else:
             chars = [self.num_characters]
-            self.grid2 = 0
 
         saved = None
         for k, subchars in enumerate(chars):
@@ -562,10 +581,10 @@ class EncounterObject(TableObject):
                     else:
                         # collision detection
                         saved_x, saved_y, saved_window = saved
-                        if (saved_x <= x <= saved_x + len(saved_window[0]) or
-                                x <= saved_x <= x + len(window[0]) or
-                                saved_y <= y <= saved_y + len(saved_window) or
-                                y <= saved_y <= y + len(window)):
+                        if abs(x - saved_x) < 5 and abs(y - saved_y) < 5:
+                            continue
+                        if (max(abs(x - saved_x), abs(y - saved_y)) == 5 and
+                                random.choice([True, True, False])):
                             continue
                     break
             for row in window:
@@ -573,16 +592,13 @@ class EncounterObject(TableObject):
                     row.append(0)
             while len(window) < 5:
                 window.append([0, 0, 0, 0, 0])
-            '''
-            if self.entd == 0x184:
-                print MapObject.get_map(self.map_id).get_pretty_values_grid("height")
-                print
-                print "%x %x" % (x, y), "%s/%s" % (subchars, numvalid)
-                for row in window:
-                    print " ".join([str(v) for v in row])
-                print
-                import pdb; pdb.set_trace()
-            '''
+
+            for j, row in enumerate(window):
+                for i, v in enumerate(row):
+                    if v:
+                        m = MapObject.get_map(self.map_id)
+                        m.set_occupied(x+i, y+j, party=True)
+
             bitmap = 0
             valids = [v for row in zip(*window) for v in row]
             for l, v in enumerate(valids):
@@ -597,8 +613,12 @@ class EncounterObject(TableObject):
             f.num_characters = subchars
             if k == 0:
                 self.grid = f.id_number
+                self.grid2 = 0
             elif k == 1:
                 self.grid2 = f.id_number
+
+        if self.grid2 and random.choice([True, False]):
+            self.grid, self.grid2 = self.grid2, self.grid
 
     def randomize_weather(self):
         if self.weather <= 4:
@@ -3021,6 +3041,11 @@ def mutate_units_special():
                 probval = max(probval, 8)
 
 
+def randomize_enemy_formations():
+    es = [e for e in EncounterObject.every
+          if e.map_id and e.entd and e.event and e.grid]
+
+
 def randomize_ending():
     used_graphics = sorted(set([u.graphic for u in UnitObject
                                 if u.named and 1 <= u.graphic <= 0x77]))
@@ -3399,6 +3424,7 @@ def randomize():
 
     if len(argv) <= 2:
         print ("u  Randomize enemy and ally units.\n"
+               "f  Randomize enemy and ally formations.\n"
                "j  Randomize job stats and JP required for skills.\n"
                "i  Randomize innate properties of jobs.\n"
                "s  Randomize job skillsets.\n"
@@ -3513,12 +3539,17 @@ def randomize():
         replace_generic_names(TEMPFILE)
         for e in EncounterObject.every:
             e.randomize_weather()
+
+    if 'f' in flags:
+        print "Randomizing formations."
+        random.seed(seed)
         for f in FormationObject.every:
             f.mutate()
         random.seed(seed)
         for e in EncounterObject.every:
-            if e.entd and e.event and e.grid:
+            if e.map_id and e.entd and e.event and e.grid:
                 e.generate_formations()
+        randomize_enemy_formations()
 
     if 's' in flags:
         random.seed(seed)
