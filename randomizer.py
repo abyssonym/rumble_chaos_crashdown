@@ -34,8 +34,13 @@ def randint(a, b):
 
 
 def slice_array_2d(data, x=0, width=0, y=0, length=0):
-    newdata = [row[x:x+width] for row in data]
-    return newdata[y:y+length]
+    newdata = [row[x:x+width] for row in data][y:y+length]
+    try:
+        assert len(newdata) == length
+        assert len(newdata[0]) == width
+    except AssertionError:
+        raise Exception("Array slice out of bounds.")
+    return newdata
 
 
 progress_length = None
@@ -487,7 +492,20 @@ class EncounterObject(TableObject):
             raise Exception("More than one with that ENTD.")
         return candidates[0]
 
-    def generate_formations(self):
+    @staticmethod
+    def get_unused():
+        encs = [e for e in EncounterObject.every if
+                e.map_id == 0 and e.event == 0 and e.entd == 0
+                and e.next_scene == 0 and e.following == 0]
+        if not encs:
+            return None
+        unused = encs[0]
+        unused.scenario = max([e.scenario for e in EncounterObject]) + 1
+        #import pdb; pdb.set_trace()
+        #unused = EncounterObject.get(0x18f)
+        return unused
+
+    def generate_formations(self, corner=False, numchar_override=None):
         m = MapObject.get_map(self.map_id)
         num_generic_moves = len([u for u in m.move_units if u & 0x80])
         if randint(1, num_generic_moves) > 2:
@@ -502,7 +520,12 @@ class EncounterObject(TableObject):
         if length * width == 0:
             return None
 
-        if self.num_characters < 2:
+        if numchar_override:
+            num_characters = numchar_override
+        else:
+            num_characters = self.num_characters
+
+        if num_characters < 2 or corner or numchar_override:
             num_formations = 1
         else:
             num_formations = random.choice([1, 1, 1, 2])
@@ -514,10 +537,14 @@ class EncounterObject(TableObject):
             placewidth = width - 4
             placelength = length - 4
             halfwidth, halflength = placewidth/2, placelength/2
-            x = randint(0, halfwidth) + randint(0, halfwidth)
-            x = (x + halfwidth) % placewidth
-            y = randint(0, halflength) + randint(0, halflength)
-            y = (y + halflength) % placelength
+            if not corner:
+                x = randint(0, halfwidth) + randint(0, halfwidth)
+                x = (x + halfwidth) % placewidth
+                y = randint(0, halflength) + randint(0, halflength)
+                y = (y + halflength) % placelength
+            else:
+                x = random.choice([0, placewidth-1])
+                y = random.choice([0, placelength-1])
             assert 0 <= x <= placewidth
             assert 0 <= y <= placelength
             lines_deleted = 0
@@ -550,7 +577,10 @@ class EncounterObject(TableObject):
             height_tolerance = 0
             while random.choice([True, False]):
                 height_tolerance += 1
-            winheights = slice_array_2d(heights, x, winwidth, y, winlength)
+            try:
+                winheights = slice_array_2d(heights, x, winwidth, y, winlength)
+            except:
+                import pdb; pdb.set_trace()
             winbads = slice_array_2d(bads, x, winwidth, y, winlength)
             windepths = slice_array_2d(depths, x, winwidth, y, winlength)
             winoccs = slice_array_2d(occupieds, x, winwidth, y, winlength)
@@ -624,14 +654,14 @@ class EncounterObject(TableObject):
 
         chars = []
         if num_formations > 1:
-            half = self.num_characters / 2
+            half = num_characters / 2
             first = randint(0, half) + randint(0, half)
-            first = min(1, max(first, self.num_characters-1))
+            first = min(1, max(first, num_characters-1))
             chars.append(first)
-            chars.append(self.num_characters-first)
+            chars.append(num_characters-first)
             chars = sorted(chars, reverse=True)
         else:
-            chars = [self.num_characters]
+            chars = [num_characters]
 
         saved = None
         for k, subchars in enumerate(chars):
@@ -643,6 +673,8 @@ class EncounterObject(TableObject):
                 numvalid = len([v for row in window for v in row if v])
                 if (numvalid == subchars and
                         random.choice([True, True, False])):
+                    continue
+                elif subchars <= 2 and numvalid > 12:
                     continue
                 if numvalid >= subchars:
                     if saved is None:
@@ -1183,6 +1215,15 @@ class SkillsetObject(TableObject):
 
 
 class JobObject(TableObject):
+    def get_most_common(self, attribute):
+        units = [u for u in UnitObject if u.job == self.index]
+        attr_count = Counter([getattr(u, attribute) for u in units])
+        maxval = max(attr_count.values())
+        choices = sorted([k for (k, v) in attr_count.items() if v == maxval])
+        if choices:
+            return random.choice(choices)
+        return None
+
     @property
     def guaranteed_female(self):
         units = [u for u in UnitObject.every
@@ -3311,6 +3352,143 @@ def randomize_ending():
         u.graphic = g
 
 
+def restore_warjilis(outfile):
+    f = open(outfile, 'r+b')
+    f.seek(0x823804)
+    check = ord(f.read(1))
+    assert check == 0x2E
+    f.seek(0x823804)
+    f.write("".join([chr(0xF2) for _ in xrange(9)]))  # END bg color
+    f.close()
+    gariland = EncounterObject.get(9)
+    new_enc = EncounterObject.get_unused()
+    scenario = new_enc.scenario
+    new_enc.copy_data(gariland)
+    new_enc.scenario = scenario
+    new_enc.event = 0x25  # deep dungeon END event
+    new_enc.map_id = 42
+    new_enc.ramza = 0
+    new_enc.randomize_music()
+    new_enc.randomize_weather()
+    new_enc.entd = 0x1DC  # test Dancers
+    num_teams = random.choice([3, 4])
+    num_teams = 4
+    units_per_team = 16 / num_teams
+    extra_units = (16 % num_teams)
+    if num_teams == 4:
+        override = 1
+    elif num_teams == 3:
+        override = 2
+    blank_unit = UnitObject.get(0x1d)
+    assert blank_unit.job == blank_unit.graphic == 0
+    for u in mapunits[0x1dc]:
+        u.copy_data(blank_unit)
+    new_enc.generate_formations(corner=True, numchar_override=override)
+    mymap = MapObject.get_map(42)
+    blue_corner_coordinates = [
+        (x, y) for x in xrange(mymap.width) for y in xrange(mymap.length)
+        if mymap.get_tile_value(x, y, "party") == 1]
+
+    special_jobs = [
+        j for j in get_jobs() if not 5 <= j.skillset <= 0x18
+        and not j.skillset == 0
+        and not 0x4A <= j.index <= 0x8F
+        and not j.index >= 0x92
+        and not j.index < 4
+        and not j.crippled
+        and not j.is_lucavi
+        and j.get_most_common("graphic") not in [None, 0x80, 0x81, 0x82]]
+    while True:
+        chosen_jobs = random.sample(special_jobs, 9-override)
+        if len(chosen_jobs) == len(
+                set([j.get_most_common("name") for j in chosen_jobs])):
+            break
+    jobs_per_team = len(chosen_jobs) / num_teams
+    extra_jobs = len(chosen_jobs) - (jobs_per_team * num_teams)
+    team_jobs, team_units = {}, {}
+    for team in xrange(num_teams):
+        team_jobs[team], chosen_jobs = (
+            chosen_jobs[:jobs_per_team], chosen_jobs[jobs_per_team:])
+        team_units[team] = mapunits[0x1dc][
+            team*units_per_team:(team+1)*units_per_team]
+    team_jobs[0] += chosen_jobs[-extra_jobs:]
+    if extra_units:
+        team_units[0] += mapunits[0x1dc][-extra_units:]
+    team_units[0] = team_units[0][:-override]
+    team_corners = {}
+
+    for team in xrange(num_teams):
+        if team == 0:
+            x, y = blue_corner_coordinates[0]
+            corner = x >= 5, y >= 5
+        else:
+            while True:
+                corner = (random.choice([True, False]),
+                          random.choice([True, False]))
+                if corner not in team_corners.values():
+                    break
+        team_corners[team] = corner
+
+    done_team_jobs = defaultdict(list)
+    for team in xrange(num_teams):
+        for unit in team_units[team]:
+            if team_jobs[team]:
+                job = team_jobs[team].pop()
+                done_team_jobs[team].append(job)
+            else:
+                job = random.choice(done_team_jobs[team])
+            unit.job = job.index
+            for attr in ["graphic", "misc1", "name", "month", "day", "brave",
+                         "faith", "unlocked", "unlocked_level", "secondary",
+                         "reaction", "support", "movement", "head", "body",
+                         "accessory", "righthand", "lefthand", "palette",
+                         "misc2"]:
+                setattr(unit, attr, job.get_most_common(attr))
+                unit.set_bit("enemy_team", bool(team & 1))
+                unit.set_bit("alternate_team", bool(team & 0b10))
+                unit.set_bit("always_present", True)
+                for bit in ["save_formation", "load_formation", "hidden_stats",
+                            "test_teta", "randomly_present", "control"]:
+                    unit.set_bit(bit, False)
+                if team == 0:
+                    unit.set_bit("control", True)
+                    unit.set_bit("join_after_event",
+                                 random.choice([True, False, False]))
+                    unit.level = 100 + randint(0, randint(0, 5))
+                    if unit.level == 100:
+                        unit.level = 0xFE
+                else:
+                    unit.level = randint(1, randint(1, 15))
+                unit.mutate(preserve_job=True, preserve_gender=True)
+            while True:
+                if team == 0:
+                    x, y = random.choice(blue_corner_coordinates)
+                    x += random.choice([-2, -1, -1, 0, 1, 1, 2])
+                    y += random.choice([-2, -1, -1, 0, 1, 1, 2])
+                else:
+                    x = randint(0, mymap.width-1)
+                    y = randint(0, mymap.length-1)
+                if not (x >= 5, y >= 5) == team_corners[team]:
+                    continue
+                if 5 <= y <= 9 or 3 <= x <= 6:
+                    continue
+                if x < 0 or x >= mymap.width:
+                    continue
+                if y < 0 or y >= mymap.length:
+                    continue
+                if mymap.get_tile_value(x, y, "bad"):
+                    continue
+                break
+            unit.x, unit.y = x, y
+            unit.fix_facing(mymap)
+            mymap.set_occupied(x, y)
+
+    assert sum([len(team_units[k]) for k in team_units]) + override == 16
+    warjilis = EncounterObject.get(0xab)
+    warjilis.following = 0x81
+    warjilis.next_scene = new_enc.scenario
+
+
 def mutate_treasure():
     print "Mutating treasure."
     units = get_units()
@@ -3859,6 +4037,8 @@ def randomize():
         for u in UnitObject:
             if u.get_bit("enemy_team"):
                 u.level = 1
+
+    restore_warjilis(TEMPFILE)
 
     DOUBLE_SUPER = set(SUPER_LEVEL_BOOSTED) & set(SUPER_SPECIAL)
     #for unit in DOUBLE_SUPER:

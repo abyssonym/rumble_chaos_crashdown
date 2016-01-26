@@ -9,5 +9,5 @@ PoachObject             poach_table.txt             62864   48
 JobReqObject            job_reqs_table.txt          628c4   19
 MoveFindObject          move_find_table.txt         282e74  512
 FormationObject         formation_table.txt         4d3bd4  768
-EncounterObject         encounter_table.txt         4d8938  480
+EncounterObject         encounter_table.txt         4d8938  512
 UnitObject              unit_table.txt              75e0800 8192
