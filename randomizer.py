@@ -3280,7 +3280,7 @@ def randomize_enemy_formations():
             else:
                 new.set_bit("enemy_team", True)
             if boostd["difficulty_factor"] > 1.0 or new.get_bit("enemy_team"):
-                if randint(1, 5) == 5:
+                if randint(1, 10) == 10:
                     new.set_bit("alternate_team", True)
             while True:
                 generate_heatmap(m, new, units+new_units)
