@@ -303,6 +303,14 @@ class MapObject:
         return None
 
     @property
+    def unused_units(self):
+        if not self.encounter:
+            return []
+        return sorted([u for u in mapunits[self.encounter.entd]
+                       if u.graphic == 0 and u.job == 0],
+                      key=lambda u2: u2.index)
+
+    @property
     def units(self):
         if not self.encounter:
             return []
@@ -402,6 +410,9 @@ class MapObject:
     def get_tile_value(self, x, y, attribute):
         return getattr(self.get_tile(x, y), attribute)
 
+    def get_tile_values(self, attribute):
+        return [getattr(t, attribute) for t in self.tiles]
+
     @property
     def tile_grid(self):
         grid = []
@@ -477,6 +488,10 @@ class EncounterObject(TableObject):
         return candidates[0]
 
     def generate_formations(self):
+        m = MapObject.get_map(self.map_id)
+        num_generic_moves = len([u for u in m.move_units if u & 0x80])
+        if randint(1, num_generic_moves) > 2:
+            return None
         heights = MapObject.get_certain_values_map_id(self.map_id, "height")
         depths = MapObject.get_certain_values_map_id(self.map_id, "depth")
         bads = MapObject.get_certain_values_map_id(self.map_id, "bad")
@@ -485,12 +500,12 @@ class EncounterObject(TableObject):
         length = len(heights)
         width = len(heights[0])
         if length * width == 0:
-            return
+            return None
 
         if self.num_characters < 2:
             num_formations = 1
         else:
-            num_formations = random.choice([1, 1, 2])
+            num_formations = random.choice([1, 1, 1, 2])
 
         # begin generate function
         def gen():
@@ -509,6 +524,8 @@ class EncounterObject(TableObject):
             while True:
                 xmargin = min(x, width - (x+winwidth+1))
                 ymargin = min(y, length - (y+winlength+1))
+                if randint(0, min(xmargin, ymargin)) != 0:
+                    return None
                 xpoints, ypoints = winwidth, winlength
                 if xmargin > ymargin:
                     xpoints *= 2
@@ -538,7 +555,7 @@ class EncounterObject(TableObject):
             windepths = slice_array_2d(depths, x, winwidth, y, winlength)
             winoccs = slice_array_2d(occupieds, x, winwidth, y, winlength)
             if [v for row in winoccs for v in row if v == 1]:
-                if random.choice([True, True, False]):
+                if randint(1, 5) != 5:
                     return None
             heightlist = sorted(set([h for row in winheights for h in row]))
             heightlist = [h for h in heightlist if h is not None]
@@ -785,7 +802,7 @@ class FormationObject(TableObject):
             while self.num_characters > 1:
                 prob = self.num_characters ** 4
                 prob = int(prob * (0.5 ** dings))
-                if randint(1, 1250) <= prob:
+                if randint(1, 1875) <= prob:
                     self.num_characters -= 1
                     continue
                 break
@@ -1670,7 +1687,10 @@ class UnitObject(TableObject):
         named_jobs[self.name, oldjob] = self.job
         return True
 
-    def mutate(self, boost_factor=None, preserve_gender=False):
+    def mutate(self, boost_factor=None,
+               preserve_gender=False, preserve_job=False):
+        if self.graphic == 0 and self.job == 0:
+            return
         if boost_factor is None:
             boost_factor = boostd["jp"]
         self.mutate_stats()
@@ -1684,7 +1704,7 @@ class UnitObject(TableObject):
             self.mutate_monster_job()
             return
 
-        if self.job not in jobreq_indexdict:
+        if preserve_job or self.job not in jobreq_indexdict:
             self.mutate_equips()
             self.mutate_rsm()
             self.mutate_secondary()
@@ -3150,12 +3170,16 @@ def randomize_enemy_formations():
                     if u.x == x and u.y == y:
                         heatmap[y][x] = -999999999
                         break
+                    if u.x == x:
+                        heatmap[y][x] -= 10
+                    if u.y == y:
+                        heatmap[y][x] -= 10
                 if heatmap[y][x] <= -99999999:
                     continue
                 if x == 0 or x == len(heatmap[0])-1:
-                    heatmap[y][x] -= 2
-                if y == 0 or y == len(heatmap)-1:
-                    heatmap[y][x] -= 2
+                    heatmap[y][x] -= 5
+                elif y == 0 or y == len(heatmap)-1:
+                    heatmap[y][x] -= 5
                 for i in xrange(-9, 10):
                     for j in xrange(-9, 10):
                         if min(x+i, y+j) < 0:
@@ -3170,15 +3194,15 @@ def randomize_enemy_formations():
                         if dist >= 4:
                             for u in enemy_units:
                                 if u.x == x+i and u.y == y+j:
-                                    heatmap[y][x] += max(14 - dist, 0)
+                                    heatmap[y][x] += max(10 - dist, 0)
                         try:
                             party = m.get_tile_value(x+i, y+j, "party")
                             if party:
                                 distval = max(10 - dist, 0)
                                 if example_unit.get_bit("enemy_team"):
-                                    heatmap[y][x] -= distval
-                                else:
-                                    heatmap[y][x] += distval
+                                    heatmap[y][x] -= int(round(distval ** 1.5))
+                                elif distval < 7:
+                                    heatmap[y][x] += distval / 2
                         except IndexError:
                             pass
         values = sorted(set([v for row in heatmap for v in row]))
@@ -3206,12 +3230,58 @@ def randomize_enemy_formations():
     for n, e in enumerate(es):
         check_progress_counter(n)
         m = MapObject.get_map(e.map_id)
+        if not any(m.get_tile_values("party")):
+            continue
         units = m.nonmoving_units
         random.shuffle(units)
         for i in xrange(len(units)):
             ex = units[i]
             done = units[:i]
             generate_heatmap(m, ex, done)
+
+        new_units = []
+        while True:
+            unused = list(m.unused_units)
+            if len(unused) < 6 or random.choice([True, False]):
+                break
+            new = max(unused, key=lambda u: u.index)
+            used = m.nonmoving_units
+            if not used:
+                break
+            used = [u for u in used if not u.is_lucavi and u.level != 1]
+            if randint(1, 5) != 5:
+                used = [u for u in used if not u.has_special_graphic]
+                if not used:
+                    continue
+            old = random.choice(used)
+            new.copy_data(old)
+            new.mutate(preserve_job=True)
+            new_enemies = [u for u in new_units if u.get_bit("enemy_team")]
+            if boostd["difficulty_factor"] > 1.0:
+                chance = max(7-len(new_enemies), 1)
+            else:
+                chance = max(5-(2*len(new_enemies)), 1)
+            new.set_bit("randomly_present", False)
+            new.set_bit("always_present", True)
+            new.set_bit("join_after_event", False)
+            if randint(1, chance) == 1:
+                new.set_bit("enemy_team", False)
+                if (not new.has_special_graphic and
+                        random.choice([True, True, False])):
+                    new.set_bit("join_after_event", True)
+            else:
+                new.set_bit("enemy_team", True)
+            if boostd["difficulty_factor"] > 1.0 or new.get_bit("enemy_team"):
+                if randint(1, 5) == 5:
+                    new.set_bit("alternate_team", True)
+            while True:
+                generate_heatmap(m, new, units+new_units)
+                for u in m.units:
+                    if u != new and u.x == new.x and u.y == new.y:
+                        break
+                else:
+                    break
+            new_units.append(new)
 
 
 def randomize_ending():
