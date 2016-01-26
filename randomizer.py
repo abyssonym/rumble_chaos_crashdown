@@ -91,12 +91,12 @@ MATH_SKILLSETS = [0xA, 0xB, 0xC, 0x10]
 BANNED_RSMS = [0x1BB, 0x1D7, 0x1E1, 0x1E4, 0x1E5, 0x1F1]
 BANNED_ANYTHING = [0x18]
 BANNED_ITEMS = [0x49]
-LUCAVI_INNATES = (range(0x1A6, 0x1A9)
-                  + range(0x1AA, 0x1B4) + [0x1B5, 0x1B6, 0x1BA, 0x1BD, 0x1BE]
+LUCAVI_INNATES = (range(0x1A6, 0x1A9) + [0x1AA] + range(0x1AC, 0x1B0)
+                  + range(0x1B1, 0x1B4) + [0x1B5, 0x1BA, 0x1BD, 0x1BE]
                   + range(0x1C0, 0x1C6)
-                  + range(0x1D1, 0x1D6) + [0x1D8, 0x1DD, 0x1DE, 0x1E2, 0x1E3]
+                  + range(0x1D1, 0x1D6) + [0x1D8, 0x1DD, 0x1DE, 0x1E3]
                   + [0x1E7, 0x1E8]
-                  + range(0x1EB, 0x1EF) + [0x1F2, 0x1F3, 0x1F6, 0x1FA, 0x1FB]
+                  + range(0x1EB, 0x1EE) + [0x1F2, 0x1F3, 0x1FA, 0x1FB]
                   )
 
 
@@ -1227,6 +1227,11 @@ class JobObject(TableObject):
         innates = [getattr(self, attr) for attr in innate_attrs]
         return innates
 
+    def set_all_units(self, attr, value):
+        units = [u for u in UnitObject if u.job == self.index]
+        for u in units:
+            setattr(u, attr, value)
+
     def get_appropriate_boost(self):
         if self.index in [1, 2, 3, 0xD] + range(0x4A, 0x5E):
             return 1.0
@@ -1335,28 +1340,35 @@ class JobObject(TableObject):
             innates = [AbilityObject.get(i) for i in innates if i > 0]
             innate_cands = [AbilityObject.get(i) for i in LUCAVI_INNATES]
             innate_cands += innates
-            innate_cands = [i.index for i in innate_cands if i.is_support]
-            if not self.is_altima:
-                innate_cands += [0, 0, 0]
-            random.shuffle(innate_cands)
-            new_innates = []
-            while len(new_innates) < 4:
-                # short charge or non-charge
-                value = innate_cands.pop()
-                if value in new_innates:
-                    continue
-                if 0x1E2 not in new_innates and 0x1E3 not in new_innates:
-                    if len(new_innates) == 3:
-                        new_innates.append(0x1E2)
-                        break
-                elif value in [0x1E2, 0x1E3]:
-                    continue
-                new_innates.append(value)
-            assert len(new_innates) == 4
-            new_innates = sorted(new_innates)
-            for attr, innate in zip(innate_attrs, new_innates):
-                setattr(self, attr, innate)
-            assert all([isinstance(i, int) for i in self.innates])
+            lucavi_supports = [i for i in innate_cands if i.is_support
+                               and not i.index == 0x1E2]
+            lucavi_reactions = [i for i in innate_cands if i.is_reaction]
+            lucavi_movements = [i for i in innate_cands if i.is_movement]
+            num_reactions = 1 + randint(0, 1) + randint(0, 1)
+            num_supports = 6 - num_reactions
+            while True:
+                supports = random.sample(lucavi_supports, num_supports)
+                supports = [i.index for i in supports]
+                if len(set(supports)) == num_supports:
+                    break
+            if 0x1E3 not in supports and 0x1E2 not in supports:
+                supports[-1] = 0x1E2
+            while True:
+                reactions = random.sample(lucavi_reactions, num_reactions)
+                reactions = [i.index for i in reactions]
+                if len(set(reactions)) == num_reactions:
+                    break
+            abilities = reactions + sorted(supports)
+            assert len(set(abilities)) == len(abilities) == 6
+            for attr, ability in zip(innate_attrs, abilities):
+                setattr(self, attr, ability)
+            self.set_all_units("reaction", abilities[4])
+            self.set_all_units("support", abilities[5])
+            if self.is_altima:
+                self.set_all_units("movement", 0x1F3)
+            else:
+                movement = random.choice(lucavi_movements).index
+                self.set_all_units("movement", movement)
 
         return True
 
@@ -1696,7 +1708,7 @@ class UnitObject(TableObject):
         self.mutate_stats()
 
         if self.is_lucavi:
-            self.mutate_rsm()
+            #self.mutate_rsm()  # done in job mutation
             self.mutate_secondary()
             return
 
@@ -1863,22 +1875,13 @@ class UnitObject(TableObject):
         for attr in ["reaction", "support", "movement"]:
             cands = [a for a in AbilityObject.every
                      if getattr(a, "is_%s" % attr) is True]
-            if self.is_lucavi:
-                cands = [c.index for c in cands]
-                cands = [c for c in cands
-                         if c in LUCAVI_INNATES and c not in job.innates
-                         and c not in [0x1e2, 0x1e3]]
-                setattr(self, attr, random.choice(cands))
-            elif self.has_special_graphic and randint(1, 3) == 3:
+            if self.has_special_graphic and randint(1, 3) == 3:
                 cands = sorted(cands, key=lambda a: a.jp_cost)
                 index = len(cands) / 2
                 index = mutate_normal(index, maximum=len(cands)-1)
                 setattr(self, attr, cands[index].index)
             elif random.choice([True, False]):
                 setattr(self, attr, 0x1FE)
-
-        if job.is_altima:
-            self.movement = 0x1F3
 
     def mutate_level(self):
         if (self.index <= 0xFFF and self.get_bit("randomly_present")
