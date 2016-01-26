@@ -3245,10 +3245,12 @@ def randomize_enemy_formations():
             if len(unused) < 6 or random.choice([True, False]):
                 break
             new = max(unused, key=lambda u: u.index)
-            used = m.nonmoving_units
+            used = (m.nonmoving_units +
+                    [u for u in m.moving_units if u.graphic & 0x80])
+            used = sorted(set(used), key=lambda u: u.index)
+            used = [u for u in used if not u.is_lucavi and u.level != 1]
             if not used:
                 break
-            used = [u for u in used if not u.is_lucavi and u.level != 1]
             if randint(1, 5) != 5:
                 used = [u for u in used if not u.has_special_graphic]
                 if not used:
