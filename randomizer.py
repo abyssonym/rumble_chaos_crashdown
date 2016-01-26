@@ -3086,6 +3086,7 @@ def mutate_units_special():
             change_units = [u for u in change_units if u.graphic > 0]
             change_units = sorted(change_units, key=lambda u: u.index)
             old_job = change_units[0].job
+            alternate_team = not lucavi_special and randint(1, 25) == 25
             for unit in change_units:
                 try:
                     assert not any([unit.named, unit.has_special_graphic,
@@ -3121,6 +3122,8 @@ def mutate_units_special():
                             setattr(unit, attr, chosenvalue)
                         elif oldvalue in [0, 0x1FF]:
                             setattr(unit, attr, 0x1FE)
+                elif alternate_team or randint(1, 10) == 10:
+                    unit.set_bit("alternate_team", True)
                 for method in ["mutate_equips", "mutate_rsm",
                                "mutate_secondary", "mutate_level"]:
                     if random.choice([True, False]):
