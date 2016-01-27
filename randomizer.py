@@ -3414,21 +3414,32 @@ def restore_warjilis(outfile):
                      "accessory", "righthand", "lefthand", "palette",
                      "misc2"]:
             setattr(unit, attr, job.get_most_common(attr))
-        unit.set_bit("enemy_team", True)
         unit.set_bit("always_present", True)
-        unit.set_bit("control", True)
         for bit in ["save_formation", "load_formation", "hidden_stats",
                     "test_teta", "randomly_present", "join_after_event",
-                    "alternate_team"]:
+                    "alternate_team", "immortal"]:
             unit.set_bit(bit, False)
+        unit.backup_jp_total = 999999
         if unit == partner:
             unit.set_bit("enemy_team", False)
             unit.set_bit("control", False)
             unit.set_bit("hidden_stats", True)
-            unit.level = randint(randint(randint(0, 99), 99), 99)
+            unit.set_bit("immortal", True)
+            unit.level = randint(randint(50, 99), 99)
         else:
-            unit.level = randint(0, randint(0, randint(0, 99)))
-        unit.mutate()
+            unit.level = randint(1, randint(1, randint(1, 99)))
+            unit.set_bit("enemy_team", True)
+            unit.set_bit("control", True)
+        unit.mutate(preserve_job=True, preserve_gender=True)
+        if unit == partner:
+            unit.righthand = 0x25
+            unit.support = 0x1db
+            unit.head = 0xab
+            unit.body = 0xb8
+            unit.accessory = 0xec
+            unit.secondary = 0xFE
+        else:
+            unit.reaction = 0
 
         while True:
             x = randint(0, mymap.width-1)
