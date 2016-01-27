@@ -1216,7 +1216,10 @@ class SkillsetObject(TableObject):
 
 class JobObject(TableObject):
     def get_most_common(self, attribute):
-        units = [u for u in UnitObject if u.job == self.index]
+        units = [u for u in UnitObject
+                 if u.job == self.index and u.map_id <= 0x1d5]
+        if not units:
+            return None
         attr_count = Counter([getattr(u, attribute) for u in units])
         maxval = max(attr_count.values())
         choices = sorted([k for (k, v) in attr_count.items() if v == maxval])
@@ -3386,7 +3389,7 @@ def restore_warjilis(outfile):
         and not j.index < 4
         and not j.crippled
         and not j.is_lucavi
-        and j.get_most_common("name") != 0xFF
+        and j.get_most_common("name") not in [None, 0xFF]
         and j.get_most_common("graphic") not in [None, 0x80, 0x81, 0x82]]
 
     while True:
@@ -3431,6 +3434,8 @@ def restore_warjilis(outfile):
             unit.set_bit("enemy_team", True)
             unit.set_bit("control", True)
         unit.mutate(preserve_job=True, preserve_gender=True)
+        unit.trophy = 0
+        unit.gil = 0
         if unit == partner:
             unit.righthand = 0x25
             unit.support = 0x1db
@@ -3978,13 +3983,16 @@ def randomize():
         for e in EncounterObject.every:
             e.randomize_music()
 
+    if 'z' in flags:
+        restore_warjilis(TEMPFILE)
+
     if 'o' in flags:
         try:
             auto_mash(TEMPFILE)
         except NotImplementedError:
             pass
 
-    if set(flags) & set("rujimtpsaz"):
+    if set(flags) & set("rujimtpsazf"):
         random.seed(seed)
         for unit_id in [0x1951, 0x19d0, 0x1a10, 0x1ac0, 0x1b10]:
             u = get_unit(unit_id)
@@ -4007,8 +4015,6 @@ def randomize():
         for u in UnitObject:
             if u.get_bit("enemy_team"):
                 u.level = 1
-
-    restore_warjilis(TEMPFILE)
 
     DOUBLE_SUPER = set(SUPER_LEVEL_BOOSTED) & set(SUPER_SPECIAL)
     #for unit in DOUBLE_SUPER:
