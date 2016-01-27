@@ -3371,23 +3371,12 @@ def restore_warjilis(outfile):
     new_enc.randomize_music()
     new_enc.randomize_weather()
     new_enc.entd = 0x1DC  # test Dancers
-    num_teams = random.choice([3, 4])
-    num_teams = 4
-    units_per_team = 16 / num_teams
-    extra_units = (16 % num_teams)
-    if num_teams == 4:
-        override = 1
-    elif num_teams == 3:
-        override = 2
     blank_unit = UnitObject.get(0x1d)
     assert blank_unit.job == blank_unit.graphic == 0
     for u in mapunits[0x1dc]:
         u.copy_data(blank_unit)
-    new_enc.generate_formations(corner=True, numchar_override=override)
+    new_enc.generate_formations(corner=True, numchar_override=1)
     mymap = MapObject.get_map(42)
-    blue_corner_coordinates = [
-        (x, y) for x in xrange(mymap.width) for y in xrange(mymap.length)
-        if mymap.get_tile_value(x, y, "party") == 1]
 
     special_jobs = [
         j for j in get_jobs() if not 5 <= j.skillset <= 0x18
@@ -3397,93 +3386,63 @@ def restore_warjilis(outfile):
         and not j.index < 4
         and not j.crippled
         and not j.is_lucavi
+        and j.get_most_common("name") != 0xFF
         and j.get_most_common("graphic") not in [None, 0x80, 0x81, 0x82]]
+
     while True:
-        chosen_jobs = random.sample(special_jobs, 9-override)
+        chosen_jobs = random.sample(special_jobs, 8)
         if len(chosen_jobs) == len(
                 set([j.get_most_common("name") for j in chosen_jobs])):
             break
-    jobs_per_team = len(chosen_jobs) / num_teams
-    extra_jobs = len(chosen_jobs) - (jobs_per_team * num_teams)
-    team_jobs, team_units = {}, {}
-    for team in xrange(num_teams):
-        team_jobs[team], chosen_jobs = (
-            chosen_jobs[:jobs_per_team], chosen_jobs[jobs_per_team:])
-        team_units[team] = mapunits[0x1dc][
-            team*units_per_team:(team+1)*units_per_team]
-    team_jobs[0] += chosen_jobs[-extra_jobs:]
-    if extra_units:
-        team_units[0] += mapunits[0x1dc][-extra_units:]
-    team_units[0] = team_units[0][:-override]
-    team_corners = {}
+    partner_job, chosen_jobs = chosen_jobs[0], chosen_jobs[1:]
+    partner = mapunits[0x1dc][14]
 
-    for team in xrange(num_teams):
-        if team == 0:
-            x, y = blue_corner_coordinates[0]
-            corner = x >= 5, y >= 5
+    units = mapunits[0x1dc][:15]
+    done_jobs = []
+    for unit in units:
+        if unit == partner:
+            job = partner_job
+        elif chosen_jobs:
+            job = chosen_jobs.pop()
+            done_jobs.append(job)
         else:
-            while True:
-                corner = (random.choice([True, False]),
-                          random.choice([True, False]))
-                if corner not in team_corners.values():
+            job = random.choice(done_jobs)
+        unit.job = job.index
+        for attr in ["graphic", "misc1", "name", "month", "day", "brave",
+                     "faith", "unlocked", "unlocked_level", "secondary",
+                     "reaction", "support", "movement", "head", "body",
+                     "accessory", "righthand", "lefthand", "palette",
+                     "misc2"]:
+            setattr(unit, attr, job.get_most_common(attr))
+        unit.set_bit("enemy_team", True)
+        unit.set_bit("always_present", True)
+        unit.set_bit("control", True)
+        for bit in ["save_formation", "load_formation", "hidden_stats",
+                    "test_teta", "randomly_present", "join_after_event",
+                    "alternate_team"]:
+            unit.set_bit(bit, False)
+        if unit == partner:
+            unit.set_bit("enemy_team", False)
+            unit.set_bit("control", False)
+            unit.set_bit("hidden_stats", True)
+            unit.level = randint(randint(randint(0, 99), 99), 99)
+        else:
+            unit.level = randint(0, randint(0, randint(0, 99)))
+        unit.mutate()
+
+        while True:
+            x = randint(0, mymap.width-1)
+            y = randint(0, mymap.length-1)
+            for a, b in [(a2, b2) for a2 in [-1, 0, 1] for b2 in [-1, 0, 1]]:
+                a, b = x+a, y+b
+                if mymap.get_tile_value(a, b, "bad"):
                     break
-        team_corners[team] = corner
-
-    done_team_jobs = defaultdict(list)
-    for team in xrange(num_teams):
-        for unit in team_units[team]:
-            if team_jobs[team]:
-                job = team_jobs[team].pop()
-                done_team_jobs[team].append(job)
             else:
-                job = random.choice(done_team_jobs[team])
-            unit.job = job.index
-            for attr in ["graphic", "misc1", "name", "month", "day", "brave",
-                         "faith", "unlocked", "unlocked_level", "secondary",
-                         "reaction", "support", "movement", "head", "body",
-                         "accessory", "righthand", "lefthand", "palette",
-                         "misc2"]:
-                setattr(unit, attr, job.get_most_common(attr))
-                unit.set_bit("enemy_team", bool(team & 1))
-                unit.set_bit("alternate_team", bool(team & 0b10))
-                unit.set_bit("always_present", True)
-                for bit in ["save_formation", "load_formation", "hidden_stats",
-                            "test_teta", "randomly_present", "control"]:
-                    unit.set_bit(bit, False)
-                if team == 0:
-                    unit.set_bit("control", True)
-                    unit.set_bit("join_after_event",
-                                 random.choice([True, False, False]))
-                    unit.level = 100 + randint(0, randint(0, 5))
-                    if unit.level == 100:
-                        unit.level = 0xFE
-                else:
-                    unit.level = randint(1, randint(1, 15))
-                unit.mutate(preserve_job=True, preserve_gender=True)
-            while True:
-                if team == 0:
-                    x, y = random.choice(blue_corner_coordinates)
-                    x += random.choice([-2, -1, -1, 0, 1, 1, 2])
-                    y += random.choice([-2, -1, -1, 0, 1, 1, 2])
-                else:
-                    x = randint(0, mymap.width-1)
-                    y = randint(0, mymap.length-1)
-                if not (x >= 5, y >= 5) == team_corners[team]:
-                    continue
-                if 5 <= y <= 9 or 3 <= x <= 6:
-                    continue
-                if x < 0 or x >= mymap.width:
-                    continue
-                if y < 0 or y >= mymap.length:
-                    continue
-                if mymap.get_tile_value(x, y, "bad"):
-                    continue
                 break
-            unit.x, unit.y = x, y
-            unit.fix_facing(mymap)
-            mymap.set_occupied(x, y)
+        unit.x, unit.y = x, y
+        unit.fix_facing(mymap)
+        mymap.set_occupied(x, y)
 
-    assert sum([len(team_units[k]) for k in team_units]) + override == 16
     warjilis = EncounterObject.get(0xab)
     warjilis.following = 0x81
     warjilis.next_scene = new_enc.scenario
