@@ -1654,12 +1654,14 @@ class UnitObject(TableObject):
             index = mutate_normal(index, maximum=len(candidates)-1)
             self.secondary = candidates[index]
         elif (unlocked_job != base_job and unlocked_level > 1
-                and randint(1, 3) != 3):
-            assert unlocked_job.otherindex in range(0x14)
+                and randint(1, 3) != 3 and unlocked_job.name != "mime"):
+            assert unlocked_job.otherindex in range(0x13)
             self.secondary = unlocked_job.otherindex + 5
         elif randint(1, 5) == 5:
             cands = []
             for name in JOBNAMES:
+                if name == "mime":
+                    continue
                 value = max(getattr(base_job, name) if base_job else 0,
                             getattr(unlocked_job, name))
                 if value:
