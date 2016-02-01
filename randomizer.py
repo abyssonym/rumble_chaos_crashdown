@@ -7,6 +7,7 @@ from time import time
 import string
 from string import lowercase
 from collections import Counter, defaultdict
+from itertools import product
 
 from randomtools.utils import (
     mutate_index, mutate_normal, mutate_bits, read_multi, write_multi,
@@ -87,8 +88,10 @@ Y_FORMULAS = [0x8, 0x9, 0xC, 0xD, 0xE, 0xF, 0x10, 0x1A, 0x1B, 0x1E, 0x1F, 0x20,
               ]
 
 VALID_INNATE_STATUSES = 0xCAFCE12A10
-VALID_START_STATUSES = VALID_INNATE_STATUSES | 0x1402100000
-BENEFICIAL_STATUSES = 0xC278600000
+VALID_START_STATUSES = (VALID_INNATE_STATUSES |
+                        0x1402100000)
+BENEFICIAL_STATUSES =   0xC278600000
+RERAISE_STATUS =        0x0000200000
 BANNED_SKILLS = range(0x165, 0x16F)
 BANNED_SKILLSET_SHUFFLE = [0, 1, 2, 3, 6, 8, 0x11, 0x12, 0x13, 0x14, 0x15,
                            0x18, 0x34, 0x38, 0x39, 0x3B, 0x3E, 0x9C, 0xA1]
@@ -743,7 +746,7 @@ class EncounterObject(TableObject):
             else:
                 self.weather = 0
 
-    def randomize_music(self):
+    def randomize_music(self, prefer_unused=False):
         sneaky_events = [0x186, 0x187, 0x188, 0x189, 0x18a, 0x18c, 0x18d,
                          0x18e, 0x196, 0x198, 0x19c, 0x1a2, 0x1a5, 0x1a9,
                          0x1ab, 0x1ad, 0x1b2, 0x1b5, 0x1be, 0x1c3, 0x1c7,
@@ -759,6 +762,10 @@ class EncounterObject(TableObject):
         if not temp:
             self.used_music = set([])
             temp = allowed
+        if prefer_unused:
+            temp2 = [s for s in temp if 81 <= s <= 96]
+            if temp2:
+                temp = temp2
         self.music = [m if m in banned else random.choice(temp)
                       for m in self.music]
         self.used_music |= set(self.music)
@@ -1870,19 +1877,22 @@ class UnitObject(TableObject):
             import pdb; pdb.set_trace()
 
         if not self.has_special_graphic:
-            if gender == "male":
-                self.set_bit("male", True)
-                self.set_bit("female", False)
-                self.graphic = 0x80
-            elif gender == "female":
-                self.set_bit("female", True)
-                self.set_bit("male", False)
-                self.graphic = 0x81
+            self.set_gender(gender)
 
         self.mutate_equips()
         self.mutate_rsm()
         self.mutate_secondary()
         return True
+
+    def set_gender(self, gender):
+        if gender == "male":
+            self.set_bit("male", True)
+            self.set_bit("female", False)
+            self.graphic = 0x80
+        elif gender == "female":
+            self.set_bit("female", True)
+            self.set_bit("male", False)
+            self.graphic = 0x81
 
     def mutate_equips(self):
         if self.get_bit("load_formation"):
@@ -3371,58 +3381,66 @@ def restore_warjilis(outfile):
     new_enc.event = 0x25  # deep dungeon END event
     new_enc.map_id = 42
     new_enc.ramza = 0
-    new_enc.randomize_music()
+    new_enc.randomize_music(prefer_unused=True)
     new_enc.randomize_weather()
     new_enc.entd = 0x1DC  # test Dancers
     blank_unit = UnitObject.get(0x1d)
     assert blank_unit.job == blank_unit.graphic == 0
     for u in mapunits[0x1dc]:
         u.copy_data(blank_unit)
-    new_enc.generate_formations(corner=True, numchar_override=1)
+    new_enc.generate_formations(numchar_override=1)
     mymap = MapObject.get_map(42)
 
     special_jobs = [
         j for j in get_jobs() if not 5 <= j.skillset <= 0x18
-        and not j.skillset == 0
+        and j.skillset not in [0, 0x2D, 0x2E, 0x32]
         and not 0x4A <= j.index <= 0x8F
         and not j.index >= 0x92
         and not j.index < 4
         and not j.crippled
         and not j.is_lucavi
+        and not j.start_status & RERAISE_STATUS
+        and not j.innate_status & RERAISE_STATUS
         and j.get_most_common("name") not in [None, 0xFF]
         and j.get_most_common("graphic") not in [None, 0x80, 0x81, 0x82]]
 
-    while True:
-        chosen_jobs = random.sample(special_jobs, 8)
-        if len(chosen_jobs) == len(
-                set([j.get_most_common("name") for j in chosen_jobs])):
-            break
-    partner_job, chosen_jobs = chosen_jobs[0], chosen_jobs[1:]
+    partner_job = random.choice(special_jobs)
+    special_jobs = [j for j in special_jobs
+                    if j.skillset != partner_job.skillset]
+    enemy_job = random.choice(special_jobs)
     partner = mapunits[0x1dc][14]
 
     units = mapunits[0x1dc][:15]
-    done_jobs = []
+    real_jobs = sorted(set(range(0x4A, 0x5E) + [enemy_job.index]))
+    random.shuffle(real_jobs)
     for unit in units:
         if unit == partner:
             job = partner_job
-        elif chosen_jobs:
-            job = chosen_jobs.pop()
-            done_jobs.append(job)
+            for attr in ["name", "month", "day", "brave", "faith", "secondary",
+                         "reaction", "movement", "palette",
+                         "graphic", "misc1", "misc2"]:
+                setattr(unit, attr, job.get_most_common(attr))
+            unit.job = job.index
         else:
-            job = random.choice(done_jobs)
-        unit.job = job.index
-        for attr in ["graphic", "misc1", "name", "month", "day", "brave",
-                     "faith", "unlocked", "unlocked_level", "secondary",
-                     "reaction", "support", "movement", "head", "body",
-                     "accessory", "righthand", "lefthand", "palette",
-                     "misc2"]:
-            setattr(unit, attr, job.get_most_common(attr))
+            job = enemy_job
+            for attr in ["misc1", "misc2", "palette", "graphic"]:
+                setattr(unit, attr, job.get_most_common(attr))
+            for attr in ["month", "day", "brave", "faith", "secondary"]:
+                setattr(unit, attr, 0xFE)
+            for attr in ["reaction", "movement"]:
+                setattr(unit, attr, 0x1FE)
+            unit.support = random.choice(range(0x1C8, 0x1DF) + [0x1E2, 0x1E3])
+            unit.name = 0xFF
+            unit.job = real_jobs.pop()
+            if unit.job == job.index:
+                for attr in ["name", "day", "brave", "faith"]:
+                    setattr(unit, attr, job.get_most_common(attr))
+
         unit.set_bit("always_present", True)
         for bit in ["save_formation", "load_formation", "hidden_stats",
                     "test_teta", "randomly_present", "join_after_event",
                     "alternate_team", "immortal"]:
             unit.set_bit(bit, False)
-        unit.backup_jp_total = 999999
         if unit == partner:
             unit.set_bit("enemy_team", False)
             unit.set_bit("control", False)
@@ -3433,31 +3451,59 @@ def restore_warjilis(outfile):
             unit.level = randint(1, randint(1, randint(1, 99)))
             unit.set_bit("enemy_team", True)
             unit.set_bit("control", True)
+
+        unit.unlocked_level = 8
         unit.mutate(preserve_job=True, preserve_gender=True)
+        unit.unlocked_level = 8
         unit.trophy = 0
         unit.gil = 0
         if unit == partner:
             unit.righthand = 0x25
-            unit.support = 0x1db
             unit.head = 0xab
             unit.body = 0xb8
             unit.accessory = 0xec
-            unit.secondary = 0xFE
+            unit.secondary = 0xfe
+            unit.lefthand = 0xfe
+            unit.support = 0x1db
         else:
             unit.reaction = 0
-
-        while True:
-            x = randint(0, mymap.width-1)
-            y = randint(0, mymap.length-1)
-            for a, b in [(a2, b2) for a2 in [-1, 0, 1] for b2 in [-1, 0, 1]]:
-                a, b = x+a, y+b
-                if mymap.get_tile_value(a, b, "bad"):
-                    break
+            for attr in ["lefthand", "head", "body", "accessory"]:
+                setattr(unit, attr, 0xFF)
+            unit.righthand = 0xFE
+            item_level = randint(randint(1, 100), 100)
+            attr = random.choice(
+                ["righthand", "lefthand", "head", "body", "accessory"])
+            if attr == "righthand":
+                candidates = [c for c in ItemObject if c.get_bit("weapon")]
+                setattr(unit, random.choice(["lefthand", "head", "body",
+                                             "accessory"]), 0xFE)
+            elif attr == "lefthand":
+                candidates = [c for c in ItemObject if c.get_bit("shield")]
             else:
-                break
-        unit.x, unit.y = x, y
+                candidates = [c for c in ItemObject if c.get_bit(attr)]
+            candidates = [c for c in candidates if c.enemy_level <= item_level]
+            if candidates:
+                candidates = random.sample(candidates, min(len(candidates), 3))
+                setattr(unit, attr,
+                        max(candidates, key=lambda c: c.enemy_level).index)
+
+        bads = mymap.get_values_grid("bad")
+        candidates = []
+        for j in xrange(mymap.length):
+            for i in xrange(mymap.width):
+                for a, b in product(range(-1, 2), range(-1, 2)):
+                    a, b = i+a, j+b
+                    if (a < 0 or b < 0
+                            or a >= mymap.width or b >= mymap.length):
+                        continue
+                    value = bads[b][a]
+                    if value:
+                        break
+                else:
+                    candidates.append((i, j))
+        unit.x, unit.y = random.choice(candidates)
         unit.fix_facing(mymap)
-        mymap.set_occupied(x, y)
+        mymap.set_occupied(unit.x, unit.y)
 
     warjilis = EncounterObject.get(0xab)
     warjilis.following = 0x81
