@@ -1137,6 +1137,16 @@ class SkillsetObject(TableObject):
             return False
 
     @property
+    def has_swordskills(self):
+        for action in self.actions:
+            if not AbilityAttributesObject.has(action):
+                continue
+            aa = AbilityAttributesObject.get(action)
+            if aa.get_bit("require_sword"):
+                return True
+        return False
+
+    @property
     def not_just_swordskills(self):
         for action in self.actions:
             if not AbilityAttributesObject.has(action):
@@ -3650,6 +3660,24 @@ def disable_random_battles(filename):
     f.close()
 
 
+def free_soldier_office(filename):
+    if JAPANESE_MODE:
+        raise NotImplementedError
+    f = open(filename, "r+b")
+    f.seek(0xA4EAC58)
+    write_multi(f, 0, length=2)
+    f.seek(0xA4EB68C)
+    write_multi(f, 0, length=2)
+    f.seek(0xA4EB698)
+    write_multi(f, 0, length=2)
+    s = "".join([chr(0xFF)] * 7)
+    f.seek(0x5B111)
+    f.write(s)
+    f.seek(0x5B11D)
+    f.write(s)
+    f.close()
+
+
 def auto_mash(filename):
     if JAPANESE_MODE:
         raise NotImplementedError
@@ -4053,6 +4081,7 @@ def randomize():
 
         try:
             disable_random_battles(TEMPFILE)
+            free_soldier_office(TEMPFILE)
         except NotImplementedError:
             pass
 
