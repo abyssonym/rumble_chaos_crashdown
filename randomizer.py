@@ -241,14 +241,24 @@ class TileObject:
         self.occupied = 0
         self.party = 0
         self.upper = 0
+        self.unreachable = 0
 
     @property
     def bad(self):
-        if self.impassable | self.uncursorable | self.occupied:
+        if self.occupied or self.unreachable:
+            return 1
+        return self.bad_regardless
+
+    @property
+    def bad_regardless(self):
+        if self.impassable | self.uncursorable:
             return 1
         if self.slope_height > 2:
             return 1
         return 0
+
+    def set_unreachable(self, unreachable=1):
+        self.unreachable = unreachable
 
     def set_occupied(self, occupied=1):
         self.occupied = occupied
@@ -268,6 +278,7 @@ class MapObject:
         if not self.all_map_movements:
             MapObject.populate_map_movements()
 
+        self.index = len(self.map_objects)
         self.map_id = map_id
         f = open(TEMPFILE, 'r+b')
         f.seek(p + 0x68)
@@ -286,14 +297,63 @@ class MapObject:
         for i in xrange(256, 512):
             f.seek(offset + 2 + (i*8))
             self.upper.append(TileObject(f.read(8)))
+        f.close()
         for t, u in zip(self.tiles, self.upper):
             if u.height and not u.bad:
                 t.upper = 1
         for unit, x, y in self.map_movements:
             self.set_occupied(x, y)
         self.set_entd_occupied_movers()
-        f.close()
+        self.set_unreachable_zones()
         self.map_objects.append(self)
+
+    def set_unreachable_zones(self):
+        zones = []
+        values_grid = self.get_values_grid("bad_regardless")
+        for y in xrange(self.length):
+            for x in xrange(self.width):
+                if values_grid[y][x] == 1:
+                    continue
+                zone_found = False
+                for zone in zones:
+                    for (b, a) in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                        i, j = x+a, y+b
+                        if (i, j) in zone:
+                            zone_found = True
+                            zone.append((x, y))
+                            break
+                if not zone_found:
+                    zones.append([(x, y)])
+        zones = [set(z) for z in zones]
+        num_zones = len(zones)
+        while True:
+            for z1 in list(zones):
+                for z2 in list(zones):
+                    if z1 is z2:
+                        continue
+                    if z1 & z2:
+                        zones.remove(z1)
+                        zones.remove(z2)
+                        zones.append(z1 | z2)
+                        break
+                if len(zones) != num_zones:
+                    break
+            if len(zones) == num_zones:
+                break
+            num_zones = len(zones)
+        largesize = max([len(z) for z in zones])
+        candidates = [z for z in zones if len(z) == largesize]
+        chosen = random.choice(candidates)
+        for zone in zones:
+            if zone == chosen:
+                continue
+            for (x, y) in zone:
+                self.set_unreachable(x, y)
+        self.zones = zones
+
+    def set_unreachable(self, x, y):
+        index = (y * self.width) + x
+        self.tiles[index].set_unreachable()
 
     def set_occupied(self, x, y, party=False):
         index = (y * self.width) + x
@@ -421,6 +481,17 @@ class MapObject:
     def get_tile_values(self, attribute):
         return [getattr(t, attribute) for t in self.tiles]
 
+    def tile_count(self, attribute, f=None):
+        if f is None:
+            f = lambda v: v
+        values = self.get_tile_values(attribute)
+        values = values[:self.length * self.width]
+        return len([v for v in values if f(v)])
+
+    @property
+    def tile_count_good(self):
+        return self.tile_count("bad_regardless", f=lambda v: v == 0)
+
     @property
     def tile_grid(self):
         grid = []
@@ -436,6 +507,13 @@ class MapObject:
     @staticmethod
     def get_map(map_id, index=0):
         return MapObject.get_by_map_id(map_id)[index]
+
+    @staticmethod
+    def get_most_good(map_id):
+        maps = MapObject.get_by_map_id(map_id)
+        maps = sorted(maps, key=lambda m:
+                      (m.tile_count_good, -m.index))
+        return maps[-1]
 
     @classproperty
     def every(cls):
@@ -454,6 +532,7 @@ class MapObject:
 
 class EncounterObject(TableObject):
     used_music = set([])
+    _candidate_maps = None
 
     @property
     def next_enc(self):
@@ -508,6 +587,45 @@ class EncounterObject(TableObject):
         #unused = EncounterObject.get(0x18f)
         return unused
 
+    @staticmethod
+    def get_replaceable_maps():
+        banned = [0x184, 0x185, 0x1c2]
+        encs = [e for e in EncounterObject.every if e.event and e.entd
+                and not MapObject.get_map(e.map_id).move_units
+                and 0x180 <= e.entd <= 0x1d5 and e.entd not in banned]
+        return sorted(encs, key=lambda e: e.entd)
+
+    @staticmethod
+    def get_candidate_maps():
+        if EncounterObject._candidate_maps is not None:
+            return EncounterObject._candidate_maps
+
+        maps = [
+            0, 1, 4, 8, 9, 11, 14, 15, 18, 20, 21, 23, 24, 26, 33, 37, 38,
+            41, 43, 46, 48, 51, 53, 62, 65, 68, 71, 72, 73, 75,
+            76, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 104,
+            115, 116, 117, 118, 119, 125]
+        maps = [MapObject.get_most_good(m) for m in maps]
+        EncounterObject._candidate_maps = maps
+        return EncounterObject.get_candidate_maps()
+
+    @staticmethod
+    def remove_candidate_map(m):
+        EncounterObject._candidate_maps.remove(m)
+
+    @property
+    def mutated(self):
+        if hasattr(self, "_mutated") and self._mutated:
+            return True
+        return False
+
+    def mutate_map(self):
+        candidates = self.get_candidate_maps()
+        c = random.choice(candidates)
+        self.map_id = c.map_id
+        self.remove_candidate_map(c)
+        self._mutated = True
+
     def generate_formations(self, corner=False, numchar_override=None):
         m = MapObject.get_map(self.map_id)
         num_generic_moves = len([u for u in m.move_units if u & 0x80])
@@ -535,16 +653,22 @@ class EncounterObject(TableObject):
 
         # begin generate function
         def gen():
-            winwidth = 5
-            winlength = 5
+            winwidth = min(5, width)
+            winlength = min(5, length)
             placewidth = width - 4
             placelength = length - 4
             halfwidth, halflength = placewidth/2, placelength/2
             if not corner:
-                x = randint(0, halfwidth) + randint(0, halfwidth)
-                x = (x + halfwidth) % placewidth
-                y = randint(0, halflength) + randint(0, halflength)
-                y = (y + halflength) % placelength
+                if placewidth == 0:
+                    x = 0
+                else:
+                    x = randint(0, halfwidth) + randint(0, halfwidth)
+                    x = (x + halfwidth) % placewidth
+                if placelength == 0:
+                    y = 0
+                else:
+                    y = randint(0, halflength) + randint(0, halflength)
+                    y = (y + halflength) % placelength
             else:
                 x = random.choice([0, placewidth-1])
                 y = random.choice([0, placelength-1])
@@ -734,6 +858,7 @@ class EncounterObject(TableObject):
 
         if self.grid2 and subchars > 1 and random.choice([True, False]):
             self.grid, self.grid2 = self.grid2, self.grid
+        return True
 
     def randomize_weather(self):
         if self.weather <= 4:
@@ -3225,7 +3350,7 @@ def randomize_enemy_formations():
     es = [e for e in EncounterObject.every
           if e.map_id and e.entd and e.event and e.grid]
 
-    def generate_heatmap(m, example_unit, done_units=None):
+    def generate_heatmap(m, example_unit, done_units=None, upper=True):
         enemy_units = [u for u in done_units if u.get_bit("enemy_team")]
         ally_units = [u for u in done_units if u not in enemy_units]
         if not example_unit.get_bit("enemy_team"):
@@ -3235,7 +3360,9 @@ def randomize_enemy_formations():
         for y in xrange(len(heatmap)):
             for x in xrange(len(heatmap[0])):
                 if m.get_tile_value(x, y, "bad"):
-                    if example_unit.x != x or example_unit.y != y:
+                    if (m.get_tile_value(x, y, "unreachable") or
+                            m.get_tile_value(x, y, "bad_regardless") or
+                            example_unit.x != x or example_unit.y != y):
                         heatmap[y][x] = -999999999
                         continue
                 for u in done_units:
@@ -3293,7 +3420,7 @@ def randomize_enemy_formations():
         example_unit.x, example_unit.y = x, y
         example_unit.fix_facing(m)
         example_unit.facing &= 0x7F
-        if m.get_tile_value(x, y, "upper"):
+        if upper and m.get_tile_value(x, y, "upper"):
             if random.choice([True, True, True, False]):
                 example_unit.facing |= 0x80
         return heatmap
@@ -3304,12 +3431,15 @@ def randomize_enemy_formations():
         m = MapObject.get_map(e.map_id)
         if not any(m.get_tile_values("party")):
             continue
-        units = m.nonmoving_units
+        if e.mutated:
+            units = m.units
+        else:
+            units = m.nonmoving_units
         random.shuffle(units)
         for i in xrange(len(units)):
             ex = units[i]
             done = units[:i]
-            generate_heatmap(m, ex, done)
+            generate_heatmap(m, ex, done, upper=not e.mutated)
 
         new_units = []
         while True:
@@ -3349,7 +3479,7 @@ def randomize_enemy_formations():
                 if randint(1, 10) == 10:
                     new.set_bit("alternate_team", True)
             while True:
-                generate_heatmap(m, new, units+new_units)
+                generate_heatmap(m, new, units+new_units, upper=not e.mutated)
                 for u in m.units:
                     if u != new and u.x == new.x and u.y == new.y:
                         break
@@ -3928,6 +4058,7 @@ def randomize():
     else:
         seed = int(time())
     seed = seed % (10**10)
+    random.seed(seed)
     print "Using seed: %s.%s\n" % (flags, seed)
     if flags:
         newsource = "fft_rcc.%s.%s.iso" % (flags, seed)
@@ -3976,9 +4107,9 @@ def randomize():
         ao.every
 
     get_jobreqs()
-
     sort_mapunits()
     make_rankings()
+
     if 'r' in flags:
         # before units
         random.seed(seed)
@@ -4017,6 +4148,18 @@ def randomize():
         for e in EncounterObject.every:
             e.randomize_weather()
 
+    if 'z' in flags and 'f' in flags:
+        random.seed(seed)
+        encs = EncounterObject.get_replaceable_maps()
+        half = len(encs) / 2
+        #sampsize = randint(0, half) + randint(0, half)
+        sampsize = randint(1, half)
+        sampsize = randint(sampsize, half)
+        encs = random.sample(encs, sampsize)
+        for e in encs:
+            print "MUTATED %x" % e.entd
+            e.mutate_map()
+
     if 'f' in flags:
         print "Randomizing formations."
         random.seed(seed)
@@ -4028,7 +4171,10 @@ def randomize():
         es = [e for e in EncounterObject.every
               if e.map_id and e.entd and e.event and e.grid]
         for i, e in enumerate(es):
-            e.generate_formations()
+            while True:
+                result = e.generate_formations()
+                if result or not e.mutated:
+                    break
         randomize_enemy_formations()
 
     if 's' in flags:
