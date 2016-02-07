@@ -3571,7 +3571,6 @@ def restore_warjilis(outfile):
                 setattr(unit, attr, 0xFE)
             for attr in ["reaction", "movement"]:
                 setattr(unit, attr, 0x1FE)
-            unit.support = random.choice(range(0x1C8, 0x1DF) + [0x1E2, 0x1E3])
             unit.name = 0xFF
             unit.job = real_jobs.pop()
             if unit.job == job.index:
@@ -3608,11 +3607,12 @@ def restore_warjilis(outfile):
             unit.lefthand = 0xfe
             unit.support = 0x1db
         else:
+            unit.support = random.choice(range(0x1C8, 0x1DF) + [0x1E2, 0x1E3])
             unit.reaction = 0
             for attr in ["lefthand", "head", "body", "accessory"]:
                 setattr(unit, attr, 0xFF)
             unit.righthand = 0xFE
-            item_level = randint(randint(1, 100), 100)
+            item_level = randint(randint(20, 40), 100)
             attr = random.choice(
                 ["righthand", "lefthand", "head", "body", "accessory"])
             if attr == "righthand":
@@ -4157,7 +4157,6 @@ def randomize():
         sampsize = randint(sampsize, half)
         encs = random.sample(encs, sampsize)
         for e in encs:
-            print "MUTATED %x" % e.entd
             e.mutate_map()
 
     if 'f' in flags:
