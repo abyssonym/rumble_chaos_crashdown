@@ -1285,12 +1285,22 @@ class SkillsetObject(TableObject):
     def not_just_swordskills(self):
         for action in self.actions:
             if not AbilityAttributesObject.has(action):
-                return True
+                continue
             aa = AbilityAttributesObject.get(action)
             if not (aa.get_bit("require_sword")
                     or aa.get_bit("require_materia_blade")):
                 return True
         return False
+
+    @property
+    def no_randoms(self):
+        for action in self.actions:
+            if not AbilityAttributesObject.has(action):
+                continue
+            aa = AbilityAttributesObject.get(action)
+            if aa.get_bit("random_hits"):
+                return False
+        return True
 
     def get_actual_actions(self):
         actuals = []
@@ -1806,7 +1816,7 @@ class UnitObject(TableObject):
             candidates = get_ranked_secondaries()
             candidates = [SkillsetObject.get(c) for c in candidates]
             candidates = [ss.index for ss in candidates
-                          if ss.not_just_swordskills]
+                          if ss.not_just_swordskills and ss.no_randoms]
             index = None
             if self.secondary in candidates:
                 index = candidates.index(self.secondary)
