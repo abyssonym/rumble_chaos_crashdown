@@ -601,7 +601,7 @@ class EncounterObject(TableObject):
             return EncounterObject._candidate_maps
 
         maps = [
-            0, 1, 4, 8, 9, 11, 14, 15, 18, 20, 21, 23, 24, 26, 33, 37, 38,
+            0, 1, 4, 8, 9, 11, 14, 15, 18, 20, 21, 23, 24, 26, 37, 38,
             41, 43, 46, 48, 51, 53, 62, 65, 68, 71, 72, 73, 75,
             76, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 104,
             115, 116, 117, 118, 119, 125]
@@ -3608,11 +3608,9 @@ def randomize_ending():
         u.graphic = g
 
 
-def restore_warjilis(outfile):
+def restore_warjilis(outfile, before=0xAB, new_entd=0x1DC,
+                     map_id=42, monsters=False):
     f = open(outfile, 'r+b')
-    f.seek(0x823804)
-    check = ord(f.read(1))
-    assert check == 0x2E
     f.seek(0x823804)
     f.write("".join([chr(0xF2) for _ in xrange(9)]))  # END bg color
     f.close()
@@ -3622,17 +3620,17 @@ def restore_warjilis(outfile):
     new_enc.copy_data(gariland)
     new_enc.scenario = scenario
     new_enc.event = 0x25  # deep dungeon END event
-    new_enc.map_id = 42
+    new_enc.map_id = map_id
     new_enc.ramza = 0
     new_enc.randomize_music(prefer_unused=True)
     new_enc.randomize_weather()
-    new_enc.entd = 0x1DC  # test Dancers
+    new_enc.entd = new_entd  # 1dc = test Dancers
     blank_unit = UnitObject.get(0x1d)
     assert blank_unit.job == blank_unit.graphic == 0
-    for u in mapunits[0x1dc]:
+    for u in mapunits[new_entd]:
         u.copy_data(blank_unit)
     new_enc.generate_formations(numchar_override=1)
-    mymap = MapObject.get_map(42)
+    mymap = MapObject.get_map(map_id)
 
     special_jobs = [
         j for j in get_jobs() if not 5 <= j.skillset <= 0x18
@@ -3648,14 +3646,36 @@ def restore_warjilis(outfile):
         and j.get_most_common("graphic") not in [None, 0x80, 0x81, 0x82]]
 
     partner_job = random.choice(special_jobs)
-    special_jobs = [j for j in special_jobs
-                    if j.skillset != partner_job.skillset]
-    enemy_job = random.choice(special_jobs)
-    partner = mapunits[0x1dc][14]
+    partner = mapunits[new_entd][14]
+    if not monsters:
+        special_jobs = [j for j in special_jobs
+                        if j.skillset != partner_job.skillset]
+        enemy_job = random.choice(special_jobs)
+        real_jobs = sorted(set(range(0x4A, 0x5E) + [enemy_job.index]))
+        random.shuffle(real_jobs)
+    else:
+        special_jobs = [j for j in get_jobs() if j.index >= 0x5E
+                        and j.skillset >= 0xB0 and
+                        j.get_most_common("graphic") == 0x82]
+        portraits = [j.monster_portrait for j in special_jobs]
+        portraits = sorted(set(portraits))
+        portraits = random.sample(portraits, 7)
+        portraits = sorted(portraits * 2)
+        chosen_monsters = []
+        for p in portraits:
+            candidates = [j for j in special_jobs if j.monster_portrait == p
+                          and j not in chosen_monsters]
+            c = random.choice(candidates)
+            chosen_monsters.append(c)
+        assert len(set(chosen_monsters)) == 14
+        random.shuffle(chosen_monsters)
+        for u in UnitObject.every:
+            if (u.graphic == 0x82 and u.job >= 0x5E and u.name == 0xFF
+                    and JobObject.get(u.job).skillset >= 0xB0):
+                base_monster = u
+                break
 
-    units = mapunits[0x1dc][:15]
-    real_jobs = sorted(set(range(0x4A, 0x5E) + [enemy_job.index]))
-    random.shuffle(real_jobs)
+    units = mapunits[new_entd][:15]
     for unit in units:
         if unit == partner:
             job = partner_job
@@ -3664,6 +3684,9 @@ def restore_warjilis(outfile):
                          "graphic", "misc1", "misc2"]:
                 setattr(unit, attr, job.get_most_common(attr))
             unit.job = job.index
+        elif monsters:
+            unit.copy_data(base_monster)
+            unit.job = chosen_monsters.pop().index
         else:
             job = enemy_job
             for attr in ["misc1", "misc2", "palette", "graphic"]:
@@ -3694,9 +3717,11 @@ def restore_warjilis(outfile):
             unit.set_bit("enemy_team", True)
             unit.set_bit("control", True)
 
-        unit.unlocked_level = 8
-        unit.mutate(preserve_job=True, preserve_gender=True)
-        unit.unlocked_level = 8
+        if not monsters:
+            unit.unlocked_level = 8
+            unit.mutate(preserve_job=True, preserve_gender=True)
+            unit.unlocked_level = 8
+
         unit.trophy = 0
         unit.gil = 0
         if unit == partner:
@@ -3707,6 +3732,8 @@ def restore_warjilis(outfile):
             unit.secondary = 0xfe
             unit.lefthand = 0xfe
             unit.support = 0x1db
+        elif monsters:
+            pass
         else:
             unit.support = random.choice(range(0x1C8, 0x1DF) + [0x1E2, 0x1E3])
             unit.reaction = 0
@@ -3732,25 +3759,40 @@ def restore_warjilis(outfile):
 
         bads = mymap.get_values_grid("bad")
         candidates = []
+        backups = []
         for j in xrange(mymap.length):
             for i in xrange(mymap.width):
+                backed_up = False
                 for a, b in product(range(-1, 2), range(-1, 2)):
-                    a, b = i+a, j+b
-                    if (a < 0 or b < 0
-                            or a >= mymap.width or b >= mymap.length):
+                    i2, j2 = i+a, j+b
+                    if (i2 < 0 or j2 < 0
+                            or i2 >= mymap.width or j2 >= mymap.length):
                         continue
-                    value = bads[b][a]
+                    value = bads[j2][i2]
                     if value:
-                        break
+                        if a * b == 0:
+                            break
+                        else:
+                            backed_up = True
                 else:
-                    candidates.append((i, j))
+                    if backed_up:
+                        backups.append((i, j))
+                    else:
+                        candidates.append((i, j))
+        if not candidates:
+            candidates = backups
         unit.x, unit.y = random.choice(candidates)
         unit.fix_facing(mymap)
         mymap.set_occupied(unit.x, unit.y)
 
-    warjilis = EncounterObject.get(0xab)
-    warjilis.following = 0x81
-    warjilis.next_scene = new_enc.scenario
+    try:
+        len(before)
+    except TypeError:
+        before = [before]
+    for b in before:
+        before_event = EncounterObject.get(b)
+        before_event.following = 0x81
+        before_event.next_scene = new_enc.scenario
 
 
 def mutate_treasure():
@@ -4308,7 +4350,13 @@ def randomize():
             e.randomize_music()
 
     if 'z' in flags:
-        restore_warjilis(TEMPFILE)
+        # aeris @ zarghidas: 1ca or 1cb
+        first = random.choice([True, False])
+        second = not first
+        restore_warjilis(TEMPFILE, before=0xab, new_entd=0x1dc,
+                         map_id=42, monsters=first)
+        restore_warjilis(TEMPFILE, before=[0x1c1, 0x1c2], new_entd=0x1dd,
+                         map_id=33, monsters=second)
 
     if 'o' in flags:
         try:
