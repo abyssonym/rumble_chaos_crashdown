@@ -1272,6 +1272,16 @@ class SkillsetObject(TableObject):
         return False
 
     @property
+    def has_limitskills(self):
+        for action in self.actions:
+            if not AbilityAttributesObject.has(action):
+                continue
+            aa = AbilityAttributesObject.get(action)
+            if aa.get_bit("require_materia_blade"):
+                return True
+        return False
+
+    @property
     def not_just_swordskills(self):
         for action in self.actions:
             if not AbilityAttributesObject.has(action):
@@ -1615,6 +1625,30 @@ class UnitObject(TableObject):
     @property
     def is_altima(self):
         return self.job in [0x41, 0x49]
+
+    @property
+    def has_swordskills(self):
+        job = get_job(self.job)
+        ss = get_skillset(job.skillset)
+        ss2 = get_skillset(self.secondary)
+        for s in [ss, ss2]:
+            if s is None:
+                continue
+            if s.has_swordskills:
+                return True
+        return False
+
+    @property
+    def has_limitskills(self):
+        job = get_job(self.job)
+        ss = get_skillset(job.skillset)
+        ss2 = get_skillset(self.secondary)
+        for s in [ss, ss2]:
+            if s is None:
+                continue
+            if s.has_limitskills:
+                return True
+        return False
 
     def fix_facing(self, m):
         # 0: south, 1: west, 2: north, 3: east
@@ -2036,7 +2070,15 @@ class UnitObject(TableObject):
             return
 
         for attr in ["lefthand", "righthand", "head", "body", "accessory"]:
-            if self.has_special_graphic:
+            if (attr == "righthand" and (not 1 <= self.level <= 5) and
+                    (self.has_swordskills or self.has_limitskills)
+                    and random.randint(1, 10) != 10
+                    and self.get_bit("enemy_team")):
+                if self.has_limitskills:
+                    self.righthand = 0x20
+                elif self.has_swordskills:
+                    self.equip_appropriate_sword()
+            elif self.has_special_graphic:
                 value = getattr(self, attr)
                 if value in [0, 0xFF]:
                     setattr(self, attr, random.choice([0xFF, 0xFE]))
@@ -2057,6 +2099,42 @@ class UnitObject(TableObject):
                     setattr(self, attr, 0xFE)
             elif random.choice([True, False]):
                 setattr(self, attr, 0xFE)
+
+    def equip_appropriate_sword(self):
+        if self.level_normalized:
+            if random.choice([True, False]):
+                self.righthand = 0xFE
+                return
+            else:
+                level = randint(1, randint(1, 40))
+        else:
+            level = self.level
+        candidates = [i for i in ItemObject.every if i.itemtype in [3, 4]]
+        candidates = sorted(candidates, key=lambda c: (c.enemy_level, c.index))
+        try:
+            max_index = max([n for (n, c) in enumerate(candidates)
+                             if c.enemy_level <= level])
+        except ValueError:
+            max_index = 0
+        exindex = None
+        try:
+            existing = ItemObject.get(self.righthand)
+            if existing and existing.itemtype in [3, 4]:
+                exindex = candidates.index(existing)
+                max_index = max(exindex, max_index)
+        except KeyError:
+            pass
+        booster = randint(2, randint(3, 8))
+        if self.has_special_graphic:
+            pass
+        else:
+            booster = randint(1, booster)
+        max_index += booster
+        index = randint(randint(1, max_index), max_index)
+        if self.has_special_graphic and exindex:
+            index = max(index, exindex+1)
+        chosen = candidates[:index][-1]
+        self.righthand = chosen.index
 
     def mutate_rsm(self):
         if self.get_bit("load_formation"):
@@ -3442,15 +3520,20 @@ def randomize_enemy_formations():
             generate_heatmap(m, ex, done, upper=not e.mutated)
 
         new_units = []
+        rogue = False
         while True:
             unused = list(m.unused_units)
-            if len(unused) < 6 or random.choice([True, False]):
+            if len(unused) < 6 or randint(1, 5) <= 3:
                 break
             new = max(unused, key=lambda u: u.index)
             used = (m.nonmoving_units +
                     [u for u in m.moving_units if u.graphic & 0x80])
             used = sorted(set(used), key=lambda u: u.index)
             used = [u for u in used if not u.is_lucavi and u.level != 1]
+            temp = [u for u in used
+                    if u.job not in [u2.job for u2 in new_units]]
+            if temp and random.choice([True, True, False]):
+                used = temp
             if not used:
                 break
             if randint(1, 5) != 5:
@@ -3468,16 +3551,19 @@ def randomize_enemy_formations():
             new.set_bit("randomly_present", False)
             new.set_bit("always_present", True)
             new.set_bit("join_after_event", False)
-            if randint(1, chance) == 1:
-                new.set_bit("enemy_team", False)
-                if (not new.has_special_graphic and
-                        random.choice([True, True, False])):
-                    new.set_bit("join_after_event", True)
-            else:
-                new.set_bit("enemy_team", True)
-            if boostd["difficulty_factor"] > 1.0 or new.get_bit("enemy_team"):
-                if randint(1, 10) == 10:
-                    new.set_bit("alternate_team", True)
+            new.set_bit("enemy_team", True)
+            if not rogue:
+                if randint(1, chance) == 1:
+                    new.set_bit("enemy_team", False)
+                    if (not new.has_special_graphic and
+                            random.choice([True, True, False])):
+                        new.set_bit("join_after_event", True)
+                    rogue = True
+                if (boostd["difficulty_factor"] > 1.0
+                        or new.get_bit("enemy_team")):
+                    if randint(1, 10) == 10:
+                        new.set_bit("alternate_team", True)
+                    rogue = True
             while True:
                 generate_heatmap(m, new, units+new_units, upper=not e.mutated)
                 for u in m.units:
@@ -4131,16 +4217,32 @@ def randomize():
         random.seed(seed)
         mutate_job_innates()
 
+    if 's' in flags:
+        random.seed(seed)
+        mutate_skillsets()
+
+    if 'a' in flags:
+        # do after randomizing skillsets
+        random.seed(seed)
+        mutate_abilities_attributes()
+
+    if 'j' in flags:
+        # do after randomizing skillsets
+        random.seed(seed)
+        mutate_job_stats()
+
     if 'm' in flags:
         # before units
         random.seed(seed)
         mutate_monsters()
 
     if 'u' in flags:
+        # do after randomizing skillsets
         random.seed(seed)
         mutate_units()
 
     if 'z' in flags:
+        # do after randomizing skillsets
         random.seed(seed)
         mutate_units_special()
         randomize_ending()
@@ -4175,20 +4277,6 @@ def randomize():
                 if result or not e.mutated:
                     break
         randomize_enemy_formations()
-
-    if 's' in flags:
-        random.seed(seed)
-        mutate_skillsets()
-
-    if 'a' in flags:
-        # do after randomizing skillsets
-        random.seed(seed)
-        mutate_abilities_attributes()
-
-    if 'j' in flags:
-        # do after randomizing skillsets
-        random.seed(seed)
-        mutate_job_stats()
 
     if 't' in flags:
         random.seed(seed)
