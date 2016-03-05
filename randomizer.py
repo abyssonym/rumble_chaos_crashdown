@@ -3533,7 +3533,11 @@ def randomize_enemy_formations():
         rogue = False
         while True:
             unused = list(m.unused_units)
-            if len(unused) < 6 or randint(1, 5) <= 3:
+            threshold = int(60 * ((0.5*boostd['difficulty_factor'])
+                                  ** len(new_units)))
+            threshold = min(threshold, 60)
+            value = randint(1, 100)
+            if len(unused) < 6 or value > threshold:
                 break
             new = max(unused, key=lambda u: u.index)
             used = (m.nonmoving_units +
@@ -3553,16 +3557,17 @@ def randomize_enemy_formations():
             old = random.choice(used)
             new.copy_data(old)
             new.mutate(preserve_job=True)
+            new.unlocked_level = old.unlocked_level
             new_enemies = [u for u in new_units if u.get_bit("enemy_team")]
-            if boostd["difficulty_factor"] > 1.0:
-                chance = max(7-len(new_enemies), 1)
-            else:
-                chance = max(5-(2*len(new_enemies)), 1)
             new.set_bit("randomly_present", False)
             new.set_bit("always_present", True)
             new.set_bit("join_after_event", False)
             new.set_bit("enemy_team", True)
             if not rogue:
+                if boostd["difficulty_factor"] > 1.0:
+                    chance = max(7-len(new_enemies), 1)
+                else:
+                    chance = max(5-(2*len(new_enemies)), 1)
                 if randint(1, chance) == 1:
                     new.set_bit("enemy_team", False)
                     if (not new.has_special_graphic and
