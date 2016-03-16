@@ -782,8 +782,8 @@ class EncounterObject(TableObject):
         chars = []
         if num_formations > 1:
             half = num_characters / 2
-            first = randint(0, half) + randint(0, half)
-            first = min(1, max(first, num_characters-1))
+            first = randint(1, half) + randint(0, half)
+            first = min(first, num_characters-1)
             chars.append(first)
             chars.append(num_characters-first)
             chars = sorted(chars, reverse=True)
@@ -4247,6 +4247,7 @@ def randomize():
                    and g is not TableObject]
     for ao in all_objects:
         ao.every
+    import pdb; pdb.set_trace()
 
     get_jobreqs()
     sort_mapunits()
