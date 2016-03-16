@@ -787,6 +787,7 @@ class EncounterObject(TableObject):
             chars.append(first)
             chars.append(num_characters-first)
             chars = sorted(chars, reverse=True)
+            assert sum(chars) == num_characters
         else:
             chars = [num_characters]
 
@@ -958,16 +959,14 @@ class FormationObject(TableObject):
         if self.index == 0x100:
             # gariland formation
             return
-        if boostd["difficulty_factor"] >= 1.0:
-            if boostd["difficulty_factor"] > 1.0:
-                dings = 0
-            else:
-                dings = 1
+        if boostd["difficulty_factor"] > 1.0:
+            dings = 1.0 / (boostd["difficulty_factor"] ** 4)
             while self.num_characters > 1:
                 prob = self.num_characters ** 4
-                prob = int(prob * (0.5 ** dings))
+                prob = prob * (0.5 ** dings)
                 if randint(1, 1875) <= prob:
                     self.num_characters -= 1
+                    dings *= 2
                     continue
                 break
 
