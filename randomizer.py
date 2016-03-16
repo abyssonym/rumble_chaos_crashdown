@@ -966,7 +966,7 @@ class FormationObject(TableObject):
                 prob = prob * (0.5 ** dings)
                 if randint(1, 1875) <= prob:
                     self.num_characters -= 1
-                    dings *= 2
+                    dings += 1
                     continue
                 break
 
