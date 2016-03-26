@@ -3549,10 +3549,9 @@ def randomize_enemy_formations():
                 used = temp
             if not used:
                 break
-            if randint(1, 5) != 5:
-                used = [u for u in used if not u.has_special_graphic]
-                if not used:
-                    continue
+            used = [u for u in used if not u.has_special_graphic]
+            if not used:
+                continue
             old = random.choice(used)
             new.copy_data(old)
             new.mutate(preserve_job=True)
