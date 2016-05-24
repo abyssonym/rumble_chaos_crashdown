@@ -92,6 +92,9 @@ VALID_START_STATUSES = (VALID_INNATE_STATUSES |
                         0x1402100000)
 BENEFICIAL_STATUSES =   0xC278600000
 RERAISE_STATUS =        0x0000200000
+REGEN_STATUS =          0x0040000000
+FAITH_STATUS =          0x8000000000
+INNOCENT_STATUS =       0x4000000000
 BANNED_SKILLS = range(0x165, 0x16F)
 BANNED_SKILLSET_SHUFFLE = [0, 1, 2, 3, 6, 8, 0x11, 0x12, 0x13, 0x14, 0x15,
                            0x18, 0x34, 0x38, 0x39, 0x3B, 0x3E, 0x9C, 0xA1]
@@ -102,7 +105,7 @@ BANNED_ITEMS = [0x49]
 LUCAVI_INNATES = (range(0x1A6, 0x1A9) + [0x1AA] + range(0x1AC, 0x1B0)
                   + range(0x1B1, 0x1B4) + [0x1B5, 0x1BA, 0x1BD, 0x1BE]
                   + range(0x1C0, 0x1C6)
-                  + range(0x1D1, 0x1D6) + [0x1D8, 0x1DD, 0x1DE, 0x1E3]
+                  + range(0x1D1, 0x1D6) + [0x1D8, 0x1DD, 0x1E3]
                   + [0x1E7, 0x1E8]
                   + range(0x1EB, 0x1EE) + [0x1F2, 0x1F3, 0x1FA, 0x1FB]
                   )
@@ -1517,6 +1520,11 @@ class JobObject(TableObject):
 
         self.mutate_statuses()
         if self.is_lucavi:
+            self.unset_positive_immunities()
+            if random.choice([True, False]):
+                self.immune_status |= FAITH_STATUS
+            if random.choice([True, False]):
+                self.immune_status |= INNOCENT_STATUS
             if random.choice([True, False]):
                 self.mutate_statuses()
             if randint(1, 30) != 30:
@@ -1621,6 +1629,9 @@ class JobObject(TableObject):
         start &= VALID_START_STATUSES
         self.innate_status |= innate
         self.start_status |= start
+
+    def unset_positive_immunities(self):
+        self.immune_status &= (((2**40)-1) ^ BENEFICIAL_STATUSES)
 
     def unset_negative_statuses(self):
         self.innate_status &= BENEFICIAL_STATUSES
