@@ -2832,7 +2832,17 @@ def mutate_job_requirements():
     jobpools = [set([]) for _ in xrange(num_jobpools)]
     allpool = set([squire])
     reqs = [r for r in reqs if r is not squire]
-    random.shuffle(reqs)
+    while True:
+        random.shuffle(reqs)
+        calc, priest, wizard, timemage, oracle = [
+            jobreq_namedict[name] for name in [
+                "calculator", "priest", "wizard", "timemage", "oracle"]]
+        mages = [priest, wizard, timemage, oracle]
+        calc_index = reqs.index(calc)
+        mages = [jr for jr in mages if reqs.index(jr) < calc_index]
+        if mages:
+            break
+
     assert len(levels) == len(reqs) == 19
     for req, numlevels in zip(reqs, levels):
         assert req not in done
@@ -2841,8 +2851,11 @@ def mutate_job_requirements():
         req.set_zero()
         prereqs = []
         sublevels = []
-        jobpoolcands = [j for j in jobpools
-                        if len(j) == len(min(jobpools, key=lambda j: len(j)))]
+        if req is calc:
+            jobpoolcands = [j for j in jobpools if j & set(mages)]
+        else:
+            jobpoolcands = [j for j in jobpools if len(j) == len(
+                min(jobpools, key=lambda j: len(j)))]
         jobpool = random.choice(jobpoolcands)
         if base_numlevels >= 30 or randint(1, 15) == 15:
             candidates = [c for c in done if c.name not in ["dancer", "bard"]]
@@ -2883,34 +2896,48 @@ def mutate_job_requirements():
 
         assert len(sublevels) <= len(candidates)
         assert len(sublevels) <= 14
-        if len(candidates) >= (len(sublevels) + 1):
-            candidates = candidates[:-1]
-        if (len(candidates) >= (len(sublevels) + 1)
-                and random.choice([True, False])):
-            candidates = candidates[1:]
+        if req is not calc:
+            if len(candidates) >= (len(sublevels) + 1):
+                candidates = candidates[:-1]
+            if (len(candidates) >= (len(sublevels) + 1)
+                    and random.choice([True, False])):
+                candidates = candidates[1:]
 
-        prereqs = []
-        for _ in range(len(sublevels)):
-            tempcands = list(candidates)
-            for c in candidates:
-                for pr in prereqs:
-                    value = getattr(pr, c.name)
-                    if value > 0:
-                        tempcands.remove(c)
-                        break
-            if not tempcands:
+        while True:
+            prereqs = []
+            for _ in range(len(sublevels)):
                 tempcands = list(candidates)
-            index = len(tempcands) - 1
-            while index > 0:
-                if random.choice([True, False]):
-                    if index <= 3 and random.choice([True, False]):
+                for c in candidates:
+                    for pr in prereqs:
+                        value = getattr(pr, c.name)
+                        if value > 0:
+                            tempcands.remove(c)
+                            break
+                if not tempcands:
+                    tempcands = list(candidates)
+                index = len(tempcands) - 1
+                while index > 0:
+                    if random.choice([True, False]):
+                        if index <= 3 and random.choice([True, False]):
+                            break
+                        index -= 1
+                    else:
                         break
-                    index -= 1
-                else:
-                    break
-            prereq = tempcands[index]
-            prereqs.append(prereq)
-            candidates.remove(prereq)
+                prereq = tempcands[index]
+                prereqs.append(prereq)
+                candidates.remove(prereq)
+            if req is not calc:
+                break
+            if set(prereqs) & set(mages):
+                break
+
+        if req is calc:
+            sublevels = sorted(sublevels)
+            chosen_mage = random.choice(sorted(set(prereqs) & set(mages)))
+            prereqs.remove(chosen_mage)
+            random.shuffle(prereqs)
+            prereqs = prereqs + [chosen_mage]
+            assert len(prereqs) == len(sublevels)
 
         for prereq, sublevel in zip(prereqs, sublevels):
             assert hasattr(req, prereq.name)
