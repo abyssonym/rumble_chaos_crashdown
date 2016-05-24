@@ -3652,12 +3652,57 @@ def randomize_enemy_formations():
             new_units.append(new)
 
 
-def randomize_ending():
+def randomize_ending(outfile):
+    if JAPANESE_MODE:
+        raise NotImplementedError
+    enc = EncounterObject.get(0x12b)
+    enc.following = 0
+    f = open(outfile, 'r+b')
+    f.seek(0x4DC938)
+    g = open("conditionals.dat", 'rb')
+    f.write(g.read())
+    g.close()
+    f.seek(0x9959B2)  # delita with flowers
+    x, y = 6, 6
+    north = 2
+    ramza = 3
+    ramza_unit = UnitObject.get(0x1333)
+    delita_unit = UnitObject.get(0x1330)
+    ovelia_unit = UnitObject.get(0x1331)
+    chocobo_unit = UnitObject.get(0x1332)
+    ramza_unit.unit_id = ramza
+    ramza_unit.set_bit("always_present", False)
+    ramza_unit.set_bit("load_formation", True)
+    ramza_unit.set_bit("control", True)
+    ramza_unit.set_bit("enemy_team", False)
+    delita_unit.set_bit("enemy_team", True)
+    f.write("".join(map(chr, [
+        0x5F, ramza, 0x00, x, y, 0x00, north,               # warp ramza
+        0x45, ramza, 0x00, 0x00,                            # add ramza
+        0x48,                                               # wait add unit
+        0x21, 0x6A, 0x00,                                   # teleport sound
+        0x98, ramza, 0x00,                                  # teleport in
+        0x11, ramza, 0x00, 0x2C, 0x00, 0x00,                # animate ramza
+        0x44, ramza, 0x00,                                  # draw ramza
+        0xF1, 30, 0x00,                                     # wait
+        0x11, delita_unit.unit_id, 0x00, 0x01, 0x00, 0x00,  # animate delita
+        0xF1, 30, 0x00,                                     # wait
+        0x53, ramza, 0x00, 0x04, 0x01, 0x00, 0x00, 0x00,    # face ramza
+        0x76, 0x00, 0x01, 12, 64, 0x00, 4,                  # darken screen
+        0xe5, 0x36, 0x00,                                   # wait for dark
+        0x78, 0x0F, 90,                                     # show conditions
+        0xe5, 0x38, 0x00,                                   # wait for dark
+        0x77,                                               # remove dark
+        0xe5, 0x36, 0x00,                                   # wait for dark
+        0x22, 0x01, 127, 0x00,                              # change music
+        0xDB,                                               # end event
+        ])))
+    f.close()
+
     used_graphics = sorted(set([u.graphic for u in UnitObject
                                 if u.named and 1 <= u.graphic <= 0x77]))
-    chosen = random.sample(used_graphics, 7)
-    priest, delita, princess, others = (chosen[0], chosen[1],
-                                        chosen[2], chosen[3:])
+    chosen = random.sample(used_graphics, 5)
+    priest, others = (chosen[0], chosen[1:])
     while len(others) < 7:
         others.append(random.choice(others))
     random.shuffle(others)
@@ -3666,13 +3711,13 @@ def randomize_ending():
     for u, g in zip(otherunits, others):
         u.graphic = g
 
-    for u, g in zip([0x1348, 0x1330, 0x1331], [priest, delita, princess]):
-        u = UnitObject.get(u)
-        u.graphic = g
+    UnitObject.get(0x1348).graphic = priest
 
 
 def restore_warjilis(outfile, before=0xAB, new_entd=0x1DC,
                      map_id=42, monsters=False):
+    if JAPANESE_MODE:
+        raise NotImplementedError
     f = open(outfile, 'r+b')
     f.seek(0x823804)
     f.write("".join([chr(0xF2) for _ in xrange(9)]))  # END bg color
@@ -4367,7 +4412,7 @@ def randomize():
         # do after randomizing skillsets
         random.seed(seed)
         mutate_units_special()
-        randomize_ending()
+        randomize_ending(TEMPFILE)
         replace_generic_names(TEMPFILE)
         for e in EncounterObject.every:
             e.randomize_weather()
