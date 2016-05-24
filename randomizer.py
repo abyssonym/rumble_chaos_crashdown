@@ -1389,6 +1389,10 @@ class JobObject(TableObject):
         return None
 
     @property
+    def jobreq(self):
+        return JobReqObject.get(self.index)
+
+    @property
     def guaranteed_female(self):
         units = [u for u in UnitObject.every
                  if u.job == self.index
@@ -1415,6 +1419,17 @@ class JobObject(TableObject):
         return 0x4A <= self.index <= 0x5D
 
     @property
+    def generic_rank(self):
+        assert self.index in range(0x4A, 0x5E)
+        generics = [j for j in JobObject.every if j.is_generic]
+        ranked = sorted(generics, key=lambda j: (
+            j.jobreq.required_unlock_jp, j.index))
+        index = ranked.index(self)
+        rank = float(index) / (len(ranked) - 1)
+        assert 0 <= rank <= 1
+        return rank
+
+    @property
     def is_monster_job(self):
         return self.index >= 0x5E and self.index != 0x97
 
@@ -1438,21 +1453,24 @@ class JobObject(TableObject):
             setattr(u, attr, value)
 
     def get_appropriate_boost(self):
-        if self.index in [1, 2, 3, 0xD] + range(0x4A, 0x5E):
+        if self.index in [1, 2, 3, 0xD]:
             return 1.0
 
-        units = [u for u in get_units() if u.job == self.index
-                 and u.get_bit("enemy_team") and not u.level_normalized
-                 and 0x180 <= u.map_id <= 0x1D5]
-        if not units:
-            return boostd["default_stat"]
-        units = sorted(units, key=lambda u: u.level)
-        units = units[-2:]
-        average_level = sum([u.level for u in units]) / float(len(units))
         if self.is_lucavi:
             boost = boostd["lucavi_stat"]
         else:
             boost = boostd["level_stat"]
+        if self.index in range(0x4A, 0x5E):
+            average_level = (self.generic_rank * 50) - 25
+        else:
+            units = [u for u in get_units() if u.job == self.index
+                     and u.get_bit("enemy_team") and not u.level_normalized
+                     and 0x180 <= u.map_id <= 0x1D5]
+            if not units:
+                return boostd["default_stat"]
+            units = sorted(units, key=lambda u: u.level)
+            units = units[-2:]
+            average_level = sum([u.level for u in units]) / float(len(units))
         boost = (1.0 + (average_level / 100.0)) ** boost
         return boost
 
@@ -2213,6 +2231,11 @@ class UnitObject(TableObject):
 
 
 class JobReqObject(TableObject):
+    @property
+    def job(self):
+        assert 0x4A <= self.index < 0x5E
+        return JobObject.get(self.index)
+
     def __le__(self, other):
         for attr in jobreq_namedict.keys():
             if getattr(self, attr) > getattr(other, attr):
@@ -2227,6 +2250,10 @@ class JobReqObject(TableObject):
 
     def __lt__(self, other):
         return self <= other and not self.same_reqs(other)
+
+    @staticmethod
+    def get(index):
+        return jobreq_indexdict[index]
 
     def get_prereq_dict(self):
         prereq_dict = {}
@@ -4163,7 +4190,7 @@ def randomize():
         if resp and resp[0].lower() == 'y':
             JAPANESE_MODE = True
 
-    if len(argv) == 4:
+    if len(argv) >= 4:
         difficulty = float(argv[3])
     else:
         difficulty = 1.0
@@ -4246,7 +4273,6 @@ def randomize():
                    and g is not TableObject]
     for ao in all_objects:
         ao.every
-    import pdb; pdb.set_trace()
 
     get_jobreqs()
     sort_mapunits()
@@ -4259,14 +4285,16 @@ def randomize():
         for u in get_units():
             u.set_backup_jp_total()
         mutate_job_requirements()
+
+    for req in get_jobreqs():
+        req.set_required_unlock_jp()
+
+    if 'r' in flags:
         s = get_jobtree_str()
         f = open("%s.txt" % seed, "w+")
         f.write(s)
         f.close()
         del(f)
-
-    for req in get_jobreqs():
-        req.set_required_unlock_jp()
 
     if 'i' in flags:
         # before units
