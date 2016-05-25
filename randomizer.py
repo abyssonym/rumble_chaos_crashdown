@@ -95,6 +95,7 @@ RERAISE_STATUS =        0x0000200000
 REGEN_STATUS =          0x0040000000
 FAITH_STATUS =          0x8000000000
 INNOCENT_STATUS =       0x4000000000
+INVITE_STATUS =         0x0000004000
 BANNED_SKILLS = range(0x165, 0x16F)
 BANNED_SKILLSET_SHUFFLE = [0, 1, 2, 3, 6, 8, 0x11, 0x12, 0x13, 0x14, 0x15,
                            0x18, 0x34, 0x38, 0x39, 0x3B, 0x3E, 0x9C, 0xA1]
@@ -1891,7 +1892,7 @@ class UnitObject(TableObject):
 
         return True
 
-    def mutate_monster_job(self):
+    def mutate_monster_job(self, preserve_graphic=False):
         monster_check = lambda u: (u.graphic == 0x82 and u.job >= 0x5E
                                    and u.job not in [0x91, 0x97]
                                    and u.map_id <= 0x1d5)
@@ -1904,7 +1905,7 @@ class UnitObject(TableObject):
             return True
 
         all_ranked_monster_jobs = get_ranked_monster_jobs()
-        if self.map_id not in monster_selection:
+        if self.map_id not in monster_selection and not preserve_graphic:
             assert self in mapunits[self.map_id]
             assert self.graphic == 0x82
             ranked_monster_jobs = list(all_ranked_monster_jobs)
@@ -1943,7 +1944,12 @@ class UnitObject(TableObject):
                                      if m.monster_portrait in selected_sprites]
             monster_selection[self.map_id] = selected_monsters
 
-        selection = monster_selection[self.map_id]
+        if preserve_graphic:
+            selection = [m for m in all_ranked_monster_jobs
+                         if (m.monster_portrait ==
+                             JobObject.get(self.job).monster_portrait)]
+        else:
+            selection = monster_selection[self.map_id]
         myjob = get_job(self.job)
         ranked_selection = [m for m in all_ranked_monster_jobs
                             if m in selection or m == myjob]
@@ -1981,7 +1987,7 @@ class UnitObject(TableObject):
             return
 
         if self.job >= 0x5E:
-            self.mutate_monster_job()
+            self.mutate_monster_job(preserve_graphic=preserve_job)
             return
 
         if preserve_job or self.job not in jobreq_indexdict:
@@ -3277,6 +3283,8 @@ def mutate_units():
     unnamed = [u for u in units if u.has_special_graphic or not u.named]
     set_progress_counter(len(unnamed))
     for i, u in enumerate(unnamed):
+        if u.index >> 4 == 0x133:
+            continue
         check_progress_counter(i)
         u.mutate()
 
@@ -3673,19 +3681,29 @@ def randomize_ending(outfile):
     f.write(g.read())
     g.close()
     f.seek(0x9959B2)  # delita with flowers
-    x, y = 6, 6
-    north = 2
-    ramza = 3
+
     ramza_unit = UnitObject.get(0x1333)
     delita_unit = UnitObject.get(0x1330)
     ovelia_unit = UnitObject.get(0x1331)
     chocobo_unit = UnitObject.get(0x1332)
-    ramza_unit.unit_id = ramza
+    delita_unit.backup_jp_total = 500000
+    ovelia_unit.backup_jp_total = 500000
+    delita_unit.mutate(preserve_job=True)
+    ovelia_unit.mutate(preserve_job=True)
+    chocobo_unit.mutate(preserve_job=True)
+    delita_unit.level = min(int(boostd["difficulty_factor"] * 100), 199)
     ramza_unit.set_bit("always_present", False)
     ramza_unit.set_bit("load_formation", True)
     ramza_unit.set_bit("control", True)
     ramza_unit.set_bit("enemy_team", False)
     delita_unit.set_bit("enemy_team", True)
+    del_job = JobObject.get(delita_unit.job)
+    del_job.immune_status &= (((2**40)-1) ^ INVITE_STATUS)
+
+    x, y = 6, 6
+    north = 2
+    ramza = 3
+    ramza_unit.unit_id = ramza
     f.write("".join(map(chr, [
         0x5F, ramza, 0x00, x, y, 0x00, north,               # warp ramza
         0x45, ramza, 0x00, 0x00,                            # add ramza
