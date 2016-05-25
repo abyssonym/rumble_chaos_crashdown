@@ -875,17 +875,25 @@ class EncounterObject(TableObject):
             else:
                 self.weather = 0
 
-    def randomize_music(self, prefer_unused=False):
+    def randomize_music(self, prefer_unused=False, force_battle=False):
         sneaky_events = [0x186, 0x187, 0x188, 0x189, 0x18a, 0x18c, 0x18d,
                          0x18e, 0x196, 0x198, 0x19c, 0x1a2, 0x1a5, 0x1a9,
                          0x1ab, 0x1ad, 0x1b2, 0x1b5, 0x1be, 0x1c3, 0x1c7,
                          0x1ca, 0x1d3, 0x1d5]
         if 0xFC < self.entd < 0x180 or self.entd in sneaky_events:
-            return
+            if not (force_battle and self.index == 0x12b):
+                return
         banned = [0, 17, 18, 19, 20, 21, 22, 23, 24,
                   41, 42, 43, 44, 45, 46, 47, 48, 49, 50,
                   51, 52, 53, 54, 55, 56, 57, 59, 63, 64, 65,
                   69, 70, 72, 73, 74, 75, 79, 98]
+        if force_battle:
+            banned += (range(25, 39) + range(40, 68) + range(69, 73) +
+                       [78, 80] + range(83, 93) + range(93, 97))
+            banned.remove(73)
+            banned.remove(17)
+            banned.remove(18)
+            banned.remove(19)
         allowed = [s for s in range(100) if s not in banned]
         temp = [s for s in allowed if s not in self.used_music]
         if not temp:
@@ -3657,6 +3665,8 @@ def randomize_ending(outfile):
         raise NotImplementedError
     enc = EncounterObject.get(0x12b)
     enc.following = 0
+    enc.randomize_music(force_battle=True)
+    enc.music[0] = 0x45
     f = open(outfile, 'r+b')
     f.seek(0x4DC938)
     g = open("conditionals.dat", 'rb')
@@ -3688,13 +3698,13 @@ def randomize_ending(outfile):
         0x11, delita_unit.unit_id, 0x00, 0x01, 0x00, 0x00,  # animate delita
         0xF1, 30, 0x00,                                     # wait
         0x53, ramza, 0x00, 0x04, 0x01, 0x00, 0x00, 0x00,    # face ramza
+        0x22, 0x01, 127, 0x00,                              # change music
         0x76, 0x00, 0x01, 12, 64, 0x00, 4,                  # darken screen
         0xe5, 0x36, 0x00,                                   # wait for dark
         0x78, 0x0F, 90,                                     # show conditions
         0xe5, 0x38, 0x00,                                   # wait for dark
         0x77,                                               # remove dark
         0xe5, 0x36, 0x00,                                   # wait for dark
-        0x22, 0x01, 127, 0x00,                              # change music
         0xDB,                                               # end event
         ])))
     f.close()
