@@ -1,5 +1,22 @@
 Changelog - FFT RUMBLE CHAOS CRASHDOWN Randomizer
 
+Version 21: DELITA
+- WARNING: This version includes some big changes that have not seen rigorous testing. There may be bugs. If you would like to play it safe, I recommend disabling the 'f' flag, which will disable many of the more experimental randomizations.
+- WARNING: One user reported a freezing glitch at Bethla Sluice. I have not been able to reproduce this glitch.
+- WARNING: This version will not work on the Japanese version of FFT.
+- "True" formation randomization has been implemented, meaning enemy and ally positions can end up in completely different places on certain maps. Some battles may include additional enemy units.
+- Under certain conditions, battles may occur on new maps.
+- Reduced party sizes are less likely and will not occur on the default difficulty setting.
+- Zodiac demons have been buffed once again.
+- Enemy units have been indirectly buffed by giving them smarter options and by giving late game classes better stats.
+- The ending was modified to be less dumb.
+- The soldier office is now free.
+- Traps/items only appear on walkable tiles now, making them a bit more common.
+- Various tweaks to balance and probabilities.
+
+Version 20: UNNAMED
+- This was a beta version that included many of the features scheduled for version 21. This version was not publically released.
+
 Version 19: LARG
 - Battle formations, weather, and music are randomized.
 - Cutscene autoplay feature added to the NA version.

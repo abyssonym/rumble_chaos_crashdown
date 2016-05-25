@@ -1,6 +1,6 @@
 FFT Rumble Chaos Crashdown Randomizer
-Version:    19
-Date:       January 3, 2016
+Version:    21
+Date:       May 25, 2016
 URL:        https://github.com/abyssonym/rumble_chaos_crashdown
 Contact:    https://twitter.com/abyssonym
             https://www.twitch.tv/abyssonym
@@ -32,6 +32,7 @@ Flags:
     p  Randomize item prices and shop availability.
     m  Randomize monster stats and skills.
     c  Randomize battle music.
+    f  Randomize enemy and ally formations.
     z  Enable special surprises.
     o  Enable autoplay cutscenes.
 
