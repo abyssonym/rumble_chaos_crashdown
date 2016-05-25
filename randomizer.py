@@ -3728,12 +3728,14 @@ def randomize_ending(outfile):
         ])))
     f.close()
 
+    henchmen = [UnitObject.get(u).graphic for u in range(0x1b93, 0x1b97)]
     used_graphics = sorted(set([u.graphic for u in UnitObject
-                                if u.named and 1 <= u.graphic <= 0x77]))
-    chosen = random.sample(used_graphics, 5)
+                                if u.named and 1 <= u.graphic <= 0x77
+                                and u.graphic not in henchmen]))
+    chosen = random.sample(used_graphics, 4)
     priest, others = (chosen[0], chosen[1:])
-    while len(others) < 7:
-        others.append(random.choice(others))
+    others += henchmen
+    assert len(others) == 7
     random.shuffle(others)
     otherunits = [u for u in mapunits[0x134] if 0x1341 <= u.index <= 0x1347]
     otherunits = sorted(otherunits, key=lambda u: u.index)
