@@ -3680,7 +3680,6 @@ def randomize_ending(outfile):
     g = open("conditionals.dat", 'rb')
     f.write(g.read())
     g.close()
-    f.seek(0x9959B2)  # delita with flowers
 
     ramza_unit = UnitObject.get(0x1333)
     delita_unit = UnitObject.get(0x1330)
@@ -3704,7 +3703,9 @@ def randomize_ending(outfile):
     north = 2
     ramza = 3
     ramza_unit.unit_id = ramza
+    f.seek(0x9959B2)  # delita with flowers
     f.write("".join(map(chr, [
+        0xE5, 0x01, 0x00,                                   # wait for message
         0x5F, ramza, 0x00, x, y, 0x00, north,               # warp ramza
         0x45, ramza, 0x00, 0x00,                            # add ramza
         0x48,                                               # wait add unit
@@ -3718,11 +3719,11 @@ def randomize_ending(outfile):
         0x53, ramza, 0x00, 0x04, 0x01, 0x00, 0x00, 0x00,    # face ramza
         0x22, 0x01, 127, 0x00,                              # change music
         0x76, 0x00, 0x01, 12, 64, 0x00, 4,                  # darken screen
-        0xe5, 0x36, 0x00,                                   # wait for dark
+        0xE5, 0x36, 0x00,                                   # wait for dark
         0x78, 0x0F, 90,                                     # show conditions
-        0xe5, 0x38, 0x00,                                   # wait for dark
+        0xE5, 0x38, 0x00,                                   # wait for dark
         0x77,                                               # remove dark
-        0xe5, 0x36, 0x00,                                   # wait for dark
+        0xE5, 0x36, 0x00,                                   # wait for dark
         0xDB,                                               # end event
         ])))
     f.close()
