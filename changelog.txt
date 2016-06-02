@@ -1,8 +1,11 @@
 Changelog - FFT RUMBLE CHAOS CRASHDOWN Randomizer
 
+Version 21.1:
+- Freezing glitch was determined to be related to weather effects, and was subsequently patched. If you encounter any more glitches, please let me know.
+
 Version 21: DELITA
 - WARNING: This version includes some big changes that have not seen rigorous testing. There may be bugs. If you would like to play it safe, I recommend disabling the 'f' flag, which will disable many of the more experimental randomizations.
-- WARNING: One user reported a freezing glitch at Bethla Sluice. I have not been able to reproduce this glitch.
+- WARNING: One user reported a freezing glitch at Bethla Sluice. I have not been able to reproduce this glitch. (FIXED?)
 - WARNING: This version will not work on the Japanese version of FFT.
 - "True" formation randomization has been implemented, meaning enemy and ally positions can end up in completely different places on certain maps. Some battles may include additional enemy units.
 - Under certain conditions, battles may occur on new maps.
