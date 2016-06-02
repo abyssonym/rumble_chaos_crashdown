@@ -119,6 +119,7 @@ MONSTER_JOBS = range(0x5E, 0x8E) + [0x90, 0x91, 0x96, 0x97, 0x99, 0x9A]
 STORYLINE_RECRUITABLE_JOBS = [0xD, 0xF, 0x16, 0x1A, 0x1E, 0x1F,
                               0x29, 0x2A, 0x90, 0x91]
 USED_MAPS = range(0, 0x14B) + range(0x180, 0x1d6)
+FIXED_WEATHER = [0x1b5, 0x1c2]
 
 jobreq_namedict = {}
 jobreq_indexdict = {}
@@ -866,6 +867,7 @@ class EncounterObject(TableObject):
         return True
 
     def randomize_weather(self):
+        oldnight, oldweather = self.night, self.weather
         if self.weather <= 4:
             if randint(1, 7) == 7:
                 self.night = 1
@@ -875,6 +877,8 @@ class EncounterObject(TableObject):
                 self.weather = random.choice([1, 2, 3, 4])
             else:
                 self.weather = 0
+        if self.entd in FIXED_WEATHER:
+            self.weather = oldweather
 
     def randomize_music(self, prefer_unused=False, force_battle=False):
         sneaky_events = [0x186, 0x187, 0x188, 0x189, 0x18a, 0x18c, 0x18d,
