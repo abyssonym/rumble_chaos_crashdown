@@ -1,5 +1,10 @@
 Changelog - FFT RUMBLE CHAOS CRASHDOWN Randomizer
 
+Version 21.2:
+- In addition to weather effects, night effects are also patched.
+- Units will no longer be allowed to spawn in deep water.
+- Wild Altimas will have Ultimate Magic
+
 Version 21.1:
 - Freezing glitch was determined to be related to weather effects, and was subsequently patched. If you encounter any more glitches, please let me know.
 
