@@ -4505,6 +4505,8 @@ def randomize():
                          map_id=42, monsters=first)
         restore_warjilis(TEMPFILE, before=[0x1c1, 0x1c2], new_entd=0x1dd,
                          map_id=33, monsters=second)
+        altima1 = JobObject.get(0x41)
+        altima1.skillset = 0x41
 
     if 'o' in flags:
         try:
