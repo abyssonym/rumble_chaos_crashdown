@@ -881,6 +881,7 @@ class EncounterObject(TableObject):
                 self.weather = 0
         if self.entd in FIXED_WEATHER:
             self.weather = oldweather
+            self.night = oldnight
 
     def randomize_music(self, prefer_unused=False, force_battle=False):
         sneaky_events = [0x186, 0x187, 0x188, 0x189, 0x18a, 0x18c, 0x18d,
