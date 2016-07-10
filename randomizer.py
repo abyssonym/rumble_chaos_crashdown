@@ -260,6 +260,8 @@ class TileObject:
             return 1
         if self.slope_height > 2:
             return 1
+        if self.depth > 2:
+            return 1
         return 0
 
     def set_unreachable(self, unreachable=1):
