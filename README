@@ -45,5 +45,9 @@ Chaos multiplier:
 Output files:
     The randomizer will output a new, randomized ISO with the seed in the filename. If you choose to randomize job requirements, it will also output a text file with the new job requirements inside.
 
+--- SPECIAL THANKS & CONTRIBUTORS ---
+Ryason55 - https://twitter.com/ryason55
+    Contributed the code to randomize item/equipment stats and weapon/ability status effects, plus bugfixes.
+
 Like this randomizer? Be sure to check out my main project, the FF6 Beyond Chaos randomizer:
     https://github.com/abyssonym/beyondchaos
