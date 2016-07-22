@@ -1241,10 +1241,13 @@ class ChemistItemObject(TableObject):
 class InflictStatusObject(TableObject):
     def randomize_empty(self):
         if (0x1D <= self.index <= 0x1F) or  (0x7A <= self.index <= 0x7F):
-            # High odds to ensure that each new inflict status has at least something
-            toinflict = mutate_bits(self.statuses_to_inflict, 40, odds_multiplier=0.1)
-            # (Maybe too chaotic, though? Might be better if there was a way to ensure that only 1-3 statuses are set)
-            toinflict &= VALID_START_STATUSES
+            toinflict = 0
+            while True:
+                toinflict |= (1 << randint(0, 39))
+                toinflict &= VALID_START_STATUSES
+                if (toinflict and
+                        randint(1, 2**(bin(toinflict).count("1"))) != 1):
+                    break
             self.statuses_to_inflict = toinflict
             if not (self.statuses_to_inflict == 0x0000000000):
                 choice = randint(1,9)
@@ -1263,8 +1266,8 @@ class ItemAttributesObject(TableObject):
         if self.index > 0:
             if self.index <= 49:
                 for attr in ["pa", "ma", "speed", "move", "jump"]:
-                    if (randint(1,3) == 1):
-                        value = getattr(self, attr)
+                    value = getattr(self, attr)
+                    if random.choice([True, False]):
                         if 0 <= value <= 0xFD:
                             newvalue = mutate_normal(value, minimum=0, maximum=0xFD)
                             setattr(self, attr, newvalue)
@@ -4571,7 +4574,6 @@ def randomize():
         difficulty = 1.0
 
     if len(argv) <= 2:
-        # Ry Edit: Added the new flags to the printout presented to the user
         print ("u  Randomize enemy and ally units.\n"
                "f  Randomize enemy and ally formations.\n"
                "j  Randomize job stats and JP required for skills.\n"
@@ -4689,7 +4691,6 @@ def randomize():
         mutate_abilities_attributes()
 
     if 'y' in flags:
-        # Ry Edit: Added Weapon and Ability Inflict Status randomization flag
         random.seed(seed)
         mutate_inflict_status()
 
@@ -4753,7 +4754,6 @@ def randomize():
         mutate_shops()
 
     if 'w' in flags:
-        # Ry Edit: Added Item and Weapon randomization flag
         random.seed(seed)
         mutate_items_and_weapons()
 
@@ -4772,7 +4772,6 @@ def randomize():
         restore_warjilis(TEMPFILE, before=[0x1c1, 0x1c2], new_entd=0x1dd,
                          map_id=33, monsters=second)
         altima1 = JobObject.get(0x41)
-        # Ry Edit: This was 0x41, which is notably not Ultimate Magic :P
         altima1.skillset = 0x7B
 
     if 'o' in flags:
@@ -4782,7 +4781,6 @@ def randomize():
             pass
 
     if set(flags) & set("rujimtpsazfyw"):
-        # Ry Edit: Added the 2 new flags here... though I don't know 100% if they needed to be
         random.seed(seed)
         for unit_id in [0x1951, 0x19d0, 0x1a10, 0x1ac0, 0x1b10]:
             u = get_unit(unit_id)
