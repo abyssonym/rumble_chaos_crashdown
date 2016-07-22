@@ -1160,13 +1160,12 @@ class PoachObject(TableObject):
 class WeaponObject(TableObject):
     def mutate(self):
         for attr in ["range", "weapon_power", "evade"]:
-            if random.choice([True, False]):
-                value = getattr(self, attr)
-                if 0 <= value <= 0xFD:
-                    newvalue = mutate_normal(value, minimum=0, maximum=0xFD)
-                    if attr == "range" and value > 0 and newvalue == 0:
-                        continue
-                    setattr(self, attr, newvalue)
+            value = getattr(self, attr)
+            if random.choice([True, False]) and 0 <= value <= 0xFD:
+                newvalue = mutate_normal(value, minimum=0, maximum=0xFD)
+                if attr == "range" and value > 0 and newvalue == 0:
+                    continue
+                setattr(self, attr, newvalue)
 
         #if random.choice([True, False]):
         #    self.element = mutate_bits(self.element)
@@ -1203,9 +1202,8 @@ class WeaponObject(TableObject):
 class ShieldObject(TableObject):
     def mutate(self):
         for attr in ["physical_evade", "magic_evade"]:
-            if random.choice([True, False]):
-                value = getattr(self, attr)
-                if 0 <= value <= 0x50:
+            value = getattr(self, attr)
+            if random.choice([True, False]) and 0 <= value <= 0x50:
                     newvalue = mutate_normal(value, minimum=0, maximum=0x50) # Max 80
                     setattr(self, attr, newvalue)
 
@@ -1213,9 +1211,8 @@ class ShieldObject(TableObject):
 class ArmorObject(TableObject):
     def mutate(self):
         for attr in ["hp_bonus", "mp_bonus"]:
-            if random.choice([True, False]):
-                value = getattr(self, attr)
-                if 0 <= value <= 0xFD:
+            value = getattr(self, attr)
+            if random.choice([True, False]) and 0 <= value <= 0xFD:
                     newvalue = mutate_normal(value, minimum=0, maximum=0xFD)
                     setattr(self, attr, newvalue)
 
@@ -1223,9 +1220,8 @@ class ArmorObject(TableObject):
 class AccessoryObject(TableObject):
     def mutate(self):
         for attr in ["physical_evade", "magic_evade"]:
-            if random.choice([True, False]):
-                value = getattr(self, attr)
-                if 0 <= value <= 0x3C:
+            value = getattr(self, attr)
+            if random.choice([True, False]) and 0 <= value <= 0x3C:
                     newvalue = mutate_normal(value, minimum=0, maximum=0x3C) # Max 60
                     setattr(self, attr, newvalue)
 
@@ -1263,65 +1259,65 @@ class InflictStatusObject(TableObject):
 
 class ItemAttributesObject(TableObject):
     def mutate(self):
-        if self.index > 0:
-            if self.index <= 49:
-                for attr in ["pa", "ma", "speed", "move", "jump"]:
-                    value = getattr(self, attr)
-                    if random.choice([True, False]):
-                        if 0 <= value <= 0xFD:
-                            newvalue = mutate_normal(value, minimum=0, maximum=0xFD)
-                            setattr(self, attr, newvalue)
+        if not self.index:
+            return
+        if self.index <= 49:
+            for attr in ["pa", "ma", "speed", "move", "jump"]:
+                value = getattr(self, attr)
+                if random.choice([True, False]) and 0 <= value <= 0xFD:
+                        newvalue = mutate_normal(value, minimum=0, maximum=0xFD)
+                        setattr(self, attr, newvalue)
 
-                '''
-                # Mutating status/elements on items seems like an all-around bad idea until tooltips are implemented
-                if randint(1,3) == 1:
-                  immune = mutate_bits(self.status_immune, 40, odds_multiplier=4.0)
-                  changed = immune ^ self.status_immune
-                  for i in range(40):
-                      mask = (1 << i)
-                      if mask & changed:
-                          if mask & BENEFICIAL_STATUSES or randint(1, 50) == 50:
-                              self.status_immune ^= mask
-                          else:
-                              self.status_immune |= mask
+            '''
+            # Mutating status/elements on items seems like an all-around bad idea until tooltips are implemented
+            if randint(1,3) == 1:
+              immune = mutate_bits(self.status_immune, 40, odds_multiplier=4.0)
+              changed = immune ^ self.status_immune
+              for i in range(40):
+                  mask = (1 << i)
+                  if mask & changed:
+                      if mask & BENEFICIAL_STATUSES or randint(1, 50) == 50:
+                          self.status_immune ^= mask
+                      else:
+                          self.status_immune |= mask
 
-                  not_innate = ((2**40)-1) ^ self.status_innate
-                  not_start = ((2**40)-1) ^ self.status_start
-                  self.status_immune &= not_innate
-                  self.status_immune &= not_start
+              not_innate = ((2**40)-1) ^ self.status_innate
+              not_start = ((2**40)-1) ^ self.status_start
+              self.status_immune &= not_innate
+              self.status_immune &= not_start
 
-                  vulnerable = ((2**40)-1) ^ self.status_immune
-                  innate = mutate_bits(self.status_innate, 40, odds_multiplier=4.0)
-                  innate &= vulnerable
-                  innate &= VALID_INNATE_STATUSES
-                  not_innate2 = ((2**40)-1) ^ innate
-                  start = mutate_bits(self.status_start, 40, odds_multiplier=4.0)
-                  start &= vulnerable
-                  start &= (not_innate & not_innate2)
-                  start &= VALID_START_STATUSES
-                  self.status_innate |= innate
-                  self.status_start |= start
+              vulnerable = ((2**40)-1) ^ self.status_immune
+              innate = mutate_bits(self.status_innate, 40, odds_multiplier=4.0)
+              innate &= vulnerable
+              innate &= VALID_INNATE_STATUSES
+              not_innate2 = ((2**40)-1) ^ innate
+              start = mutate_bits(self.status_start, 40, odds_multiplier=4.0)
+              start &= vulnerable
+              start &= (not_innate & not_innate2)
+              start &= VALID_START_STATUSES
+              self.status_innate |= innate
+              self.status_start |= start
 
-                if randint(1,2) == 1:
-                    self.elem_null = mutate_bits(self.elem_null)
-                    vulnerable = 0xFF ^ self.elem_null
-                    self.elem_abs = mutate_bits(self.elem_abs) & vulnerable
-                    self.elem_strengthen = mutate_bits(self.elem_strengthen) & vulnerable
-                    self.elem_halve = mutate_bits(self.elem_halve) & vulnerable
-                    vulnerable = 0xFF ^ (self.elem_null | self.elem_strengthen | self.elem_halve)
-                    self.elem_weak = mutate_bits(self.elem_weak) & vulnerable
-                '''
-            elif self.index == 0x4A:
-                # Static Item Attributes to be used to "mutate" weapons that don't have Attributes normally
-                self.pa = 1
-            elif self.index == 0x4B:
-                self.ma = 1
-            elif self.index == 0x4C:
-                self.speed = 1
-            elif self.index == 0x4D:
-                self.move = 1
-            elif self.index == 0x4E:
-                self.jump = 1
+            if randint(1,2) == 1:
+                self.elem_null = mutate_bits(self.elem_null)
+                vulnerable = 0xFF ^ self.elem_null
+                self.elem_abs = mutate_bits(self.elem_abs) & vulnerable
+                self.elem_strengthen = mutate_bits(self.elem_strengthen) & vulnerable
+                self.elem_halve = mutate_bits(self.elem_halve) & vulnerable
+                vulnerable = 0xFF ^ (self.elem_null | self.elem_strengthen | self.elem_halve)
+                self.elem_weak = mutate_bits(self.elem_weak) & vulnerable
+            '''
+        elif self.index == 0x4A:
+            # Static Item Attributes to be used to "mutate" weapons that don't have Attributes normally
+            self.pa = 1
+        elif self.index == 0x4B:
+            self.ma = 1
+        elif self.index == 0x4C:
+            self.speed = 1
+        elif self.index == 0x4D:
+            self.move = 1
+        elif self.index == 0x4E:
+            self.jump = 1
 
 
 class AbilityAttributesObject(TableObject):
@@ -1339,9 +1335,8 @@ class AbilityAttributesObject(TableObject):
             self.yval = mutate_normal(self.yval, minimum=1, maximum=0xFD)
 
         for attr in ["range", "effect", "vertical"]:
-            if random.choice([True, False]):
-                value = getattr(self, attr)
-                if 0 <= value <= 0xFD:
+            value = getattr(self, attr)
+            if random.choice([True, False]) and 0 <= value <= 0xFD:
                     newvalue = mutate_normal(value, minimum=0, maximum=0xFD)
                     if attr == "range" and value > 0 and newvalue == 0:
                         continue
