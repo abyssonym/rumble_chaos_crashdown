@@ -2,7 +2,7 @@
 palette,1
 graphic,1
 enemy_level,1
-misc1,bit:unk0 rare unk1 accessory body head shield weapon
+misc1,bit:z0 rare unk1 accessory body head shield weapon
 second_table,1
 itemtype,1
 always_zero1,1

@@ -1,0 +1,4 @@
+#8 bytes, starts at 0x60798, 14 total
+formula,1
+zval,1
+inflict_status,1

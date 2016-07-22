@@ -1,0 +1,3 @@
+#8 bytes, starts at 0x60758, 32 total
+physical_evade,1
+magic_evade,1

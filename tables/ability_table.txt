@@ -2,4 +2,7 @@
 jp_cost,2
 learn_chance,1
 misc_type,1
-misc_unk,4
+misc_ai1,bit:target_allies target_enemies unequip stats add_status cancel_status mp hp
+misc_ai2,bit:silence evadable faith random_hits follow_target undead_reverse reflectable self_target
+mist_ai3,bit:defense_up magic_defense_up triple_bracelet triple_attack vertical_increase linear_attack direct_attack arc_attack
+mist_ai4,bit:unk10 unk11 use_weapon_range requires_monster_skill unk12 cannot_target_ally cannot_target_enemy usable_by_ai

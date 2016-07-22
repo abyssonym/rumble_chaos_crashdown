@@ -3,6 +3,13 @@ AbilityObject           ability_table.txt           58744   512
 AbilityAttributesObject ability_attribute_table.txt 59744   357
 JobObject               job_table.txt               5ac0c   160
 ItemObject              item_table.txt              5ca0c   254
+WeaponObject            weapon_table.txt            5d60c   128
+ShieldObject            shield_table.txt            5da0c   16
+ArmorObject             armor_table.txt             5da2c   64
+AccessoryObject         accessory_table.txt         5daac   32
+ChemistItemObject       chemist_item_table.txt      5daec   14
+InflictStatusObject     inflict_status_table.txt    5db18   128
+ItemAttributesObject    item_attribute_table.txt    5de18   80
 SkillsetObject          skillset_table.txt          5e5e8   176
 MonsterSkillsObject     monster_skills_table.txt    5f718   48
 PoachObject             poach_table.txt             5fbb8   48

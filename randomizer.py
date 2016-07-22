@@ -129,6 +129,12 @@ JOBNAMES = ["squire", "chemist", "knight", "archer", "monk", "priest",
             "dancer", "mime"]
 JOBLEVEL_JP = [100, 200, 350, 550, 800, 1150, 1550, 2100]
 
+#Ry Edit: List of formulas that should be able to inflict status
+STATUS_FORMULAS = [1, 8, 9, 0xA, 0xB, 0xD, 0xE, 0x1E, 0x1F, 0x20, 0x21, 
+                   0x22, 0x24, 0x26, 0x28, 0x29, 0x2D, 0x31, 0x33, 0x35,
+                   0x38, 0x3D, 0x3F, 0x40, 0x41, 0x47, 0x4E, 0x50, 0x51,
+                   0x52, 0x53, 0x57, 0x5A, 0x5B, 0x5E, 0x5F, 0x60]
+
 
 mapsprite_restrictions = {}
 mapsprite_selection = {}
@@ -1150,6 +1156,160 @@ class PoachObject(TableObject):
             candidates = temp
         self.rare = random.choice(candidates).index
         self.donerare.add(self.rare)
+        
+        
+#Ry Edit: Objects for Weapon, Shield, Armor, Accessory, Chemist Item, Inflict Status, and Item Attribute Data
+class WeaponObject(TableObject):
+    def mutate(self):
+        for attr in ["range", "weapon_power", "evade"]:
+            if random.choice([True, False]):
+                value = getattr(self, attr)
+                if 0 <= value <= 0xFD:
+                    newvalue = mutate_normal(value, minimum=0, maximum=0xFD)
+                    if attr == "range" and value > 0 and newvalue == 0:
+                        continue
+                    setattr(self, attr, newvalue)
+        #if random.choice([True, False]):
+        #    self.element = mutate_bits(self.element)
+        attr = "inflict_status"
+        value = getattr(self, attr)
+        if self.formula == 1 and value == 0 and randint(1,5) == 1: #20% chance to turn a non-status Formula 1 move into Formula 2
+            self.formula = 2
+            setattr(self, "inflict_status", 0)
+        if self.formula == 2: #Formula 2 calls the "inflict status" value as a spell to cast 25% of the time
+            if (value == 0) or (randint(1,10) == 1): #10% chance for pre-existing spell casts to be randomized
+                newvalue = randint(1,0xFF) #Value is capped at FF internally, so no abilities past Holy Bracelet
+                if newvalue in [0x28, 0x2D, 0xB8, 0xDB, 0xDC]: #Empty abilities
+                    newvalue = randint(1,0x1F)
+                setattr(self, attr, newvalue)
+
+
+    def mutate_status(self):
+        if (not (self.formula == 2)) and randint(1,10) == 1:
+            attr = "inflict_status"
+            value = getattr(self, attr)
+            if value > 0 and randint(1,10) != 1: #1% Chance for a pre-existing Inflict Status to be randomized; 10% otherwise
+                return
+            newvalue = randint(0,0x79)
+            if newvalue == 0x60: #Banning Crystal (since it's more likely to appear on weapons)
+                return
+            setattr(self, attr, newvalue)
+
+
+class ShieldObject(TableObject):
+    def mutate(self):
+        for attr in ["physical_evade", "magic_evade"]:
+            if random.choice([True, False]):
+                value = getattr(self, attr)
+                if 0 <= value <= 0x50:
+                    newvalue = mutate_normal(value, minimum=0, maximum=0x50) #Max 80
+                    setattr(self, attr, newvalue)
+
+
+class ArmorObject(TableObject):
+    def mutate(self):
+        for attr in ["hp_bonus", "mp_bonus"]:
+            if random.choice([True, False]):
+                value = getattr(self, attr)
+                if 0 <= value <= 0xFD:
+                    newvalue = mutate_normal(value, minimum=0, maximum=0xFD)
+                    setattr(self, attr, newvalue)
+
+
+class AccessoryObject(TableObject):
+    def mutate(self):
+        for attr in ["physical_evade", "magic_evade"]:
+            if random.choice([True, False]):
+                value = getattr(self, attr)
+                if 0 <= value <= 0x3C:
+                    newvalue = mutate_normal(value, minimum=0, maximum=0x3C) #Max 60
+                    setattr(self, attr, newvalue)
+
+
+class ChemistItemObject(TableObject):
+    def mutate(self):
+        attr = "zval"
+        value = getattr(self, attr)
+        if 1 <= value <= 0xFD:
+            newvalue = mutate_normal(value, minimum=1, maximum=0xFD)
+            setattr(self, attr, newvalue)
+
+
+class InflictStatusObject(TableObject):
+    def randomize_empty(self):
+        if (0x1D <= self.index <= 0x1F) or  (0x7A <= self.index <= 0x7F):
+            toinflict = mutate_bits(self.statuses_to_inflict, 40, odds_multiplier=0.1) #High odds to ensure that each new inflict status has at least something
+            toinflict &= VALID_START_STATUSES                                          #(Maybe too chaotic, though? Might be better if there was a way to ensure that only 1-3 statuses are set)
+            self.statuses_to_inflict = toinflict
+            if not (self.statuses_to_inflict == 0x0000000000):
+                choice = randint(1,9)
+                if choice <= 3: #33%
+                    self.set_bit("random", True)
+                elif choice <= 6: #33%
+                    self.set_bit("separate", True)
+                elif choice <= 8: #22%
+                    self.set_bit("cancel", True)
+                else: #11%
+                    self.set_bit("all_or_nothing", True)
+            
+
+
+class ItemAttributesObject(TableObject):
+    def mutate(self):
+        if self.index > 0:
+            if self.index <= 49:
+                for attr in ["pa", "ma", "speed", "move", "jump"]:
+                    if (randint(1,3) == 1):
+                        value = getattr(self, attr)
+                        if 0 <= value <= 0xFD:
+                            newvalue = mutate_normal(value, minimum=0, maximum=0xFD)
+                            setattr(self, attr, newvalue)
+                ''' #Mutating status/elements on items seems like an all-around bad idea until tooltips are implemented
+                if randint(1,3) == 1:
+                  immune = mutate_bits(self.status_immune, 40, odds_multiplier=4.0)
+                  changed = immune ^ self.status_immune
+                  for i in range(40):
+                      mask = (1 << i)
+                      if mask & changed:
+                          if mask & BENEFICIAL_STATUSES or randint(1, 50) == 50:
+                              self.status_immune ^= mask
+                          else:
+                              self.status_immune |= mask
+                  not_innate = ((2**40)-1) ^ self.status_innate
+                  not_start = ((2**40)-1) ^ self.status_start
+                  self.status_immune &= not_innate
+                  self.status_immune &= not_start
+
+                  vulnerable = ((2**40)-1) ^ self.status_immune
+                  innate = mutate_bits(self.status_innate, 40, odds_multiplier=4.0)
+                  innate &= vulnerable
+                  innate &= VALID_INNATE_STATUSES
+                  not_innate2 = ((2**40)-1) ^ innate
+                  start = mutate_bits(self.status_start, 40, odds_multiplier=4.0)
+                  start &= vulnerable
+                  start &= (not_innate & not_innate2)
+                  start &= VALID_START_STATUSES
+                  self.status_innate |= innate
+                  self.status_start |= start
+                if randint(1,2) == 1:
+                    self.elem_null = mutate_bits(self.elem_null)
+                    vulnerable = 0xFF ^ self.elem_null
+                    self.elem_abs = mutate_bits(self.elem_abs) & vulnerable
+                    self.elem_strengthen = mutate_bits(self.elem_strengthen) & vulnerable
+                    self.elem_halve = mutate_bits(self.elem_halve) & vulnerable
+                    vulnerable = 0xFF ^ (self.elem_null | self.elem_strengthen | self.elem_halve)
+                    self.elem_weak = mutate_bits(self.elem_weak) & vulnerable
+                '''
+            elif self.index == 0x4A: #Static Item Attributes to be used to "mutate" weapons that don't have Attributes normally
+                setattr(self, "pa", 1)
+            elif self.index == 0x4B:
+                setattr(self, "ma", 1)
+            elif self.index == 0x4C:
+                setattr(self, "speed", 1)
+            elif self.index == 0x4D:
+                setattr(self, "move", 1)
+            elif self.index == 0x4E:
+                setattr(self, "jump", 1)
 
 
 class AbilityAttributesObject(TableObject):
@@ -1175,6 +1335,43 @@ class AbilityAttributesObject(TableObject):
                         continue
                     setattr(self, attr, newvalue)
 
+
+    def mutate_status(self): #Ry Edit: Ability Inflict Status randomizer
+        if not (self.index == 0x1D): #Excluding Frog, because I feel like there's some hardcoding for the AI's usage of it
+            formula = getattr(self, "formula")
+            attr = "inflict_status"
+            value = getattr(self, attr)
+            if (value > 0) or (formula in STATUS_FORMULAS):
+                if randint(1,5) == 1:
+                    if value > 0 and randint(1,10) != 1: #2% Chance for a pre-existing Inflict Status to be randomized; 20% otherwise
+                        return
+                    newvalue = randint(1,0x7F)
+                    if newvalue == 0x60: #Banning Crystal if it'd hit more than 1 unit
+                        effectarea = getattr(self, "effect")
+                        if effectarea > 0 or self.get_bit("math_skill") or self.get_bit("3_directions"):
+                            return
+                        #Add code here to ensure that all Ramza classes and Rafa are immune to Crystal?
+                    setattr(self, attr, newvalue)
+                    ability = get_ability(self.index)
+                    if ability.get_bit("add_status") or ability.get_bit("cancel_status"): #Correcting the AI flags if the ability normally does status
+                        inflictstatus = InflictStatusObject.get(newvalue)
+                        if inflictstatus.get_bit("cancel"):
+                            ability.set_bit("add_status", False)
+                            ability.set_bit("cancel_status", True)
+                        elif inflictstatus.get_bit("separate") or inflictstatus.get_bit("random") or inflictstatus.get_bit("all_or_nothing"):
+                            ability.set_bit("add_status", True)
+                            ability.set_bit("cancel_status", False)
+                ''' #Alternate version that bans only status-focused spells from being randomized (untested)
+                ability = get_ability(self.index)
+                if value == 0 or not (ability.get_bit("add_status") or ability.get_bit("cancel_status")):
+                    if randint(1,10) <= 3:
+                        newvalue = randint(1,0x7F)
+                        if newvalue == 0x60:
+                            effectarea = getattr(self, "effect")
+                            if effectarea > 0 or self.get_bit("math_skill") or self.get_bit("3_directions"):
+                                return
+                        setattr(self, attr, newvalue)
+                '''
 
 class AbilityObject(TableObject):
     @property
@@ -1235,6 +1432,12 @@ class ItemObject(TableObject):
                 self.enemy_level / boostd["equipment"]))
             self.enemy_level = mutate_normal(self.enemy_level, minimum=1,
                                              maximum=99)
+
+
+    def mutate_attributes(self): #Ry Edit: Item Attribute Randomizer
+        if self.index > 0 and self.attributes == 0 and randint(1,10) == 1:
+            newvalue = randint(0x4A,0x4E) #Only selects from predefined single-stat Item Attributes
+            setattr(self, "attributes", newvalue)
 
 
 class SkillsetObject(TableObject):
@@ -3173,6 +3376,45 @@ def mutate_skillsets():
                 ss.actions.remove(action)
 
 
+#Ry Edit: Mutate functions for Inflict Status and Weapon/Item Stats
+def mutate_inflict_status():
+    print "Mutating weapon and ability status effects."
+    inflict_statuses = InflictStatusObject.every
+    for infst in inflict_statuses:
+        infst.randomize_empty()
+    abilities_attributes = get_abilities_attributes()
+    for aa in abilities_attributes:
+        aa.mutate_status()
+    weapons = WeaponObject.every
+    for w in weapons:
+        w.mutate_status()
+        
+        
+def mutate_items_and_weapons():
+    print("Mutating weapon and item stats.")
+    weapons = WeaponObject.every
+    for w in weapons:
+        w.mutate()
+    shields = ShieldObject.every
+    for s in shields:
+        s.mutate()
+    armors = ArmorObject.every
+    for ar in armors:
+        ar.mutate()
+    accessories = AccessoryObject.every
+    for acc in accessories:
+        acc.mutate()
+    chemistitems = ChemistItemObject.every
+    for ci in chemistitems:
+        ci.mutate()
+    itemattributes = ItemAttributesObject.every
+    for ia in itemattributes:
+        ia.mutate()
+    items = get_items()
+    for i in items:
+        i.mutate_attributes()
+
+
 def mutate_abilities_attributes():
     print "Mutating ability attributes."
     abilities_attributes = get_abilities_attributes()
@@ -4317,15 +4559,18 @@ def randomize():
         difficulty = 1.0
 
     if len(argv) <= 2:
+        #Ry Edit: Added the new flags to the printout presented to the user
         print ("u  Randomize enemy and ally units.\n"
                "f  Randomize enemy and ally formations.\n"
                "j  Randomize job stats and JP required for skills.\n"
                "i  Randomize innate properties of jobs.\n"
                "s  Randomize job skillsets.\n"
                "a  Randomize abilities, including CT, MP cost, etc.\n"
+               "y  Randomize ability and weapon status effects.\n"
                "r  Randomize job requirements and job level JP.\n"
                "t  Randomize trophies, poaches, and move-find items.\n"
                "p  Randomize item prices and shop availability.\n"
+               "w  Randomize weapon and item stats.\n"
                "m  Randomize monster stats and skills.\n"
                "c  Randomize battle music.\n"
                "z  Enable special surprises.\n"
@@ -4430,6 +4675,10 @@ def randomize():
         # do after randomizing skillsets
         random.seed(seed)
         mutate_abilities_attributes()
+        
+    if 'y' in flags: #Ry Edit: Added Weapon and Ability Inflict Status randomization flag
+        random.seed(seed)
+        mutate_inflict_status()
 
     if 'j' in flags:
         # do after randomizing skillsets
@@ -4490,6 +4739,10 @@ def randomize():
     if 'p' in flags:
         random.seed(seed)
         mutate_shops()
+        
+    if 'w' in flags: #Ry Edit: Added Item and Weapon randomization flag
+        random.seed(seed)
+        mutate_items_and_weapons()
 
     if 'c' in flags:
         random.seed(seed)
@@ -4506,7 +4759,7 @@ def randomize():
         restore_warjilis(TEMPFILE, before=[0x1c1, 0x1c2], new_entd=0x1dd,
                          map_id=33, monsters=second)
         altima1 = JobObject.get(0x41)
-        altima1.skillset = 0x41
+        altima1.skillset = 0x7B #Ry Edit: This was 0x41, which is notably not Ultimate Magic :P
 
     if 'o' in flags:
         try:
@@ -4514,7 +4767,7 @@ def randomize():
         except NotImplementedError:
             pass
 
-    if set(flags) & set("rujimtpsazf"):
+    if set(flags) & set("rujimtpsazfyw"): #Ry Edit: Added the 2 new flags here... though I don't know 100% if they needed to be
         random.seed(seed)
         for unit_id in [0x1951, 0x19d0, 0x1a10, 0x1ac0, 0x1b10]:
             u = get_unit(unit_id)

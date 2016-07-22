@@ -1,0 +1,14 @@
+# 8 bytes, starts at 0x60AC4, 80 total
+pa,1
+ma,1
+speed,1
+move,1
+jump,1
+status_innate,5
+status_immune,5
+status_start,5
+elem_abs,1
+elem_null,1
+elem_halve,1
+elem_weak,1
+elem_strengthen,1

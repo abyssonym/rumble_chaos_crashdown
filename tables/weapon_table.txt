@@ -1,0 +1,9 @@
+# 8 bytes, starts at 0x602B8, 128 entries
+range,1
+attack_flags,1
+formula,1
+unknown,1
+weapon_power,1
+evade,1
+element,1
+inflict_status,1
