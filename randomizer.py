@@ -1169,12 +1169,11 @@ class WeaponObject(TableObject):
                     setattr(self, attr, newvalue)
         #if random.choice([True, False]):
         #    self.element = mutate_bits(self.element)
-        attr = "inflict_status"
-        value = getattr(self, attr)
+        value = self.inflict_status
         if self.formula == 1 and value == 0 and randint(1,5) == 1:
             # 20% chance to turn a non-status Formula 1 move into Formula 2
             self.formula = 2
-            setattr(self, "inflict_status", 0)
+            self.inflict_status = 0
         if self.formula == 2:
             # Formula 2 calls the "inflict status" value as a spell to cast 25% of the time
             if (value == 0) or (randint(1,10) == 1):
@@ -1184,13 +1183,12 @@ class WeaponObject(TableObject):
                 if newvalue in [0x28, 0x2D, 0xB8, 0xDB, 0xDC]:
                     # Empty abilities
                     newvalue = randint(1,0x1F)
-                setattr(self, attr, newvalue)
+                self.inflict_status = newvalue
 
 
     def mutate_status(self):
         if (not (self.formula == 2)) and randint(1,10) == 1:
-            attr = "inflict_status"
-            value = getattr(self, attr)
+            value = self.inflict_status
             if value > 0 and randint(1,10) != 1:
                 # 1% Chance for a pre-existing Inflict Status to be randomized; 10% otherwise
                 return
@@ -1198,7 +1196,7 @@ class WeaponObject(TableObject):
             if newvalue == 0x60:
                 # Banning Crystal (since it's more likely to appear on weapons)
                 return
-            setattr(self, attr, newvalue)
+            self.inflict_status = newvalue
 
 
 class ShieldObject(TableObject):
@@ -1233,11 +1231,10 @@ class AccessoryObject(TableObject):
 
 class ChemistItemObject(TableObject):
     def mutate(self):
-        attr = "zval"
-        value = getattr(self, attr)
+        value = self.zval
         if 1 <= value <= 0xFD:
             newvalue = mutate_normal(value, minimum=1, maximum=0xFD)
-            setattr(self, attr, newvalue)
+            self.zval = newvalue
 
 
 class InflictStatusObject(TableObject):
@@ -1310,15 +1307,15 @@ class ItemAttributesObject(TableObject):
                 '''
             elif self.index == 0x4A:
                 # Static Item Attributes to be used to "mutate" weapons that don't have Attributes normally
-                setattr(self, "pa", 1)
+                self.pa = 1
             elif self.index == 0x4B:
-                setattr(self, "ma", 1)
+                self.ma = 1
             elif self.index == 0x4C:
-                setattr(self, "speed", 1)
+                self.speed = 1
             elif self.index == 0x4D:
-                setattr(self, "move", 1)
+                self.move = 1
             elif self.index == 0x4E:
-                setattr(self, "jump", 1)
+                self.jump = 1
 
 
 class AbilityAttributesObject(TableObject):
@@ -1349,9 +1346,8 @@ class AbilityAttributesObject(TableObject):
         # Ry Edit: Ability Inflict Status randomizer
         if not (self.index == 0x1D):
             # Excluding Frog, because I feel like there's some hardcoding for the AI's usage of it
-            formula = getattr(self, "formula")
-            attr = "inflict_status"
-            value = getattr(self, attr)
+            formula = self.formula
+            value = self.inflict_status
             if (value > 0) or (formula in STATUS_FORMULAS):
                 if randint(1,5) == 1:
                     if value > 0 and randint(1,10) != 1:
@@ -1360,11 +1356,11 @@ class AbilityAttributesObject(TableObject):
                     newvalue = randint(1,0x7F)
                     if newvalue == 0x60:
                         # Banning Crystal if it'd hit more than 1 unit
-                        effectarea = getattr(self, "effect")
+                        effectarea = self.effect
                         if effectarea > 0 or self.get_bit("math_skill") or self.get_bit("3_directions"):
                             return
                         # Add code here to ensure that all Ramza classes and Rafa are immune to Crystal?
-                    setattr(self, attr, newvalue)
+                    self.inflict_status = newvalue
                     ability = get_ability(self.index)
                     if ability.get_bit("add_status") or ability.get_bit("cancel_status"):
                         # Correcting the AI flags if the ability normally does status
@@ -1382,10 +1378,10 @@ class AbilityAttributesObject(TableObject):
                     if randint(1,10) <= 3:
                         newvalue = randint(1,0x7F)
                         if newvalue == 0x60:
-                            effectarea = getattr(self, "effect")
+                            effectarea = self.effect
                             if effectarea > 0 or self.get_bit("math_skill") or self.get_bit("3_directions"):
                                 return
-                        setattr(self, attr, newvalue)
+                        self.inflict_status = newvalue
                 '''
 
 class AbilityObject(TableObject):
@@ -1454,7 +1450,7 @@ class ItemObject(TableObject):
         if self.index > 0 and self.attributes == 0 and randint(1,10) == 1:
             newvalue = randint(0x4A,0x4E)
             # Only selects from predefined single-stat Item Attributes
-            setattr(self, "attributes", newvalue)
+            self.attributes = newvalue
 
 
 class SkillsetObject(TableObject):
