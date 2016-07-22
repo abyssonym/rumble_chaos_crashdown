@@ -1170,29 +1170,29 @@ class WeaponObject(TableObject):
         #if random.choice([True, False]):
         #    self.element = mutate_bits(self.element)
         value = self.inflict_status
-        if self.formula == 1 and value == 0 and randint(1,5) == 1:
+        if self.formula == 1 and value == 0 and randint(1, 5) == 1:
             # 20% chance to turn a non-status Formula 1 move into Formula 2
             self.formula = 2
             self.inflict_status = 0
 
         if self.formula == 2:
             # Formula 2 calls the "inflict status" value as a spell to cast 25% of the time
-            if (value == 0) or (randint(1,10) == 1):
+            if (value == 0) or (randint(1, 10) == 1):
                 # 10% chance for pre-existing spell casts to be randomized
                 # Value is capped at FF internally, so no abilities past Holy Bracelet
-                newvalue = randint(1,0xFF)
+                newvalue = randint(1, 0xFF)
                 if newvalue in [0x28, 0x2D, 0xB8, 0xDB, 0xDC]:
                     # Empty abilities
-                    newvalue = randint(1,0x1F)
+                    newvalue = randint(1, 0x1F)
                 self.inflict_status = newvalue
 
     def mutate_status(self):
-        if (not (self.formula == 2)) and randint(1,10) == 1:
+        if (not (self.formula == 2)) and randint(1, 10) == 1:
             value = self.inflict_status
-            if value > 0 and randint(1,10) != 1:
+            if value > 0 and randint(1, 10) != 1:
                 # 1% Chance for a pre-existing Inflict Status to be randomized; 10% otherwise
                 return
-            newvalue = randint(0,0x79)
+            newvalue = randint(0, 0x79)
             if newvalue == 0x60:
                 # Banning Crystal (since it's more likely to appear on weapons)
                 return
@@ -1248,7 +1248,7 @@ class InflictStatusObject(TableObject):
                     break
             self.statuses_to_inflict = toinflict
             if not (self.statuses_to_inflict == 0x0000000000):
-                choice = randint(1,9)
+                choice = randint(1, 9)
                 if choice <= 3: # 33%
                     self.set_bit("random", True)
                 elif choice <= 6: # 33%
@@ -1272,7 +1272,7 @@ class ItemAttributesObject(TableObject):
 
             '''
             # Mutating status/elements on items seems like an all-around bad idea until tooltips are implemented
-            if randint(1,3) == 1:
+            if randint(1, 3) == 1:
               immune = mutate_bits(self.status_immune, 40, odds_multiplier=4.0)
               changed = immune ^ self.status_immune
               for i in range(40):
@@ -1300,7 +1300,7 @@ class ItemAttributesObject(TableObject):
               self.status_innate |= innate
               self.status_start |= start
 
-            if randint(1,2) == 1:
+            if randint(1, 2) == 1:
                 self.elem_null = mutate_bits(self.elem_null)
                 vulnerable = 0xFF ^ self.elem_null
                 self.elem_abs = mutate_bits(self.elem_abs) & vulnerable
@@ -1353,11 +1353,11 @@ class AbilityAttributesObject(TableObject):
         formula = self.formula
         value = self.inflict_status
         if (value > 0) or (formula in STATUS_FORMULAS):
-            if randint(1,5) == 1:
-                if value > 0 and randint(1,10) != 1:
+            if randint(1, 5) == 1:
+                if value > 0 and randint(1, 10) != 1:
                     # 2% Chance for a pre-existing Inflict Status to be randomized; 20% otherwise
                     return
-                newvalue = randint(1,0x7F)
+                newvalue = randint(1, 0x7F)
                 if newvalue == 0x60:
                     # Banning Crystal if it'd hit more than 1 unit
                     effectarea = self.effect
@@ -1383,8 +1383,8 @@ class AbilityAttributesObject(TableObject):
             # Alternate version that bans only status-focused spells from being randomized (untested)
             ability = get_ability(self.index)
             if value == 0 or not (ability.get_bit("add_status") or ability.get_bit("cancel_status")):
-                if randint(1,10) <= 3:
-                    newvalue = randint(1,0x7F)
+                if randint(1, 10) <= 3:
+                    newvalue = randint(1, 0x7F)
                     if newvalue == 0x60:
                         effectarea = self.effect
                         if effectarea > 0 or self.get_bit("math_skill") or self.get_bit("3_directions"):
@@ -1455,8 +1455,8 @@ class ItemObject(TableObject):
 
     def mutate_attributes(self):
         # Ry Edit: Item Attribute Randomizer
-        if self.index > 0 and self.attributes == 0 and randint(1,10) == 1:
-            newvalue = randint(0x4A,0x4E)
+        if self.index > 0 and self.attributes == 0 and randint(1, 10) == 1:
+            newvalue = randint(0x4A, 0x4E)
             # Only selects from predefined single-stat Item Attributes
             self.attributes = newvalue
 
