@@ -1239,8 +1239,10 @@ class InflictStatusObject(TableObject):
         if (0x1D <= self.index <= 0x1F) or  (0x7A <= self.index <= 0x7F):
             toinflict = 0
             while True:
-                toinflict |= (1 << randint(0, 39))
-                toinflict &= VALID_START_STATUSES
+                bit = (1 << randint(0, 39))
+                if not bit & VALID_START_STATUSES:
+                    continue
+                toinflict |= bit
                 if (toinflict and
                         randint(1, 2**(bin(toinflict).count("1"))) != 1):
                     break
