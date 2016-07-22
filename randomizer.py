@@ -1167,6 +1167,7 @@ class WeaponObject(TableObject):
                     if attr == "range" and value > 0 and newvalue == 0:
                         continue
                     setattr(self, attr, newvalue)
+
         #if random.choice([True, False]):
         #    self.element = mutate_bits(self.element)
         value = self.inflict_status
@@ -1174,6 +1175,7 @@ class WeaponObject(TableObject):
             # 20% chance to turn a non-status Formula 1 move into Formula 2
             self.formula = 2
             self.inflict_status = 0
+
         if self.formula == 2:
             # Formula 2 calls the "inflict status" value as a spell to cast 25% of the time
             if (value == 0) or (randint(1,10) == 1):
@@ -1184,7 +1186,6 @@ class WeaponObject(TableObject):
                     # Empty abilities
                     newvalue = randint(1,0x1F)
                 self.inflict_status = newvalue
-
 
     def mutate_status(self):
         if (not (self.formula == 2)) and randint(1,10) == 1:
@@ -1257,7 +1258,6 @@ class InflictStatusObject(TableObject):
                     self.set_bit("all_or_nothing", True)
 
 
-
 class ItemAttributesObject(TableObject):
     def mutate(self):
         if self.index > 0:
@@ -1268,6 +1268,7 @@ class ItemAttributesObject(TableObject):
                         if 0 <= value <= 0xFD:
                             newvalue = mutate_normal(value, minimum=0, maximum=0xFD)
                             setattr(self, attr, newvalue)
+
                 '''
                 # Mutating status/elements on items seems like an all-around bad idea until tooltips are implemented
                 if randint(1,3) == 1:
@@ -1280,6 +1281,7 @@ class ItemAttributesObject(TableObject):
                               self.status_immune ^= mask
                           else:
                               self.status_immune |= mask
+
                   not_innate = ((2**40)-1) ^ self.status_innate
                   not_start = ((2**40)-1) ^ self.status_start
                   self.status_immune &= not_innate
@@ -1296,6 +1298,7 @@ class ItemAttributesObject(TableObject):
                   start &= VALID_START_STATUSES
                   self.status_innate |= innate
                   self.status_start |= start
+
                 if randint(1,2) == 1:
                     self.elem_null = mutate_bits(self.elem_null)
                     vulnerable = 0xFF ^ self.elem_null
@@ -1341,48 +1344,54 @@ class AbilityAttributesObject(TableObject):
                         continue
                     setattr(self, attr, newvalue)
 
-
     def mutate_status(self):
         # Ry Edit: Ability Inflict Status randomizer
-        if not (self.index == 0x1D):
+        if self.index == 0x1D:
             # Excluding Frog, because I feel like there's some hardcoding for the AI's usage of it
-            formula = self.formula
-            value = self.inflict_status
-            if (value > 0) or (formula in STATUS_FORMULAS):
-                if randint(1,5) == 1:
-                    if value > 0 and randint(1,10) != 1:
-                        # 2% Chance for a pre-existing Inflict Status to be randomized; 20% otherwise
+            return
+
+        formula = self.formula
+        value = self.inflict_status
+        if (value > 0) or (formula in STATUS_FORMULAS):
+            if randint(1,5) == 1:
+                if value > 0 and randint(1,10) != 1:
+                    # 2% Chance for a pre-existing Inflict Status to be randomized; 20% otherwise
+                    return
+                newvalue = randint(1,0x7F)
+                if newvalue == 0x60:
+                    # Banning Crystal if it'd hit more than 1 unit
+                    effectarea = self.effect
+                    if effectarea > 0 or self.get_bit("math_skill") or self.get_bit("3_directions"):
                         return
+                    # Add code here to ensure that all Ramza classes and Rafa are immune to Crystal?
+
+                self.inflict_status = newvalue
+                ability = get_ability(self.index)
+                if ability.get_bit("add_status") or ability.get_bit("cancel_status"):
+                    # Correcting the AI flags if the ability normally does status
+                    inflictstatus = InflictStatusObject.get(newvalue)
+                    if inflictstatus.get_bit("cancel"):
+                        ability.set_bit("add_status", False)
+                        ability.set_bit("cancel_status", True)
+                    elif (inflictstatus.get_bit("separate") or
+                            inflictstatus.get_bit("random") or
+                            inflictstatus.get_bit("all_or_nothing")):
+                        ability.set_bit("add_status", True)
+                        ability.set_bit("cancel_status", False)
+
+            '''
+            # Alternate version that bans only status-focused spells from being randomized (untested)
+            ability = get_ability(self.index)
+            if value == 0 or not (ability.get_bit("add_status") or ability.get_bit("cancel_status")):
+                if randint(1,10) <= 3:
                     newvalue = randint(1,0x7F)
                     if newvalue == 0x60:
-                        # Banning Crystal if it'd hit more than 1 unit
                         effectarea = self.effect
                         if effectarea > 0 or self.get_bit("math_skill") or self.get_bit("3_directions"):
                             return
-                        # Add code here to ensure that all Ramza classes and Rafa are immune to Crystal?
                     self.inflict_status = newvalue
-                    ability = get_ability(self.index)
-                    if ability.get_bit("add_status") or ability.get_bit("cancel_status"):
-                        # Correcting the AI flags if the ability normally does status
-                        inflictstatus = InflictStatusObject.get(newvalue)
-                        if inflictstatus.get_bit("cancel"):
-                            ability.set_bit("add_status", False)
-                            ability.set_bit("cancel_status", True)
-                        elif inflictstatus.get_bit("separate") or inflictstatus.get_bit("random") or inflictstatus.get_bit("all_or_nothing"):
-                            ability.set_bit("add_status", True)
-                            ability.set_bit("cancel_status", False)
-                '''
-                # Alternate version that bans only status-focused spells from being randomized (untested)
-                ability = get_ability(self.index)
-                if value == 0 or not (ability.get_bit("add_status") or ability.get_bit("cancel_status")):
-                    if randint(1,10) <= 3:
-                        newvalue = randint(1,0x7F)
-                        if newvalue == 0x60:
-                            effectarea = self.effect
-                            if effectarea > 0 or self.get_bit("math_skill") or self.get_bit("3_directions"):
-                                return
-                        self.inflict_status = newvalue
-                '''
+            '''
+
 
 class AbilityObject(TableObject):
     @property
@@ -1443,7 +1452,6 @@ class ItemObject(TableObject):
                 self.enemy_level / boostd["equipment"]))
             self.enemy_level = mutate_normal(self.enemy_level, minimum=1,
                                              maximum=99)
-
 
     def mutate_attributes(self):
         # Ry Edit: Item Attribute Randomizer
@@ -3404,23 +3412,17 @@ def mutate_inflict_status():
 
 def mutate_items_and_weapons():
     print("Mutating weapon and item stats.")
-    weapons = WeaponObject.every
-    for w in weapons:
+    for w in WeaponObject.every:
         w.mutate()
-    shields = ShieldObject.every
-    for s in shields:
+    for s in ShieldObject.every:
         s.mutate()
-    armors = ArmorObject.every
-    for ar in armors:
+    for ar in ArmorObject.every:
         ar.mutate()
-    accessories = AccessoryObject.every
-    for acc in accessories:
+    for acc in AccessoryObject.every:
         acc.mutate()
-    chemistitems = ChemistItemObject.every
-    for ci in chemistitems:
+    for ci in ChemistItemObject.every:
         ci.mutate()
-    itemattributes = ItemAttributesObject.every
-    for ia in itemattributes:
+    for ia in ItemAttributesObject.every:
         ia.mutate()
     items = get_items()
     for i in items:
