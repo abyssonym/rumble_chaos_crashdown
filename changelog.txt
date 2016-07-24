@@ -1,5 +1,12 @@
 Changelog - FFT RUMBLE CHAOS CRASHDOWN Randomizer
 
+Version 22: ALMA
+- The 'y' and 'w' randomization flags have been added. (contributed by Ryason55)
+	'y' - Randomize ability and weapon status effects
+	'w' - Randomize weapon and item stats.
+- Generic unit names were updated.
+- Minor balance changes and bugfixes.
+
 Version 21.2:
 - In addition to weather effects, night effects are also patched.
 - Units will no longer be allowed to spawn in deep water.
