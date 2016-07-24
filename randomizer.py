@@ -104,13 +104,14 @@ MATH_SKILLSETS = [0xA, 0xB, 0xC, 0x10]
 BANNED_RSMS = [0x1BB, 0x1D7, 0x1E1, 0x1E4, 0x1E5, 0x1F1]
 BANNED_ANYTHING = [0x18]
 BANNED_ITEMS = [0x49]
+MP_RESTORE_INNATES = [0x1EE, 0x1B6, 0x1B0]
 LUCAVI_INNATES = (range(0x1A6, 0x1A9) + [0x1AA] + range(0x1AC, 0x1B0)
                   + range(0x1B1, 0x1B4) + [0x1B5, 0x1BA, 0x1BD, 0x1BE]
                   + range(0x1C0, 0x1C6)
                   + range(0x1D1, 0x1D6) + [0x1D8, 0x1DD, 0x1E3]
                   + [0x1E7, 0x1E8]
                   + range(0x1EB, 0x1EE) + [0x1F2, 0x1F3, 0x1FA, 0x1FB]
-                  )
+                  ) + MP_RESTORE_INNATES
 
 
 LUCAVI_JOBS = [0x3C, 0x3E, 0x40, 0x41, 0x43, 0x45, 0x49, 0x97]
@@ -1819,17 +1820,20 @@ class JobObject(TableObject):
             num_reactions = 1 + randint(0, 1) + randint(0, 1)
             num_supports = 6 - num_reactions
             while True:
+                reactions = random.sample(lucavi_reactions, num_reactions)
+                reactions = [i.index for i in reactions]
+                if (0x1bd not in reactions and
+                        set(reactions) & set(MP_RESTORE_INNATES)):
+                    continue
+                if len(set(reactions)) == num_reactions:
+                    break
+            while True:
                 supports = random.sample(lucavi_supports, num_supports)
                 supports = [i.index for i in supports]
                 if len(set(supports)) == num_supports:
                     break
             if 0x1E3 not in supports and 0x1E2 not in supports:
                 supports[-1] = 0x1E2
-            while True:
-                reactions = random.sample(lucavi_reactions, num_reactions)
-                reactions = [i.index for i in reactions]
-                if len(set(reactions)) == num_reactions:
-                    break
             abilities = reactions + sorted(supports)
             assert len(set(abilities)) == len(abilities) == 6
             for attr, ability in zip(innate_attrs, abilities):
@@ -1839,6 +1843,9 @@ class JobObject(TableObject):
             if self.is_altima:
                 self.set_all_units("movement", 0x1F3)
             else:
+                if 0x1bd not in reactions:
+                    lucavi_movements = [i for i in lucavi_movements
+                                        if i.index not in MP_RESTORE_INNATES]
                 movement = random.choice(lucavi_movements).index
                 self.set_all_units("movement", movement)
 
