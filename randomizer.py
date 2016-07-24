@@ -1875,6 +1875,10 @@ class JobObject(TableObject):
         start &= vulnerable
         start &= (not_innate & not_innate2)
         start &= VALID_START_STATUSES
+        if (self.index in range(0x4A, 0x5E) and innate & RERAISE_STATUS
+                and randint(1, 100) != 100):
+            innate ^= RERAISE_STATUS
+            start |= RERAISE_STATUS
         self.innate_status |= innate
         self.start_status |= start
 
