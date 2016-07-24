@@ -28,6 +28,7 @@ NAMESFILE = path.join(tblpath, "generic_names.txt")
 MESSAGESFILE = path.join(tblpath, "message_pointers.txt")
 MESHESFILE = path.join(tblpath, "mesh_pointers.txt")
 MAPMOVESFILE = path.join(tblpath, "map_movements.txt")
+CONDITIONALSFILE = path.join(tblpath, "conditionals.dat")
 
 
 def randint(a, b):
@@ -3938,7 +3939,7 @@ def randomize_ending(outfile):
     enc.music[0] = 0x45
     f = open(outfile, 'r+b')
     f.seek(0x4DC938)
-    g = open("conditionals.dat", 'rb')
+    g = open(CONDITIONALSFILE, 'rb')
     f.write(g.read())
     g.close()
 
