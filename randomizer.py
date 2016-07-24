@@ -3979,7 +3979,7 @@ def randomize_ending(outfile):
         0x11, delita_unit.unit_id, 0x00, 0x01, 0x00, 0x00,  # animate delita
         0xF1, 30, 0x00,                                     # wait
         0x53, ramza, 0x00, 0x04, 0x01, 0x00, 0x00, 0x00,    # face ramza
-        0x22, 0x01, 127, 0x00,                              # change music
+        #0x22, 0x01, 127, 0x00,                              # change music
         0x76, 0x00, 0x01, 12, 64, 0x00, 4,                  # darken screen
         0xE5, 0x36, 0x00,                                   # wait for dark
         0x78, 0x0F, 90,                                     # show conditions
