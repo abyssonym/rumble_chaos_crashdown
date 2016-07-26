@@ -1265,7 +1265,7 @@ class ItemAttributesObject(TableObject):
     def mutate(self):
         if not self.index:
             return
-        if self.index <= 49:
+        if self.index <= 0x49:
             for attr in ["pa", "ma", "speed", "move", "jump"]:
                 value = getattr(self, attr)
                 if random.choice([True, False]) and 0 <= value <= 0xFD:
