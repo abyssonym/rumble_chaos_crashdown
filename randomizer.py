@@ -3943,13 +3943,15 @@ def randomize_enemy_formations():
 
 def randomize_ending(outfile):
     if JAPANESE_MODE:
-        raise NotImplementedError
+        pointer = 0x4DCF0C
+    else:
+        pointer = 0x4DC938
     enc = EncounterObject.get(0x12b)
     enc.following = 0
     enc.randomize_music(force_battle=True)
     enc.music[0] = 0x45
     f = open(outfile, 'r+b')
-    f.seek(0x4DC938)
+    f.seek(pointer)
     g = open(CONDITIONALSFILE, 'rb')
     f.write(g.read())
     g.close()
@@ -3976,7 +3978,11 @@ def randomize_ending(outfile):
     north = 2
     ramza = 3
     ramza_unit.unit_id = ramza
-    f.seek(0x9959B2)  # delita with flowers
+    if JAPANESE_MODE:
+        pointer = 0x8FF9B2
+    else:
+        pointer = 0x9959B2
+    f.seek(pointer)  # delita with flowers
     f.write("".join(map(chr, [
         0xE5, 0x01, 0x00,                                   # wait for message
         0x5F, ramza, 0x00, x, y, 0x00, north,               # warp ramza
@@ -4021,9 +4027,11 @@ def randomize_ending(outfile):
 def restore_warjilis(outfile, before=0xAB, new_entd=0x1DC,
                      map_id=42, monsters=False):
     if JAPANESE_MODE:
-        raise NotImplementedError
+        pointer = 0x7EA004
+    else:
+        pointer = 0x823804
     f = open(outfile, 'r+b')
-    f.seek(0x823804)
+    f.seek(pointer)
     f.write("".join([chr(0xF2) for _ in xrange(9)]))  # END bg color
     f.close()
     gariland = EncounterObject.get(9)
