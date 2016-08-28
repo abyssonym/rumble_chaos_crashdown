@@ -1,5 +1,12 @@
 Changelog - FFT RUMBLE CHAOS CRASHDOWN Randomizer
 
+Version 23: ALGUS
+- Plugged an RNG leak. It's a funny story. I thought I was being clever by defining Job A as "less than" Job B if A's job requirements are a subset of B's. Of course, this is a partial order, not a total order, so a list of job requirements can be sorted in multiple valid ways. This resulted in an unmanaged random element, and it turns out that if one of your job's requirements is off by just ONE level, it has a cascading effect that spreads to everything else.
+- Fixed an error where units would attempt to spawn on top of lava.
+- Updated the main mutation function to use a glorious True Normal Distribution instead of a triangular distribution. The resulting randomizations should be mostly the same, perhaps slightly more conservative.
+- Updated support for the Japanese version.
+- Fixed a typo that prevented the full range of item attributes from being randomized.
+
 Version 22: ALMA
 - The 'y' and 'w' randomization flags have been added. (contributed by Ryason55)
 	'y' - Randomize ability and weapon status effects

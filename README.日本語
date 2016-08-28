@@ -1,6 +1,6 @@
 ファイナルファンタジータクティクス「Rumble Chaos Crashdown」ランダマイザ
 バージョン: 19
-日: January 3, 2016
+日: August 28, 2016
 ダウンロード:
     https://github.com/abyssonym/rumble_chaos_crashdown/archive/master.zip
 連絡先:
@@ -26,12 +26,16 @@
         i   ジョブのメリットアビリティなど
         s   ジョブのアビリティ
         a   アビリティの特徴
+        y   追加効果
         r   ジョブの必要ジョブLV
         t   アイテム可用性:　密漁、埋蔵、利
         p   アイテム可用性:　店
+        w   アイテム
         m   モンスターのステータス
         c   音楽
+        f   陣形
         z   特別な驚き
+
     「Seed?」と言うのは乱数発生器の種です。空白のままにしても大丈夫です。
     「CHAOS MULTIPLIER?」と言うのは難易度設定です。1.0は推奨設定です。
 
@@ -61,6 +65,15 @@
         WIZARD (wiz)        黒魔導士
 
 他の作品
-    英語でも大丈夫だったら、私の他のプロジェクトを試してみませんか。
-    「Beyond Chaos」と言うFF6のランダマイザ:
-        https://github.com/abyssonym/beyondchaos
+    日本語版は互換性ある
+        クロノ・トリガー
+            https://github.com/abyssonym/eternalnightmare/archive/master.zip
+        ファイナルファンタジーUSA ミスティッククエスト
+            https://github.com/abyssonym/terriblesecret/archive/master.zip
+        スーパーマリオRPG
+            https://github.com/abyssonym/smrpg_gbarp/archive/master.zip
+    日本語版は互換性ない
+        ファイナルファンタジーVI
+            https://github.com/abyssonym/beyondchaos/archive/master.zip
+        ブレス オブ ファイアII 使命の子
+            https://github.com/abyssonym/painsong/archive/master.zip
