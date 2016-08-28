@@ -261,6 +261,8 @@ class TileObject:
     def bad(self):
         if self.occupied or self.unreachable:
             return 1
+        if self.terrain_type == 0x12:  # lava
+            return 1
         return self.bad_regardless
 
     @property
@@ -1101,15 +1103,9 @@ class MoveFindObject(TableObject):
                 try:
                     bad = (MapObject.get_certain_values_map_id(
                            self.map_id, "bad")[y][x])
-                    lava = (MapObject.get_certain_values_map_id(
-                            self.map_id, "terrain_type")[y][x])
-                    lava = (lava == 0x12)
-                    deep = (MapObject.get_certain_values_map_id(
-                            self.map_id, "depth")[y][x])
-                    deep = (deep >= 3)
                 except IndexError:
                     continue
-                if bad or lava or deep:
+                if bad:
                     continue
                 break
             self.set_coordinates(x, y)
