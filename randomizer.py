@@ -13,7 +13,8 @@ from randomtools.utils import (
     mutate_index, mutate_normal, mutate_bits, read_multi, write_multi,
     classproperty, utilrandom as random)
 from randomtools.tablereader import (
-    TableObject, set_global_table_filename, set_table_specs)
+    TableObject, set_global_table_filename, set_global_output_filename,
+    set_table_specs)
 from randomtools.uniso import remove_sector_metadata, inject_logical_sectors
 
 
@@ -4657,11 +4658,13 @@ def randomize():
         copyfile(sourcefile, TEMPFILE)
 
     set_global_table_filename(TEMPFILE)
+    set_global_output_filename(TEMPFILE)
 
     if JAPANESE_MODE:
         set_table_specs("tables_list_jp.txt")
         JOBLEVEL_JP = [100, 200, 400, 700, 1100, 1600, 2200, 3000]
     else:
+        set_table_specs("tables_list.txt")
         JOBLEVEL_JP = [100, 200, 350, 550, 800, 1150, 1550, 2100]
 
     print "Reading game data."
