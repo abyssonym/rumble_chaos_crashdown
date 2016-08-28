@@ -2505,7 +2505,7 @@ class JobReqObject(TableObject):
         assert 0x4A <= self.index < 0x5E
         return JobObject.get(self.index)
 
-    def __le__(self, other):
+    def reqs_are_subset_of(self, other):
         for attr in jobreq_namedict.keys():
             if getattr(self, attr) > getattr(other, attr):
                 return False
@@ -2517,8 +2517,8 @@ class JobReqObject(TableObject):
                 return False
         return True
 
-    def __lt__(self, other):
-        return self <= other and not self.same_reqs(other)
+    def reqs_are_strict_subset_of(self, other):
+        return self.reqs_are_subset_of(other) and not self.same_reqs(other)
 
     @staticmethod
     def get(index):
@@ -3202,7 +3202,8 @@ def mutate_job_requirements():
 
         if req is calc:
             sublevels = sorted(sublevels)
-            chosen_mage = random.choice(sorted(set(prereqs) & set(mages)))
+            candidates = sorted(set(prereqs) & set(mages))
+            chosen_mage = random.choice(candidates)
             prereqs.remove(chosen_mage)
             random.shuffle(prereqs)
             prereqs = prereqs + [chosen_mage]
@@ -4399,12 +4400,12 @@ def get_jobtree_str():
     for j in jobreqs:
         chosen = None
         for j2 in jobreqs:
-            if j2 < j and getattr(j, j2.name) > 0:
+            if j2.reqs_are_strict_subset_of(j) and getattr(j, j2.name) > 0:
                 if j2.name in ["dancer", "bard"]:
                     continue
-                if not chosen or j2 > chosen:
+                if not chosen or chosen.reqs_are_strict_subset_of(j2):
                     chosen = j2
-                elif j2 < chosen:
+                elif j2.reqs_are_strict_subset_of(chosen):
                     pass
                 else:
                     chosen = max(
