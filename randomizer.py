@@ -2707,10 +2707,9 @@ def get_jobreqs(filename=None):
     for j, jobindex in zip(jobreqs, range(0x4B, 0x60)):
         j.otherindex = j.index + 1
         j.index = jobindex
-    squire = JobReqObject()
+    squire = JobReqObject(index=0x4a)
     squire.copy_data(jobreqs[0])
     squire.otherindex = 0
-    squire.index = 0x4A
     squire.name = "squire"
     jobreqs = [squire] + jobreqs
     for j in jobreqs:
