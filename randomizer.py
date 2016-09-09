@@ -912,9 +912,9 @@ class EncounterObject(TableObject):
             banned.remove(18)
             banned.remove(19)
         allowed = [s for s in range(100) if s not in banned]
-        temp = [s for s in allowed if s not in self.used_music]
+        temp = [s for s in allowed if s not in EncounterObject.used_music]
         if not temp:
-            self.used_music = set([])
+            EncounterObject.used_music = set([])
             temp = allowed
         if prefer_unused:
             temp2 = [s for s in temp if 81 <= s <= 96]
@@ -922,7 +922,7 @@ class EncounterObject(TableObject):
                 temp = temp2
         self.music = [m if m in banned else random.choice(temp)
                       for m in self.music]
-        self.used_music |= set(self.music)
+        EncounterObject.used_music |= set(self.music)
 
 
 class FormationObject(TableObject):
