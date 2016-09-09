@@ -293,10 +293,10 @@ class MapObject:
     all_map_movements = defaultdict(list)
 
     def __init__(self, map_id, p):
-        if not self.all_map_movements:
+        if not MapObject.all_map_movements:
             MapObject.populate_map_movements()
 
-        self.index = len(self.map_objects)
+        self.index = len(MapObject.map_objects)
         self.map_id = map_id
         f = open(TEMPFILE, 'r+b')
         f.seek(p + 0x68)
@@ -323,7 +323,7 @@ class MapObject:
             self.set_occupied(x, y)
         self.set_entd_occupied_movers()
         self.set_unreachable_zones()
-        self.map_objects.append(self)
+        MapObject.map_objects.append(self)
 
     def set_unreachable_zones(self):
         zones = []
@@ -422,11 +422,11 @@ class MapObject:
 
     @property
     def map_movements(self):
-        return self.all_map_movements[self.map_id]
+        return MapObject.all_map_movements[self.map_id]
 
     @property
     def move_units(self):
-        return self.all_move_units[self.map_id]
+        return MapObject.all_move_units[self.map_id]
 
     @staticmethod
     def populate_map_movements():
@@ -636,7 +636,7 @@ class EncounterObject(TableObject):
         return False
 
     def mutate_map(self):
-        candidates = self.get_candidate_maps()
+        candidates = EncounterObject.get_candidate_maps()
         c = random.choice(candidates)
         self.map_id = c.map_id
         self.remove_candidate_map(c)
@@ -1148,11 +1148,11 @@ class PoachObject(TableObject):
             self.common, boost_factor=boostd["common_item"]).index
         common = ItemObject.get(self.common)
         candidates = [i for i in ItemObject.every if i.rank > common.rank]
-        temp = [i for i in candidates if i.index not in self.donerare]
+        temp = [i for i in candidates if i.index not in PoachObject.donerare]
         if temp:
             candidates = temp
         self.rare = random.choice(candidates).index
-        self.donerare.add(self.rare)
+        PoachObject.donerare.add(self.rare)
 
 
 # Ry Edit: Objects for Weapon, Shield, Armor, Accessory, Chemist Item, Inflict Status, and Item Attribute Data
