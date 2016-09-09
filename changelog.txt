@@ -1,5 +1,11 @@
 Changelog - FFT RUMBLE CHAOS CRASHDOWN Randomizer
 
+Version 23.2:
+- Fixed a bug that caused the randomizer to not enforce a variety of songs in the soundtrack. We shouldn't see 5 battles in a row that all have the proposition theme, anymore.
+
+Version 23.1:
+- The randomizer is now playable on consoles, provided that the console has been modded to read burned disks. (I updated the CD-ROM utility to regenerate error detection and error correction codes.)
+
 Version 23: ALGUS
 - Plugged an RNG leak. It's a funny story. I thought I was being clever by defining Job A as "less than" Job B if A's job requirements are a subset of B's. Of course, this is a partial order, not a total order, so a list of job requirements can be sorted in multiple valid ways. This resulted in an unmanaged random element, and it turns out that if one of your job's requirements is off by just ONE level, it has a cascading effect that spreads to everything else.
 - Fixed an error where units would attempt to spawn on top of lava.
