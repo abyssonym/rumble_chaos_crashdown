@@ -1598,6 +1598,32 @@ class SkillsetObject(TableObject):
         if self.index in BANNED_ANYTHING:
             return
 
+        if self.index in range(0x7B, 0x7F):
+            candidates = [aa for aa in AbilityAttributesObject.every
+                          if not aa.get_bit("random_hits")]
+            candidates = [aa for aa in candidates if
+                          AbilityObject.get(aa.index).get_bit("usable_by_ai")]
+            candidates = [aa.index for aa in candidates if aa.index > 0 and
+                          aa.index not in BANNED_SKILLS]
+            candidates += range(0x170, 0x18A) + range(0x196, 0x19E)
+            if self.index == 0x7B:
+                # altima 1 primary
+                self.actions = [0xE5, 0x15E]
+            elif self.index == 0x7C:
+                # secondary
+                self.actions = []
+            elif self.index == 0x7D:
+                # complete magic, altima 2 primary
+                self.actions = [0xE6, 0x15E, 0xE7, 0xE8, 0xE9]
+            elif self.index == 0x7E:
+                # secondary
+                self.actions = []
+            while len(self.actions) < 16:
+                chosen = random.choice(candidates)
+                if chosen not in self.actions:
+                    self.actions.append(chosen)
+            return
+
         if self.index not in BANNED_SKILLSET_SHUFFLE:
             candidates = [a for a in get_abilities() if a.ability_type == 1]
             for i, a in enumerate(self.actions):
@@ -2035,6 +2061,11 @@ class UnitObject(TableObject):
     def mutate_secondary(self, base_job=None, jp_remaining=None,
                          boost_factor=None):
         if self.get_bit("load_formation"):
+            return
+
+        if self.is_altima:
+            if self.job == 0x49:
+                pass
             return
 
         if boost_factor is None:
