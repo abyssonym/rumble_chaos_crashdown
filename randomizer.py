@@ -14,15 +14,8 @@ from randomtools.utils import (
     classproperty, utilrandom as random)
 from randomtools.tablereader import (
     TableObject, set_global_table_filename, set_global_output_filename,
-    set_table_specs)
+    set_table_specs, tblpath)
 from randomtools.uniso import remove_sector_metadata, inject_logical_sectors
-
-
-try:
-    from sys import _MEIPASS
-    tblpath = path.join(_MEIPASS, "tables")
-except ImportError:
-    tblpath = "tables"
 
 
 NAMESFILE = path.join(tblpath, "generic_names.txt")
@@ -30,7 +23,13 @@ MESSAGESFILE = path.join(tblpath, "message_pointers.txt")
 MESHESFILE = path.join(tblpath, "mesh_pointers.txt")
 MAPMOVESFILE = path.join(tblpath, "map_movements.txt")
 CONDITIONALSFILE = path.join(tblpath, "conditionals.dat")
+ITEM_NAMES_FILE = path.join(tblpath, "item_names.txt")
+MONSTER_NAMES_FILE = path.join(tblpath, "monster_names.txt")
 
+ITEM_NAMES = [line.strip() for line in open(ITEM_NAMES_FILE).readlines()
+              if line.strip()]
+MONSTER_NAMES = [line.strip() for line in open(MONSTER_NAMES_FILE).readlines()
+                 if line.strip()]
 
 def randint(a, b):
     return random.randint(min(a, b), max(a, b))
@@ -1146,6 +1145,13 @@ class MoveFindObject(TableObject):
 
 class PoachObject(TableObject):
     donerare = set([])
+
+    def __repr__(self):
+        monster_name = MONSTER_NAMES[self.index]
+        common = ITEM_NAMES[self.common]
+        rare = ITEM_NAMES[self.rare]
+        s = "{0:13} {1:15} {2:15}".format(monster_name, common, rare)
+        return s
 
     def mutate(self):
         self.common = get_similar_item(
@@ -4533,6 +4539,14 @@ def get_jobtree_str():
     return treestr
 
 
+def get_poach_str():
+    s = ("SECRET HUNT LIST\n"
+         "Secret Hunt is always a Thief ability.\n\n")
+    for p in PoachObject.every:
+        s += str(p) + "\n"
+    return s.strip()
+
+
 def get_new_names(basenames):
     candnamesdict = {}
     for name in basenames:
@@ -4783,10 +4797,9 @@ def randomize():
 
     if 'r' in flags:
         s = get_jobtree_str()
-        f = open("%s.txt" % seed, "w+")
-        f.write(s)
+        f = open("%s.txt" % seed, "a+")
+        f.write(s + "\n\n")
         f.close()
-        del(f)
 
     if 'i' in flags:
         # before units
@@ -4865,6 +4878,11 @@ def randomize():
     if 't' in flags:
         random.seed(seed)
         mutate_treasure()
+
+        s = get_poach_str()
+        f = open("%s.txt" % seed, "a+")
+        f.write(s + "\n\n")
+        f.close()
 
     if 'p' in flags:
         random.seed(seed)
