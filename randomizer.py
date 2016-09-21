@@ -2214,6 +2214,12 @@ class UnitObject(TableObject):
             self.job = named_jobs[self.name, self.job]
             return True
 
+        if self.named and (self.name, self.job) == (0x76, 0x5E):
+            self.job = random.choice(
+                range(0x5E, 0x8E) + [0x90, 0x91, 0x96, 0x99, 0x9A])
+            named_jobs[self.name, oldjob] = self.job
+            return True
+
         all_ranked_monster_jobs = get_ranked_monster_jobs()
         if self.map_id not in monster_selection and not preserve_graphic:
             assert self in mapunits[self.map_id]
