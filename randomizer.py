@@ -2065,7 +2065,11 @@ class UnitObject(TableObject):
 
         if self.is_altima:
             if self.job == 0x49:
-                pass
+                unlocked = max(JobReqObject.every,
+                               key=lambda j: (j.calculator_potential, j.index))
+                self.unlocked = unlocked.otherindex
+                self.unlocked_level = 8
+                self.secondary = 0x15
             return
 
         if boost_factor is None:
@@ -2547,6 +2551,18 @@ class JobReqObject(TableObject):
     def job(self):
         assert 0x4A <= self.index < 0x5E
         return JobObject.get(self.index)
+
+    @property
+    def calculator_potential(self):
+        if self.calculator == 0 and self.name != "calculator":
+            return 0
+        total = 0
+        for attr in ["priest", "wizard", "timemage", "oracle", "calculator"]:
+            if attr == self.name:
+                total += 8
+            else:
+                total += getattr(self, attr)
+        return total
 
     def reqs_are_subset_of(self, other):
         for attr in jobreq_namedict.keys():
