@@ -981,12 +981,16 @@ class FormationObject(TableObject):
     def my_map(self):
         return MapObject.get_map(self.map_number)
 
-    def mutate(self):
+    def mutate(self, reduce_formations=False):
+        if not reduce_formations:
+            return
+
         if self.num_characters == 0 or self.bitmap == 0:
             return
         if self.index == 0x100:
             # gariland formation
             return
+
         if boostd["difficulty_factor"] > 1.0:
             dings = 1.0 / (boostd["difficulty_factor"] ** 4)
             while self.num_characters > 1:
