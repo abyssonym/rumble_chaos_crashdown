@@ -2364,7 +2364,7 @@ class UnitObject(TableObject):
         for attr in ["lefthand", "righthand", "head", "body", "accessory"]:
             if (attr == "righthand" and (not 1 <= self.level <= 5) and
                     (self.has_swordskills or self.has_limitskills)
-                    and random.randint(1, 10) != 10
+                    and randint(1, 10) != 10
                     and self.get_bit("enemy_team")):
                 if self.has_limitskills:
                     self.righthand = 0x20
@@ -3962,7 +3962,10 @@ def randomize_ending(outfile):
     delita_unit.mutate(preserve_job=True)
     ovelia_unit.mutate(preserve_job=True)
     chocobo_unit.mutate(preserve_job=True)
-    delita_unit.level = min(int(boostd["difficulty_factor"] * 100), 199)
+    maxlevel = (boostd["difficulty_factor"] - 1.0) * 100
+    level = int(round(maxlevel ** 0.5))
+    level = randint(level, randint(level, randint(level, maxlevel)))
+    delita_unit.level = min(level + 100, 199)
     ramza_unit.set_bit("always_present", False)
     ramza_unit.set_bit("load_formation", True)
     ramza_unit.set_bit("control", True)
