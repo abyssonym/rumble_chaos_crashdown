@@ -1788,6 +1788,7 @@ class JobObject(TableObject):
                 elif (self.is_lucavi and newvalue < value
                         and "growth" not in attr):
                     newvalue = value + abs(value - newvalue)
+                newvalue = max(1, min(newvalue, 0xFD))
                 setattr(self, attr, newvalue)
 
         return True
