@@ -1941,6 +1941,18 @@ class UnitObject(TableObject):
                 return True
         return False
 
+    def clean(self):
+        if self.job not in range(0x4A, 0x5E):
+            return
+
+        if self.get_bit("alternate_team"):
+            map_enemy_palettes = [u.palette for u in UnitObject.every
+                if u.map_id == self.map_id and u.get_bit("enemy_team")]
+            candidates = sorted(set(range(1, 5)) - set(map_enemy_palettes))
+            self.palette = random.choice(candidates)
+        elif not self.get_bit("enemy_team"):
+            self.palette = 0
+
     def fix_facing(self, m):
         # 0: south, 1: west, 2: north, 3: east
         dirdict = {
@@ -4813,6 +4825,9 @@ def randomize():
                          map_id=33, monsters=second)
         altima1 = JobObject.get(0x41)
         altima1.skillset = 0x7B
+
+    for u in UnitObject.every:
+        u.clean()
 
     if 'o' in flags:
         try:
