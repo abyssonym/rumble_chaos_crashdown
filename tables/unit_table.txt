@@ -29,6 +29,7 @@ unknown2,2
 trophy,1
 gil,1
 unit_id,1
-unknown3,3
+unknown3,2
+behavior,1
 target_id,1
 unknown4,3

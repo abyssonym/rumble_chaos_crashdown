@@ -3984,6 +3984,12 @@ def randomize_ending(outfile):
         setattr(ovelia_unit, attr, 0xFE)
         setattr(chocobo_unit, attr, 0)
     ovelia_unit.righthand = knives[index].index
+    chocobo_unit.unknown4 = 0x400
+    ovelia_unit.unknown4 = 0x400
+    chocobo_unit.behavior = 8
+    ovelia_unit.behavior = 8
+    delita_unit.behavior = 0x58
+    delita_unit.target_id = 3
 
     x, y = 6, 6
     north = 2
