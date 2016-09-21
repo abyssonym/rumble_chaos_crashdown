@@ -3652,6 +3652,7 @@ def mutate_units():
 
 def mutate_units_special():
     print "Adding special surprises."
+    generate_balmafula()
     ranked_jobs = get_ranked("job")
     special_jobs = [j for j in get_jobs() if not 5 <= j.skillset <= 0x18
                     and not j.skillset == 0
@@ -3682,9 +3683,9 @@ def mutate_units_special():
             lucavi_unit = max([u for u in units if u.is_lucavi],
                               key=lambda u2: u2.level)
         elif map_id == 1:
-            probval = 8
+            probval = 5
         elif map_id == 0x180:
-            probval = 15
+            probval = 12
             special_jobs = list(backup_special_jobs)
         else:
             probval -= 1
@@ -3868,9 +3869,9 @@ def mutate_units_special():
 
             if map_id >= 0x180:
                 if not lucavi_special:
-                    probval = max(probval, 15)
+                    probval = max(probval, 12)
             else:
-                probval = max(probval, 8)
+                probval = max(probval, 5)
 
 
 def randomize_enemy_formations():
@@ -4647,6 +4648,16 @@ def replace_generic_names(filename):
         f.close()
 
 
+def generate_balmafula():
+    arc_witch = JobObject.get(0x21)
+    arc_witch.skillset = 0x7C
+    for attr in ["hpgrowth", "hpmult", "mpgrowth", "mpmult", "spdgrowth",
+                 "spdmult", "pagrowth", "pamult", "magrowth", "mamult",
+                 "move", "jump", "evade"]:
+        index = randint(0x4A, 0x5E)
+        setattr(arc_witch, attr, getattr(JobObject.get(index), attr))
+
+
 def randomize():
     global JAPANESE_MODE, JOBLEVEL_JP
     print ('You are using the FFT RUMBLE CHAOS CRASHDOWN randomizer '
@@ -4848,6 +4859,7 @@ def randomize():
         randomize_ending(TEMPFILE)
         if not any([0x74 in SkillsetObject.get(s).actions for s in
                     [7, 9, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf, 0x10, 0x16]]):
+            # guaranteed invite on ramza
             ss = SkillsetObject.get(0x1B)
             ss.add_action(0x74, force=True)
 
