@@ -1547,6 +1547,19 @@ class SkillsetObject(TableObject):
                 return False
         return True
 
+    def add_action(self, action, force=False):
+        if action in self.actions:
+            return
+        actions = [a for a in self.actions if a]
+        if len(actions) == 16:
+            if force:
+                actions[randint(0, 15)] = action
+            else:
+                raise Exception("Not enough room to add action.")
+        else:
+            actions += [action]
+        self.actions = actions
+
     def get_actual_actions(self):
         actuals = []
         actionbits = (self.actionbits1 << 8) | self.actionbits2
@@ -3398,9 +3411,9 @@ def mutate_skillsets():
         actions.extend(pulled)
         if len(actions) > 16:
             actions = random.sample(actions, 16)
-        a_actions = sorted([x for x in actions if x in a.actions])
-        b_actions = sorted([x for x in actions if x in pulled
-                            and x not in a_actions])
+        a_actions = sorted(set([x for x in actions if x in a.actions]))
+        b_actions = sorted(set([x for x in actions if x in pulled
+                                and x not in a_actions]))
         if random.choice([True, False]):
             a.actions = a_actions + b_actions
         else:
@@ -4813,6 +4826,11 @@ def randomize():
         random.seed(seed)
         mutate_units_special()
         randomize_ending(TEMPFILE)
+        if not any([0x74 in SkillsetObject.get(s).actions for s in
+                    [7, 9, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf, 0x10, 0x16]]):
+            ss = SkillsetObject.get(0x1B)
+            ss.add_action(0x74, force=True)
+
         replace_generic_names(TEMPFILE)
         for e in EncounterObject.every:
             e.randomize_weather()
