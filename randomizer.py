@@ -4036,7 +4036,7 @@ def randomize_ending(outfile):
     delita_unit.set_bit("enemy_team", True)
     del_job = JobObject.get(delita_unit.job)
     del_job.immune_status &= (((2**40)-1) ^ INVITE_STATUS)
-    del_job.equips &= 0xFF000000
+    del_job.equips &= 0xFF1F0000
     del_job.equips |= 0x18
     knives = range(1, 0x13) + [0x26, 0x27]
     knives = [k for k in ItemObject.ranked if k.index in knives]
