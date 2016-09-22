@@ -31,6 +31,8 @@ ITEM_NAMES = [line.strip() for line in open(ITEM_NAMES_FILE).readlines()
 MONSTER_NAMES = [line.strip() for line in open(MONSTER_NAMES_FILE).readlines()
                  if line.strip()]
 
+MUTATED_SKILLSETS = False
+
 def randint(a, b):
     return random.randint(min(a, b), max(a, b))
 
@@ -1637,10 +1639,11 @@ class SkillsetObject(TableObject):
             elif self.index == 0x7E:
                 # secondary
                 self.actions = []
-            while len(self.actions) < 16:
-                chosen = random.choice(candidates)
-                if chosen not in self.actions:
-                    self.actions.append(chosen)
+            if self.index in [0x7C, 0x7E]:
+                while len(self.actions) < 16:
+                    chosen = random.choice(candidates)
+                    if chosen not in self.actions:
+                        self.actions.append(chosen)
             return
 
         if self.index not in BANNED_SKILLSET_SHUFFLE:
@@ -2083,7 +2086,7 @@ class UnitObject(TableObject):
         if self.get_bit("load_formation"):
             return
 
-        if self.is_altima:
+        if self.is_altima and MUTATED_SKILLSETS:
             if self.job == 0x49:
                 unlocked = max(JobReqObject.every,
                                key=lambda j: (j.calculator_potential, j.index))
@@ -3367,6 +3370,9 @@ def mutate_job_innates():
 
 
 def mutate_skillsets():
+    global MUTATED_SKILLSETS
+    MUTATED_SKILLSETS = True
+
     print "Shuffling job skillsets."
     skillsets = get_skillsets()
     skillsets = [s for s in skillsets if s.has_learnable_actions
@@ -4549,7 +4555,7 @@ def get_jobtree_str():
 
 def get_poach_str():
     s = ("SECRET HUNT LIST\n"
-         "Secret Hunt is always a Thief ability.\n\n")
+         "Secret Hunt is always a Thief ability.\n")
     for p in PoachObject.every:
         s += str(p) + "\n"
     return s.strip()
