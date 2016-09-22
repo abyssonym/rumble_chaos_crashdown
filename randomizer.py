@@ -64,7 +64,7 @@ def check_progress_counter(index):
     stdout.flush()
 
 
-VERSION = "23"
+VERSION = "24"
 MD5HASHES = ["b156ba386436d20fd5ed8d37bab6b624",
              "aefdf27f1cd541ad46b5df794f635f50",
              ]

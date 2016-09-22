@@ -1,5 +1,14 @@
 Changelog - FFT RUMBLE CHAOS CRASHDOWN Randomizer
 
+Version 24: ALTIMA
+- Spiced things up here and there.
+- Poaches are now listed in the text file.
+- Cloud was missing from the skillset shuffle, and has been re-added.
+- Formation sizes are no longer reduced on any difficulty setting.
+- Extra units should be color coded based on their team allegience now, instead of always being enemy-colored.
+- True End conditions were made a little more reasonable on higher difficulties.
+- Lionel castle weather/daytime is no longer randomized. Hopefully this fixes the gate bug but I didn't test it.
+
 Version 23.2:
 - Fixed a bug that caused the randomizer to not enforce a variety of songs in the soundtrack. We shouldn't see 5 battles in a row that all have the proposition theme, anymore.
 
