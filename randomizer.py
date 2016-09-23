@@ -3207,9 +3207,10 @@ def mutate_job_requirements():
         req.set_zero()
         prereqs = []
         sublevels = []
+        jobpoolcands = None
         if req is calc:
             jobpoolcands = [j for j in jobpools if j & set(mages)]
-        else:
+        if not jobpoolcands:
             jobpoolcands = [j for j in jobpools if len(j) == len(
                 min(jobpools, key=lambda j: len(j)))]
         jobpool = random.choice(jobpoolcands)
@@ -3260,17 +3261,18 @@ def mutate_job_requirements():
                 candidates = candidates[1:]
 
         while True:
+            subcands = list(candidates)
             prereqs = []
             for _ in range(len(sublevels)):
-                tempcands = list(candidates)
-                for c in candidates:
+                tempcands = list(subcands)
+                for c in subcands:
                     for pr in prereqs:
                         value = getattr(pr, c.name)
                         if value > 0:
                             tempcands.remove(c)
                             break
                 if not tempcands:
-                    tempcands = list(candidates)
+                    tempcands = list(subcands)
                 index = len(tempcands) - 1
                 while index > 0:
                     if random.choice([True, False]):
@@ -3281,12 +3283,13 @@ def mutate_job_requirements():
                         break
                 prereq = tempcands[index]
                 prereqs.append(prereq)
-                candidates.remove(prereq)
+                subcands.remove(prereq)
             if req is not calc:
                 break
             if set(prereqs) & set(mages):
                 break
 
+        candidates = subcands
         if req is calc:
             sublevels = sorted(sublevels)
             candidates = sorted(set(prereqs) & set(mages))
@@ -3349,10 +3352,13 @@ def mutate_job_stats():
                         k = average_jp_cost / 500.0
                     else:
                         k = 1
-                    learn_rate = ((factor * 110) +
-                                  ((1-factor) * (25 / jp_factor)))
-                    learn_rate = (learn_rate**2) / float(90)
-                    learn_rate = (k*learn_rate) + ((1-k)*100)
+                    if jp_factor == 0:
+                        learn_rate = 100
+                    else:
+                        learn_rate = ((factor * 110) +
+                                      ((1-factor) * (25 / jp_factor)))
+                        learn_rate = (learn_rate**2) / float(90)
+                        learn_rate = (k*learn_rate) + ((1-k)*100)
                     minimum = randint(10, 40)
                     learn_rate = min(90, max(learn_rate, minimum))
                     learn_rate = mutate_normal(learn_rate, maximum=100)
