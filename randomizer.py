@@ -1630,20 +1630,25 @@ class SkillsetObject(TableObject):
                           AbilityObject.get(aa.index).get_bit("usable_by_ai")]
             candidates = [aa.index for aa in candidates if aa.index > 0 and
                           aa.index not in BANNED_SKILLS]
-            candidates += range(0x170, 0x18A) + range(0x196, 0x19E)
+            candidates += range(0x170, 0x17E) + range(0x196, 0x19E)
             if self.index == 0x7B:
                 # altima 1 primary
                 self.actions = [0xE5, 0x15E]
             elif self.index == 0x7C:
                 # secondary
                 self.actions = []
+                rsm_cands = [a.index for a in get_abilities()
+                             if 7 <= a.ability_type <= 9
+                             and a.index not in BANNED_RSMS]
+                chosen = sorted(random.sample(rsm_cands, 6))
+                self.rsms = chosen
             elif self.index == 0x7D:
                 # complete magic, altima 2 primary
                 self.actions = [0xE6, 0x15E, 0xE7, 0xE8, 0xE9]
             elif self.index == 0x7E:
                 # secondary
                 self.actions = []
-            if self.index in [0x7C, 0x7E]:
+            if self.index in [0x7C, 0x7D, 0x7E]:
                 while len(self.actions) < 16:
                     chosen = random.choice(candidates)
                     if chosen not in self.actions:
