@@ -262,7 +262,8 @@ class TileObject:
     def bad(self):
         if self.occupied or self.unreachable:
             return 1
-        if self.terrain_type == 0x12:  # lava
+        if self.terrain_type in [0x12, 0x24]:
+            # bad terrain : lava, water plant
             return 1
         return self.bad_regardless
 
