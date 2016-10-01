@@ -4882,9 +4882,10 @@ def randomize():
     if 'z' in flags and 'f' in flags:
         random.seed(seed)
         encs = EncounterObject.get_replaceable_maps()
-        half = len(encs) / 2
-        sampsize = randint(1, half)
-        sampsize = randint(sampsize, half)
+        sampsize = len(encs) / 2
+        sampsize = mutate_normal(sampsize, minimum=0, maximum=len(encs))
+        sampsize = max(sampsize, 1)
+        sampsize = randint(sampsize, randint(sampsize, len(encs)))
         encs = random.sample(encs, sampsize)
         for e in encs:
             e.mutate_map()
