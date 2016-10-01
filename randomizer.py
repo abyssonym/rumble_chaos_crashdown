@@ -34,6 +34,9 @@ MONSTER_NAMES = [line.strip() for line in open(MONSTER_NAMES_FILE).readlines()
 MUTATED_SKILLSETS = False
 
 def randint(a, b):
+    if not (isinstance(a, int) and isinstance(b, int)):
+        a = int(round(a))
+        b = int(round(b))
     return random.randint(min(a, b), max(a, b))
 
 
