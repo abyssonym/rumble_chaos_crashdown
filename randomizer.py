@@ -1894,14 +1894,11 @@ class JobObject(TableObject):
                 setattr(self, attr, ability)
             self.set_all_units("reaction", abilities[4])
             self.set_all_units("support", abilities[5])
-            if self.is_altima:
-                self.set_all_units("movement", 0x1F3)
-            else:
-                if 0x1bd not in reactions:
-                    lucavi_movements = [i for i in lucavi_movements
-                                        if i.index not in MP_RESTORE_INNATES]
-                movement = random.choice(lucavi_movements).index
-                self.set_all_units("movement", movement)
+            if 0x1bd not in reactions:
+                lucavi_movements = [i for i in lucavi_movements
+                                    if i.index not in MP_RESTORE_INNATES]
+            movement = random.choice(lucavi_movements).index
+            self.set_all_units("movement", movement)
 
         return True
 
