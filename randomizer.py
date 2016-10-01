@@ -3723,6 +3723,7 @@ def mutate_units_special():
             if map_id == 0x1a9:
                 continue
             lucavi_special = (any([u.is_altima for u in units])
+                              or any([u.job == 0x97 for u in units])
                               or randint(1, 3) != 3)
             lucavi_unit = max([u for u in units if u.is_lucavi],
                               key=lambda u2: u2.level)
@@ -3738,11 +3739,16 @@ def mutate_units_special():
         if map_id in [0x183, 0x184, 0x185]:
             continue
         if lucavi_special or randint(1, probval) == 1:
-            candidates = [u for u in units if 0x80 <= u.graphic <= 0x82]
-            noncandidates = [u for u in units if u not in candidates]
-            noncandjobs = [u.job for u in noncandidates
-                           if 0x80 <= u.graphic <= 0x82]
-            candidates = [c for c in candidates if c.job not in noncandjobs]
+            if map_id == 0x192:
+                candidates = [u for u in units if u.graphic == 0x82
+                              and u.job != 0x97 and u.get_bit("enemy_team")]
+            else:
+                candidates = [u for u in units if 0x80 <= u.graphic <= 0x82]
+                noncandidates = [u for u in units if u not in candidates]
+                noncandjobs = [u.job for u in noncandidates
+                               if 0x80 <= u.graphic <= 0x82]
+                candidates = [c for c in candidates
+                              if c.job not in noncandjobs]
 
             for c in list(candidates):
                 if c.named or not c.get_bit("enemy_team"):
@@ -3853,6 +3859,8 @@ def mutate_units_special():
             old_job = change_units[0].job
             alternate_team = not lucavi_special and randint(1, 25) == 25
             for unit in change_units:
+                if map_id == 0x192 and not unit.get_bit("enemy_team"):
+                    continue
                 try:
                     assert not any([unit.named, unit.has_special_graphic,
                                     not unit.get_bit("enemy_team")])
@@ -4046,6 +4054,9 @@ def randomize_enemy_formations():
             new.set_bit("always_present", True)
             new.set_bit("join_after_event", False)
             new.set_bit("enemy_team", True)
+            assert not new.has_special_graphic
+            new.unit_id = 0x80 | (new.index & 0xF)
+            new.name = 0xFF
             if not rogue:
                 if boostd["difficulty_factor"] > 1.0:
                     chance = max(7-len(new_enemies), 1)
