@@ -1,11 +1,15 @@
 Changelog - FFT RUMBLE CHAOS CRASHDOWN Randomizer
 
+Version 25: BEOWULF
+- Adjusted Altima. On higher difficulties she'll probably still have some math capability and there's a chance she'll be even harder, but in general she should be slightly easier.
+- Various minor bugfixes and balance changes
+
 Version 24: ALTIMA
 - Spiced things up here and there.
 - Poaches are now listed in the text file.
 - Cloud was missing from the skillset shuffle, and has been re-added.
 - Formation sizes are no longer reduced on any difficulty setting.
-- Extra units should be color coded based on their team allegience now, instead of always being enemy-colored.
+- Extra units should be color coded based on their team allegiance now, instead of always being enemy-colored.
 - True End conditions were made a little more reasonable on higher difficulties.
 - Lionel castle weather/daytime is no longer randomized. Hopefully this fixes the gate bug but I didn't test it.
 
