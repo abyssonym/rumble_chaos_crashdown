@@ -2092,10 +2092,29 @@ class UnitObject(TableObject):
 
         if self.is_altima and MUTATED_SKILLSETS:
             if self.job == 0x49:
-                unlocked = max(JobReqObject.every,
-                               key=lambda j: (j.calculator_potential, j.index))
+                factor = boostd['difficulty_factor'] - 1.0
+                factor = min(max(factor, 0.0), 1.0)
+                candidates = [j for j in JobReqObject.every
+                              if j.calculator_potential >= 1]
+                candidates = sorted(candidates,
+                    key=lambda j: (j.calculator_potential, j.index))
+                low_index = randint(0, randint(0, len(candidates)/2))
+                high_index = mutate_normal(
+                    len(candidates)/2, minimum=0, maximum=len(candidates)-1)
+                high_index = randint(
+                    high_index, randint(high_index, len(candidates)-1))
+                if low_index > high_index:
+                    low_index, high_index = high_index, low_index
+                index = (factor*high_index) + ((1-factor)*low_index)
+                unlocked = candidates[int(round(index))]
+                low_level = randint(1, randint(1, 8))
+                high_level = randint(randint(1, 8), 8)
+                if low_level > high_level:
+                    low_level, high_level = high_level, low_level
+                level = int(round((factor*high_level) +
+                                  ((1-factor)*low_level)))
                 self.unlocked = unlocked.otherindex
-                self.unlocked_level = 8
+                self.unlocked_level = level
                 self.secondary = 0x15
             return
 
@@ -2591,11 +2610,18 @@ class JobReqObject(TableObject):
             return 0
         total = 0
         for attr in ["priest", "wizard", "timemage", "oracle", "calculator"]:
+            j = JobReqObject.get_by_name(attr)
             if attr == self.name:
                 total += 8
-            else:
+            elif getattr(self, attr) > 0:
                 total += getattr(self, attr)
+            elif j.reqs_are_subset_of(self):
+                total += 1
         return total
+
+    @staticmethod
+    def get_by_name(name):
+        return [j for j in JobReqObject.every if j.name == name][0]
 
     def reqs_are_subset_of(self, other):
         for attr in jobreq_namedict.keys():
