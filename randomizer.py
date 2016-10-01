@@ -1779,7 +1779,7 @@ class JobObject(TableObject):
                      "spdmult", "pagrowth", "pamult", "magrowth", "mamult",
                      "move", "jump", "evade"]:
             value = getattr(self, attr)
-            if "growth" in attr or "mult" in attr:
+            if "growth" in attr or "mult" in attr or attr == "move":
                 attrfactor = boost_factor ** 0.5
             else:
                 attrfactor = boost_factor
