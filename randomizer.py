@@ -1156,7 +1156,7 @@ class PoachObject(TableObject):
         monster_name = MONSTER_NAMES[self.index]
         common = ITEM_NAMES[self.common]
         rare = ITEM_NAMES[self.rare]
-        s = "{0:13} {1:15} {2:15}".format(monster_name, common, rare)
+        s = "{0:14} {1:15} {2:15}".format(monster_name, common, rare)
         return s
 
     def mutate(self):
@@ -4877,6 +4877,8 @@ def randomize():
     get_jobreqs()
     sort_mapunits()
     make_rankings()
+    logfile = "%s.txt" % seed
+    open(logfile, "w+").close()
 
     if 'r' in flags:
         # before units
@@ -4891,7 +4893,7 @@ def randomize():
 
     if 'r' in flags:
         s = get_jobtree_str()
-        f = open("%s.txt" % seed, "a+")
+        f = open(logfile, "a+")
         f.write(s + "\n\n")
         f.close()
 
@@ -4976,7 +4978,7 @@ def randomize():
         mutate_treasure()
 
         s = get_poach_str()
-        f = open("%s.txt" % seed, "a+")
+        f = open(logfile, "a+")
         f.write(s + "\n\n")
         f.close()
 
