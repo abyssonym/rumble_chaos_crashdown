@@ -1559,6 +1559,16 @@ class SkillsetObject(TableObject):
                 return False
         return True
 
+    @property
+    def no_balls(self):
+        return 0x189 not in self.actions
+
+    @property
+    def lucavi_appropriate(self):
+        # lucavi can't throw balls
+        return (self.not_just_swordskills and self.no_randoms
+                and self.no_balls)
+
     def add_action(self, action, force=False):
         if action in self.actions:
             return
@@ -2199,7 +2209,7 @@ class UnitObject(TableObject):
             candidates = get_ranked_secondaries()
             candidates = [SkillsetObject.get(c) for c in candidates]
             candidates = [ss.index for ss in candidates
-                          if ss.not_just_swordskills and ss.no_randoms]
+                          if ss.lucavi_appropriate]
             index = None
             if self.secondary in candidates:
                 index = candidates.index(self.secondary)
@@ -2234,6 +2244,10 @@ class UnitObject(TableObject):
             else:
                 self.secondary = 0xFE
         elif self.secondary != 0 or random.choice([True, False]):
+            self.secondary = 0xFE
+
+        if (self.is_lucavi and self.secondary != 0xFE
+                and not SkillsetObject.get(self.secondary).lucavi_appropriate):
             self.secondary = 0xFE
 
         return True
