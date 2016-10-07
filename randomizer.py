@@ -1899,11 +1899,14 @@ class JobObject(TableObject):
                 setattr(self, attr, ability)
             self.set_all_units("reaction", abilities[4])
             self.set_all_units("support", abilities[5])
-            if 0x1bd not in reactions:
-                lucavi_movements = [i for i in lucavi_movements
-                                    if i.index not in MP_RESTORE_INNATES]
-            movement = random.choice(lucavi_movements).index
-            self.set_all_units("movement", movement)
+            if self.is_altima and self.index == 0x41:
+                self.set_all_units("movement", 0x1F3)
+            else:
+                if 0x1bd not in reactions:
+                    lucavi_movements = [i for i in lucavi_movements
+                                        if i.index not in MP_RESTORE_INNATES]
+                movement = random.choice(lucavi_movements).index
+                self.set_all_units("movement", movement)
 
         return True
 
@@ -2093,11 +2096,14 @@ class UnitObject(TableObject):
             return
 
         if self.is_altima and MUTATED_SKILLSETS:
-            if self.job == 0x49:
+            if self.index == 0x1b98:
+                assert self.job == 0x49
                 factor = boostd['difficulty_factor'] - 1.0
                 factor = min(max(factor, 0.0), 1.0)
                 candidates = [j for j in JobReqObject.every
                               if j.calculator_potential >= 1]
+                while len(candidates) < 3:
+                    candidates.append(JobReqObject.get_by_name("squire"))
                 candidates = sorted(candidates,
                     key=lambda j: (j.calculator_potential, j.index))
                 low_index = randint(0, randint(0, len(candidates)/2))
@@ -2115,10 +2121,11 @@ class UnitObject(TableObject):
                     low_level, high_level = high_level, low_level
                 level = int(round((factor*high_level) +
                                   ((1-factor)*low_level)))
-                self.unlocked = unlocked.otherindex
-                self.unlocked_level = level
-                self.secondary = 0x15
-            return
+                if unlocked.calculator_potential >= 1:
+                    self.unlocked = unlocked.otherindex
+                    self.unlocked_level = level
+                    self.secondary = 0x15
+                    return
 
         if boost_factor is None:
             boost_factor = boostd["jp"]
@@ -2623,7 +2630,7 @@ class JobReqObject(TableObject):
 
     @staticmethod
     def get_by_name(name):
-        return [j for j in JobReqObject.every if j.name == name][0]
+        return [j for j in get_jobreqs() if j.name == name][0]
 
     def reqs_are_subset_of(self, other):
         for attr in jobreq_namedict.keys():
@@ -4983,6 +4990,15 @@ def randomize():
                          map_id=33, monsters=second)
         altima1 = JobObject.get(0x41)
         altima1.skillset = 0x7B
+
+    altima2 = UnitObject.get(0x1b98)
+    if altima2.secondary == 0x15:
+        for index in [0x1a40, 0x1b92]:
+            alma = UnitObject.get(index)
+            assert alma.job in [0x30, 0x14]
+            alma.secondary = altima2.secondary
+            alma.unlocked = altima2.unlocked
+            alma.unlocked_level = altima2.unlocked_level
 
     for u in UnitObject.every:
         u.clean()
