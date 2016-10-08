@@ -1,5 +1,10 @@
 Changelog - FFT RUMBLE CHAOS CRASHDOWN Randomizer
 
+Version 26: DYCEDARG
+- More Altimath rebalancing.
+- Removed most shop and menu music from the random music pool.
+- Various bugfixes and gameplay tweaks.
+
 Version 25: BEOWULF
 - Adjusted Altima. On higher difficulties she'll probably still have some math capability and there's a chance she'll be even harder, but in general she should be slightly easier.
 - Various minor bugfixes and balance changes
