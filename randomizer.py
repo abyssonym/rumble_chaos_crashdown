@@ -5007,6 +5007,9 @@ def randomize():
         altima1 = JobObject.get(0x41)
         altima1.skillset = 0x7B
 
+        for index in [0x1921] + range(0x1922, 0x1928) + [0x192a]:
+            UnitObject.get(index).set_bit("join_after_event", True)
+
     altima2 = UnitObject.get(0x1b98)
     if altima2.secondary == 0x15:
         for index in [0x1a40, 0x1b92]:
