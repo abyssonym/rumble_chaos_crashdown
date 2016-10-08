@@ -2115,6 +2115,7 @@ class UnitObject(TableObject):
                 factor = min(max(factor, 0.0), 1.0)
                 candidates = [j for j in JobReqObject.every
                               if j.calculator_potential >= 1]
+                candidates.append(JobReqObject.get_by_name("squire"))
                 while len(candidates) < 3:
                     candidates.append(JobReqObject.get_by_name("squire"))
                 candidates = sorted(candidates,
