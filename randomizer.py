@@ -906,9 +906,10 @@ class EncounterObject(TableObject):
             if not (force_battle and self.index == 0x12b):
                 return
         banned = [0, 17, 18, 19, 20, 21, 22, 23, 24,
+                  27, 28, 29, 30, 31, 32, 33, 35, 40,
                   41, 42, 43, 44, 45, 46, 47, 48, 49, 50,
-                  51, 52, 53, 54, 55, 56, 57, 59, 63, 64, 65,
-                  69, 70, 72, 73, 74, 75, 79, 98]
+                  51, 52, 53, 54, 55, 56, 57, 59, 60, 63, 64, 65,
+                  69, 70, 71, 72, 73, 74, 75, 79, 98]
         if force_battle:
             banned += (range(25, 39) + range(40, 68) + range(69, 73) +
                        [78, 80] + range(83, 93) + range(93, 97))
@@ -916,6 +917,8 @@ class EncounterObject(TableObject):
             banned.remove(17)
             banned.remove(18)
             banned.remove(19)
+        if randint(1, 100) == 100:
+            banned.remove(35)
         allowed = [s for s in range(100) if s not in banned]
         temp = [s for s in allowed if s not in EncounterObject.used_music]
         if not temp:
@@ -4111,7 +4114,6 @@ def randomize_ending(outfile):
         pointer = 0x4DC938
     enc = EncounterObject.get(0x12b)
     enc.following = 0
-    enc.randomize_music(force_battle=True)
     enc.music[0] = 0x45
     f = open(outfile, 'r+b')
     f.seek(pointer)
