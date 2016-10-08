@@ -4131,6 +4131,7 @@ def randomize_ending(outfile):
     ovelia_unit.mutate(preserve_job=True)
     chocobo_unit.mutate(preserve_job=True)
     maxlevel = (boostd["difficulty_factor"] - 1.0) * 100
+    maxlevel = max(maxlevel, 0)
     level = int(round(maxlevel ** 0.5))
     level = randint(level, randint(level, randint(level, maxlevel)))
     delita_unit.level = min(level + 100, 199)
