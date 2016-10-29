@@ -1672,7 +1672,7 @@ class SkillsetObject(TableObject):
             candidates = [a for a in get_abilities() if a.ability_type == 1]
             for i, a in enumerate(self.actions):
                 if get_ability(a).ability_type == 1:
-                    if randint(1, 100) == 100:
+                    if randint(1, 50) == 50:
                         a = random.choice(candidates)
                         if a.jp_cost == 0:
                             a.jp_cost = 100 + randint(0, 700) + randint(0, 700)
@@ -1683,7 +1683,7 @@ class SkillsetObject(TableObject):
 
         candidates = [a for a in get_abilities() if 7 <= a.ability_type <= 9]
         for i, a in enumerate(self.rsms):
-            if randint(1, 100) == 100:
+            if randint(1, 50) == 50:
                 a = random.choice(candidates)
                 if a.jp_cost == 0:
                     a.jp_cost = 100 + randint(0, 700) + randint(0, 700)
