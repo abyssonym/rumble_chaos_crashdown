@@ -10,11 +10,10 @@ from collections import Counter, defaultdict
 from itertools import product
 
 from randomtools.utils import (
-    mutate_index, mutate_normal, mutate_bits, read_multi, write_multi,
-    classproperty, utilrandom as random)
+    read_multi, write_multi, classproperty, utilrandom as random)
 from randomtools.tablereader import (
     TableObject, set_global_table_filename, set_global_output_filename,
-    set_table_specs, tblpath)
+    set_table_specs, tblpath, mutate_normal)
 from randomtools.uniso import remove_sector_metadata, inject_logical_sectors
 
 
@@ -32,6 +31,39 @@ MONSTER_NAMES = [line.strip() for line in open(MONSTER_NAMES_FILE).readlines()
                  if line.strip()]
 
 MUTATED_SKILLSETS = False
+
+
+def mutate_index(index, length, continuation=None,
+                 basic_range=None, extended_range=None):
+    if length == 0:
+        return None
+
+    highest = length - 1
+    continuation = continuation or [True, False]
+    basic_range = basic_range or (-3, 3)
+    extended_range = extended_range or (-1, 1)
+
+    index += random.randint(*basic_range)
+    index = max(0, min(index, highest))
+    while random.choice(continuation):
+        index += random.randint(*extended_range)
+        index = max(0, min(index, highest))
+
+    return index
+
+
+def mutate_bits(value, size=8, odds_multiplier=2.0):
+    bits_set = bin(value).count('1')
+    bits_unset = size - bits_set
+    assert bits_unset >= 0
+    lowvalue = min(bits_set, bits_unset)
+    lowvalue = max(lowvalue, 1)
+    multiplied = int(round(size * odds_multiplier))
+    for i in range(size):
+        if random.randint(1, multiplied) <= lowvalue:
+            value ^= (1 << i)
+    return value
+
 
 def randint(a, b):
     if not (isinstance(a, int) and isinstance(b, int)):
@@ -1065,7 +1097,7 @@ class MonsterSkillsObject(TableObject):
                 new_attacks.append(action)
                 continue
             index = candidates.index(get_ability(action))
-            index = mutate_normal(index, maximum=len(candidates)-1)
+            index = mutate_normal(index, minimum=0, maximum=len(candidates)-1)
             new_attacks.append(candidates[index].index)
 
         new_attacks, beastmaster = new_attacks[:-1], new_attacks[-1]
@@ -1345,7 +1377,7 @@ class AbilityAttributesObject(TableObject):
         for attr in ["ct", "mp"]:
             value = getattr(self, attr)
             if 1 <= value <= 0xFD:
-                value = mutate_normal(value)
+                value = mutate_normal(value, minimum=1, maximum=0xFD)
                 setattr(self, attr, value)
 
         if 1 <= self.xval <= 0xFD:
@@ -1449,13 +1481,13 @@ class ItemObject(TableObject):
             return True
 
     def mutate_shop(self):
-        self.price = mutate_normal(self.price, maximum=65000)
+        self.price = mutate_normal(self.price, minimum=0, maximum=65000)
         self.price = int(round(self.price, -1))
         if self.price > 500:
             self.price = int(round(self.price, -2))
         if 1 <= self.time_available <= 16:
             self.time_available = mutate_normal(self.time_available,
-                                                maximum=16)
+                                                minimum=1, maximum=16)
 
         if self.get_bit("rare") and randint(1, 4) != 4:
             if self.index in BANNED_ITEMS and randint(1, 3) != 3:
@@ -1871,7 +1903,8 @@ class JobObject(TableObject):
                         index = len(attr_cands)/2
 
                     if attr_cands and index is not None:
-                        index = mutate_normal(index, maximum=len(attr_cands)-1)
+                        index = mutate_normal(
+                            index, minimum=0, maximum=len(attr_cands)-1)
                         value = attr_cands[index]
 
                 innates.append(value)
@@ -2079,7 +2112,8 @@ class UnitObject(TableObject):
         else:
             if (self.unlocked == 0 and self.unlocked_level == 0
                     and not self.level_normalized):
-                total = mutate_normal(175 * self.level, maximum=500000)
+                total = mutate_normal(175 * self.level, minimum=0,
+                                      maximum=500000)
                 return total
             base_job = jobreq_indexdict[0x4a]
         unlocked_job = jobreq_indexdict[self.unlocked + 0x4a]
@@ -2097,7 +2131,7 @@ class UnitObject(TableObject):
 
     def mutate_trophy(self):
         if self.gil > 0:
-            self.gil = mutate_normal(self.gil, maximum=65000)
+            self.gil = mutate_normal(self.gil, minimum=1, maximum=65000)
             self.gil = int(round(self.gil, -2))
         if self.trophy:
             self.trophy = get_similar_item(
@@ -2220,14 +2254,15 @@ class UnitObject(TableObject):
             elif randint(1, 5) == 5:
                 index = 2 * (len(candidates) / 3)
             if index is not None and random.choice([True, False]):
-                index = mutate_normal(index, maximum=len(candidates)-1)
+                index = mutate_normal(index, minimum=0,
+                                      maximum=len(candidates)-1)
                 self.secondary = candidates[index]
             return True
 
         if randint(1, 20) == 20:
             candidates = get_ranked_secondaries()
             index = len(candidates) / 3
-            index = mutate_normal(index, maximum=len(candidates)-1)
+            index = mutate_normal(index, minimum=0, maximum=len(candidates)-1)
             self.secondary = candidates[index]
         elif (unlocked_job != base_job and unlocked_level > 1
                 and randint(1, 3) != 3 and unlocked_job.name != "mime"):
@@ -2569,7 +2604,7 @@ class UnitObject(TableObject):
             if self.has_special_graphic and randint(1, 3) == 3:
                 cands = sorted(cands, key=lambda a: a.jp_cost)
                 index = len(cands) / 2
-                index = mutate_normal(index, maximum=len(cands)-1)
+                index = mutate_normal(index, minimum=0, maximum=len(cands)-1)
                 setattr(self, attr, cands[index].index)
             elif random.choice([True, False]):
                 setattr(self, attr, 0x1FE)
@@ -2609,7 +2644,7 @@ class UnitObject(TableObject):
         for attr in ["brave", "faith"]:
             value = getattr(self, attr)
             if 0 <= value <= 100:
-                value = mutate_normal(value, maximum=100)
+                value = mutate_normal(value, minimum=0, maximum=100)
                 setattr(self, attr, value)
 
         if self.named and self.name in birthday_dict:
@@ -3211,7 +3246,7 @@ def mutate_job_level(filename):
         else:
             maximum = 800
             diff = randint(diff, int(diff*boostd["jp"]))
-        diff = mutate_normal(diff, maximum=maximum)
+        diff = mutate_normal(diff, minimum=0, maximum=maximum)
         diff = int(round(diff*2, -2)) / 2
         new_joblevel_jp.append(new_joblevel_jp[-1] + diff)
     JOBLEVEL_JP = new_joblevel_jp[1:]
@@ -3395,7 +3430,9 @@ def mutate_job_stats():
         average_jp_cost = sum(jp_costs) / len(jp_costs)
         for (factor, a) in zip(factors, abilities):
             if a.jp_cost > 0:
-                a.jp_cost = mutate_normal(a.jp_cost, maximum=3000)
+                jp_cost = min(a.jp_cost, 3000)
+                a.jp_cost = mutate_normal(jp_cost, minimum=1,
+                                          maximum=max(a.jp_cost, 3000))
                 if a.jp_cost > 200:
                     a.jp_cost = int(round(a.jp_cost*2, -2) / 2)
                 else:
@@ -3418,7 +3455,8 @@ def mutate_job_stats():
                         learn_rate = (k*learn_rate) + ((1-k)*100)
                     minimum = randint(10, 40)
                     learn_rate = min(90, max(learn_rate, minimum))
-                    learn_rate = mutate_normal(learn_rate, maximum=100)
+                    learn_rate = mutate_normal(
+                        learn_rate, minimum=0, maximum=100)
                     a.learn_chance = learn_rate
             else:
                 a.learn_chance = 100
@@ -3828,7 +3866,8 @@ def mutate_units_special():
             if len(cand_jobs) >= 7:
                 index = min(index, len(cand_jobs)-4)
                 index = max(index, 3)
-            index = mutate_normal(index, maximum=len(cand_jobs)-1)
+            index = min(index, len(cand_jobs)-1)
+            index = mutate_normal(index, minimum=0, maximum=len(cand_jobs)-1)
             new_job = cand_jobs[index]
 
             jobunits = [u for u in get_units() if u.job == new_job
@@ -4441,7 +4480,7 @@ def get_similar_item(base_item, same_type=False, same_equip=False,
     a, b = min(boost_index, reverse_index), max(boost_index, reverse_index)
     reverse_index = randint(a, b)
     index = len(items) - reverse_index - 1
-    index = mutate_normal(index, maximum=len(items)-1)
+    index = mutate_normal(index, minimum=0, maximum=len(items)-1)
     replace_item = items[index]
     return replace_item
 
