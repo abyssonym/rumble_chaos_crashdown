@@ -1,0 +1,897 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Patches>  
+  <Patch name="No Zodiac Compatibility" >
+    <Description> 
+      This removes zodiac compatibility damage calculations 
+    </Description>  
+    <Location offset="11D964" file="BATTLE_BIN">
+      00000000
+      0800E003 
+      00000000    
+    </Location>
+  </Patch>
+
+  <Patch name="Alternate Death Hack">
+    <Description>
+      Instead of crystallizing or treasuring, at the end of the death countdown units will become "knocked out" like
+      guests normally do. *INCOMPLETE*
+    </Description>
+    <Location offset="37f90" file="WORLD_WORLD_BIN">
+      <!--Set Injured Display-->
+      00F50408
+      03000534
+      00000000
+    </Location>
+    <Location offset="5d400" file="WORLD_WORLD_BIN">
+      <!--Set Injured Display -->
+      0400A310
+      0C000534
+      02004314
+      0B000534
+      09000534
+      E65F0408
+      00000000
+    </Location>
+    <Location offset="38Ab4" file="WORLD_WORLD_BIN">
+      <!--Injured Location display? -->
+      C0F40408
+      0C006132
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      28002226
+      020002A6
+      21200000
+    </Location>
+    <Location offset="5d300" file="WORLD_WORLD_BIN">
+      <!--Injured Location Display? -->
+      16000012
+      00000000
+      1980103C
+      CCC71026
+      09003314
+      0B006132
+      1200A226
+      000002A2
+      1C002226
+      020002A2
+      C0000234
+      080002A2
+      B6620408
+      00000000
+      06003314
+      0F00A226
+      000002A2
+      28002226
+      020002A2
+      80000234
+      080002A2
+      B6620408
+      00000000
+      C2620408
+      00000000
+    </Location>
+  <Location offset="11C128" file="BATTLE_BIN">
+      <!--Death Counter Manipulation -->
+      03000392
+      2C00013C
+      121C2134
+      FF002230
+      06006210
+      020A0100
+      FF002230
+      03006210
+      020A0100
+      FF002230
+      03006214
+      FF000134
+      AD0C0608
+      070001A2
+      07000492
+      FF000234
+      C0500508
+      00000000
+      1000A230
+      4F004010
+      0100C230
+      4D004010
+    </Location>
+    <Location offset="ED300" file="BATTLE_BIN">
+      <!--Death Counter Manipulation  -->
+      09008210
+      21100000
+      FFFF8424
+      FF008330
+      FF000234
+      070003A2
+      03004314
+      25100000
+      5C0C0608
+      00000000
+      AD0C0608
+      25100000
+    </Location>
+    <Location file="EVENT_REQUIRE_OUT" offset="5a90">
+      <!--Set units injured in party data  -->
+      00480508
+      00000000
+    </Location>
+    <Location file="BATTLE_BIN" offset="EB000">
+      <!-- Set units injured in party data -->
+      00001224
+      BF02060C
+      21204002
+      07005190
+      02005090
+      FF001334
+      07003316
+      0580013C
+      05001312
+      747F2124
+      00821000
+      21080102
+      03001034
+      D00030A0
+      01005226
+      08000234
+      1500422E
+      EFFF4014
+      01005226
+      2C00BF8F
+      A6120708
+      2800B48F
+    </Location>
+    <Location file="BATTLE_BIN" offset="11C1c0">
+      <!-- Set units injured in party data -->
+      AD0C0608
+      21100000
+    </Location>
+    <Location offset="ED300" file="BATTLE_BIN">
+      <!--Undead Revive after KO each turn -->
+      07
+    </Location>
+    <Location offset="ED318" file="BATTLE_BIN">
+      <!--Undead Revive EACH turn -->
+      01
+    </Location>
+	<Location offset="1249dc " file="BATTLE_BIN">
+      <!--disable revival -->
+      40510508
+      1980013C
+    </Location>
+    <Location offset="ED500 " file="BATTLE_BIN">
+      <!--disable revival -->
+      982D238C
+      FF000434
+      07006190
+      00000000
+      07008114
+      05000134
+      B60160A0
+      AC0160A0
+      8C0160A0
+      B10160A0
+      8E0161A0
+      900160AC
+      3400BF8F
+      792E0608
+      3000B28F
+    </Location>
+    <Location offset="ABBB0" file="WORLD_WORLD_BIN">
+      <!--"Injured" Display -->
+      11 01 00 11 01 00 00 00 00 00 00 11 01
+    </Location>
+    <Location offset="ABC30" file="WORLD_WORLD_BIN">
+      21 01 00 21 01 00 00 00 00 00 00 21 01
+    </Location>
+    <Location offset="ABCB0" file="WORLD_WORLD_BIN" mode="DATA">
+      21 11 11 11 11 11 11 11 11 11 11 21 01
+    </Location>
+    <Location offset="ABD30" file="WORLD_WORLD_BIN">
+      21 21 52 21 21 21 21 52 51 52 51 22 01
+    </Location>
+    <Location offset="ABDB0" file="WORLD_WORLD_BIN">
+      21 21 23 21 21 21 21 21 21 21 21 21 01
+    </Location>
+   <Location offset="ABE30" file="WORLD_WORLD_BIN">
+      21 21 21 21 21 21 21 11 21 46 21 21 01
+    </Location>
+    <Location offset="ABEB0" file="WORLD_WORLD_BIN">
+      21 21 21 21 61 62 21 11 51 22 51 22 01
+    </Location>
+    <Location offset="ABF30" file="WORLD_WORLD_BIN" mode="DATA">
+      11 11 11 23 11 11 11 11 11 11 11 11 01
+    </Location>
+    <Location offset="ABFB0" file="WORLD_WORLD_BIN">
+      00 00 41 52 01 00 00 00 00 00 00 00 00
+    </Location>
+    <Location offset="AC030" file="WORLD_WORLD_BIN">
+      00 00 11 11 00 00 00 00 00 00 00 00 00
+    </Location>
+<Location offset="5D4FC" file="WORLD_WORLD_BIN"><!--Allows 0xd0 = 3 units available for Inn -->
+00000000
+1480013C
+FCD4228C
+00000134
+06002214
+D000C290
+03000134
+07004114
+00000000
+2AD60108
+00000000
+03004014
+00000000
+01D60108
+00000000
+41D60108
+00000000
+</Location>
+<Location offset="E7FC " file="WORLD_WLDCORE_BIN"><!--Allows 0xd0 = 3 units available for Inn -->
+40F50408
+00000000
+</Location>
+<Location offset="C2c0" file="WORLD_WORLD_BIN"><!--Allows 0xd0 = 3 units available for Inn -->
+28F50408
+21888000
+</Location>
+<Location offset="5d4a0 " file="WORLD_WORLD_BIN"><!--Allows 0xd0 = 3 units available for Inn -->
+3000BFAF
+1580013C
+D83124AC
+1480013C
+B2CC0108
+FCD424AC
+</Location>
+<Location offset="CD60" file="WORLD_WLDCORE_BIN"><!--Allows 0xd0 = 3 units available for Inn -->
+54F50408
+1480013C
+</Location>
+<Location offset="5d550 " file="WORLD_WORLD_BIN"><!--Allows 0xd0 = 3 units available for Inn -->
+FCD4228C
+00000134
+08002214
+D0006290
+03000134
+03004110
+00000000
+6BCF0108
+00000000
+6ACF0108
+00000000
+5ACF0108
+00000000
+</Location>
+<Location file="WORLD_WLDCORE_BIN" offset="12078"><!--Allow Inn to be repeated -->
+80F50408
+00000000
+</Location>
+<Location file="WORLD_WORLD_BIN" offset="5d600"><!--Allow Inn to be repeated -->
+02006010
+00000000
+00004234
+000022A0
+20E40108
+0580023C
+</Location>
+  </Patch>
+  
+  <Patch name="JP gain hack *Fixed">
+    <Description>
+      JP gain is: (10 + (CasLVL/3) + (TarLVL-CasLVL))
+    </Description>
+    <Location file="BATTLE_BIN" offset="1178d0">
+      1980013C
+      00000000
+      0C392290
+    </Location>
+    <Location file="BATTLE_BIN" offset="117920">
+      03005692
+      1000A627
+      8AFA050C
+      2128C002
+      21B84000
+      00000492
+      68382290
+      03001034
+      C0180200
+      23186200
+      80110300
+      CC082124
+      21084100
+      22002190
+      1A003002
+      12100000
+      0A004224
+      23183100
+      21884300
+      0200201E
+      21800000
+      01001134
+      02008014
+      05004292
+      25880000
+      30005330
+      08001512
+      21200002
+      02002106
+      21282002
+      03002526
+      83280500
+      1000A78F
+      A0FA050C
+      FF006632
+      01001026
+      1500022A
+      F4FF4014
+      00000000
+      21201500
+
+    </Location>
+  </Patch>
+  
+  <Patch name="Evade Boost - 0x1FC">
+<Description>
+Accessory Evade is boosted by 10 (magic and physical)
+</Description> 
+<Location file="BATTLE_BIN" offset="11E248">
+F0FFBD27
+6448050C
+0400BFAF
+0400BF8F
+1000BD27
+</Location>
+<Location file="BATTLE_BIN" offset="11E060">
+6448050C
+583F2190
+</Location>
+<Location file="BATTLE_BIN" offset="eb190">
+  0680013C
+  21082200
+  593F2190
+  95008290
+  00000000
+  02004010
+  00000000
+  0A002224
+  1980013C
+  0800E003
+  DE3822A0
+</Location>
+</Patch>
+  
+  <Patch name="Experience gain hack *Fixed">
+    <Description>
+      Experience gain is: (10 + (TarLVL - CasLVL))
+    </Description>
+    <Location file="BATTLE_BIN" offset="126634">
+      1980013C
+      F0F5228C
+      00000000
+      30004014
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      0A000434
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      982D228C
+    </Location>
+    <Location file="BATTLE_BIN" offset="1266b0">
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+    </Location>
+  </Patch>
+
+  <Patch name="Equip change only for helmet, armor, accessory ">
+    <Description>
+      Disables the ability to change weapons with equip change.
+    </Description>
+    <Location offset="A694" file="EVENT_EQUIP_OUT">
+      <!--Jump-->
+C04F0508
+21184000
+    </Location>
+    <Location offset="A6e4" file="EVENT_EQUIP_OUT">
+      <!--Jump for menu activity-->
+02000224
+    </Location>
+    <Location offset="ECF00" file="BATTLE_BIN">
+      <!--Body for menu activity-->
+FeFF4224
+03004014
+00000000
+A7250708
+00000000
+A9250708
+00000000
+    </Location>
+    <Location offset="547c" file="EVENT_EQUIP_OUT">
+      <!--Jump for initialization-->
+CC4F0508
+00000000
+    </Location>
+    <Location offset="ECF30" file="BATTLE_BIN">
+      <!--Body for initialization-->
+1F80013C
+EC8F2124
+02001034
+000030A0
+1400BF8F
+21110708
+1000B08F
+    </Location>
+</Patch>
+
+  <Patch name="Counter Tackle Ability Edit">
+    <Description>Changes the ability associated with Counter Tackle</Description>
+    <Variable name="Ability ID" file="BATTLE_BIN" offset="117318" bytes="2" default="0093" />
+  </Patch>
+  
+ <Patch name ="Choto's Mime Redesign v2.1 - Mime learns abilities used in battle">
+<Description>
+All Mimes in battle start with 0 abilities learned. When an ability set "mimicable" in FFTP is used, it is added to the 
+
+mimic skillset for all units.
+Max number of skills is currently hardcoded to 16 regardless of variable setting.
+</Description>
+<Location file="BATTLE_BIN" offset="11a4a8"> <!-- Allows mimic to show up as a skillset -->
+00000000
+</Location>
+<Location file="BATTLE_BIN" offset="11a8ec"> <!-- Set all mimic abilities learned -->
+FBFF2225
+13000334
+80470508
+00000000
+</Location>
+<Location file="BATTLE_BIN" offset="EAE00"> <!-- Set all mimic abilities learned -->
+07004310
+1300422C
+03004010
+00000000
+40060608
+00000000
+43060608
+00000000
+51060608
+00000000
+</Location>
+<Location file="SCUS_942_21" offset="4ad7c"> <!-- load learned abilities -->
+90470508
+18000334
+</Location>
+<Location file="BATTLE_BIN" offset="EAE40"> <!-- load learned abilities -->
+08006414
+00000000
+1580033C
+00206324
+21186500
+21186500
+00006294
+89690108
+00000334
+0680033C
+61690108
+944A6324
+</Location>
+<Location file="BATTLE_BIN" offset="5ec"><!--Mimic behaves as default skillset-->
+d8510780  
+</Location>
+<Location file="BATTLE_BIN" offset="128030"><!--Store learned ability in mimic skillset-->
+A4470508
+</Location>
+<Location file="BATTLE_BIN" offset="EAE90"><!--Store learned ability in mimic skillset-->
+1980013C
+FCF5228C
+00000000
+1F004014
+A8382124
+00002394
+0680013C
+1B006010
+C0100300
+23104300
+40100200
+F0FB2124
+21204100
+05008290
+1580013C
+10004230
+12004014
+FC1F2290
+00000000
+2000462C
+0E00C010
+00000634
+21282600
+0020A494
+00000000
+09006410
+2000C42C
+FAFF8014
+0200C624
+00000000
+40300200
+2120C100
+01004224
+FC1F22A0
+002083A4
+0800E003
+00000000
+</Location>
+<Location file="BATTLE_BIN" offset="eAFFC"><!--Store learned ability in mimic skillset-->
+00000000
+00000000
+00000000
+00000000
+00000000
+00000000
+00000000
+00000000
+00000000
+</Location>
+<Location file="BATTLE_BIN" offset="00116BD8"><!--Mimic functionality-->
+FFFF0234
+</Location>
+<Location file="BATTLE_BIN" offset="113980"><!--Item Throw range-->
+ffff0334
+</Location>
+<Location file="BATTLE_BIN" offset="116b50"><!-- MP Usage-->
+00000000
+</Location>
+<Location file="BATTLE_BIN" offset="127f4c"><!--Ability data setting-->
+00000000
+</Location>
+<Location file="BATTLE_BIN" offset="11bf64"><!--Mimic Ability storing-->
+06004014
+</Location>
+<Location file="BATTLE_BIN" offset="DA84c"><!--Spell Quote-->
+00000000
+</Location>
+<Location file="BATTLE_BIN" offset="eB040"><!--Reset Abilities-->
+1580023C
+fc1f4224
+21180000
+000040AC
+04004224
+0400652C
+FCFFA014
+01006324
+ED0F0708
+21880000
+</Location>
+<Location file="EVENT_REQUIRE_OUT" offset="4fac"><!--Reset Abilities jump-->
+10480508
+1800B0AF
+</Location>
+</Patch>
+
+  <Patch name="Weapon strike rewrite v2">
+    <Location file="BATTLE_BIN" offset="124274">
+      1980013C
+      C4382594
+      02120500
+      FF000334
+      02004314
+      FF00A230
+      01000534
+      02004314
+      03000334
+      0200A534
+      0300A314
+      01000334
+      D02C0608
+      25280000
+      05006510
+      0300A52C
+      0500A010
+      00000000
+      BD2C0608
+      C5382590
+      BD2C0608
+      C4382590
+      C3382290
+      02000334
+      1A004300
+      00000000
+      00000000
+      10100000
+      F5FF4010
+      00000000
+      B12C0608
+      00000000
+      08008290
+      00000000
+      03004010
+      00000000
+      D12C0608
+      D83822A0
+      01008290
+      0680013C
+      21082200
+      B45C2390
+      1980013C
+      09000234
+      02004314
+      0A000234
+      D83820A0
+      03004310
+      00000000
+      C1D00508
+      02008484
+      D83825A0
+      0800E003
+      00000000
+
+    </Location>
+    <Location file="BATTLE_BIN" offset="10d304">
+      0D008010
+      70018228
+      00004010
+      C0100400
+      23104400
+      40100200
+      0680013C
+      21082200
+      F3FB2290
+      00000000
+      24004230
+      02004014
+      00000000
+      21280000
+      D02C0608
+      00000000
+    </Location>
+    <Location file="BATTLE_BIN" offset="eb0fc">
+      00000434
+      1980013C
+      C4382594
+      02120500
+      FF000334
+      02004314
+      FF00A230
+      01000434
+      02004314
+      03000334
+      02008434
+      03008314
+      00000334
+      0800E003
+      25380000
+      07006410
+      01000334
+      03006410
+      00000000
+      0800E003
+      C5382790
+      0800E003
+      C4382790
+      C3382290
+      02000334
+      1A004300
+      00000000
+      00000000
+      10100000
+      F7FF4010
+      00000000
+      52480508
+      00000000
+
+    </Location>
+    <Location file="BATTLE_BIN" offset="124454">
+      C0100200
+      1980013C
+      21102200
+      CCF84290
+      C3382390
+      3F004230
+      3F48050C
+      CD3822A0
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      1100A393
+      13000234
+      04006214
+      FF00E230
+      1800A793
+      00000000
+      FF00E230
+      8000422C
+      02004014
+      00000000
+      21380000
+      1200A397
+    </Location>
+  </Patch>
+  
+<Patch name="Unit Dismissal Hack">
+<Description>
+        You can have up to 12 units that are not dismissable. Enter their Sprite ID and it will be so. Default: 01, 04, 07, 0c, 32.
+    </Description>
+ 
+
+    <Location file="WORLD_WORLD_BIN" offset="40918">
+15F50408
+00000000
+ </Location>
+ <Location file="WORLD_WORLD_BIN" offset="5d454">
+00000134
+00000434
+1480043C
+21202400
+8CD48890
+00000000
+05004810
+0C00292C
+F9FF2015
+01002124
+49820408
+00000000
+4A820408
+00000234
+ </Location>
+<Variable file="WORLD_WORLD_BIN" offset="5d48C" default="15" name="Unit 1"/>
+<Variable file="WORLD_WORLD_BIN" offset="5d48D" default="1C" name="Unit 2"/>
+<Variable file="WORLD_WORLD_BIN" offset="5d48E" default="19" name="Unit 3"/>
+<Variable file="WORLD_WORLD_BIN" offset="5d48F" default="00" name="Unit 4"/>
+<Variable file="WORLD_WORLD_BIN" offset="5d490" default="00" name="Unit 5"/>
+<Variable file="WORLD_WORLD_BIN" offset="5d491" default="00" name="Unit 6"/>
+<Variable file="WORLD_WORLD_BIN" offset="5d492" default="00" name="Unit 7"/>
+<Variable file="WORLD_WORLD_BIN" offset="5d493" default="00" name="Unit 8"/>
+<Variable file="WORLD_WORLD_BIN" offset="5d494" default="00" name="Unit 9"/>
+<Variable file="WORLD_WORLD_BIN" offset="5d495" default="00" name="Unit 10"/>
+<Variable file="WORLD_WORLD_BIN" offset="5d496" default="00" name="Unit 11"/>
+<Variable file="WORLD_WORLD_BIN" offset="5d497" default="00" name="Unit 12"/>
+ </Patch>
+
+  <Patch name="Half of MP multiplies MP cost by XX / 128">
+    <Description>
+      Make sure to fill in both X values for the drop-down box below (with the same value; one affects displayed MP cost and the other affects actual MP cost).
+
+      90% is X = 74
+      83% is X = 6B
+      80% is X = 67
+      75% is X = 60
+      70% is X = 5A
+      66% is X = 56
+      60% is X = 4D
+      50% is X = 40 (default)
+      40% is X = 34
+      33% is X = 2B
+      30% is X = 27
+      25% is X = 20
+      20% is X = 1A
+      17% is X = 16
+      10% is X = 0D
+      If you want the multiplier to be greater than 100%, add 0x80 to the above number.
+    </Description>
+    <Location file="BATTLE_BIN" offset="f2f90">
+      f800a88f
+      0d009190
+      05000011
+    </Location>
+    <Variable name="X" file="BATTLE_BIN" offset="f2f9c"/>
+    <Location file="BATTLE_BIN" offset="f2f9d">
+      000234
+      19005100
+      00000000
+      12100000
+      c2890200
+      92060608
+      00000000
+    </Location>
+    <Location file="BATTLE_BIN" offset="f3000">
+      80004230
+      06004010
+      00000000
+    </Location>
+    <Variable name="X" file="BATTLE_BIN" offset="f300c"/>
+    <Location file="BATTLE_BIN" offset="f300d">
+      000234
+      00000000
+      19004400
+      12100000
+      c2210200
+      dcf60508
+      00000000
+    </Location>
+    <Location file="BATTLE_BIN" offset="116b60">
+      00680508
+      00000000
+      00000000
+      00000000
+    </Location>
+    <Location file="BATTLE_BIN" offset="11aa34">
+      e4670508
+      00000000
+      00000000
+      00000000
+      00000000
+    </Location>
+  </Patch>
+
+  <Patch name="Short Charge multiplies ability CT by XX / 128">
+    <Description>
+      Make sure to fill in both X values for the drop-down box below (with the same value; one affects displayed CT and the other affects actual CT).
+
+      90% is X = 74
+      83% is X = 6B
+      80% is X = 67
+      75% is X = 60
+      70% is X = 5A
+      66% is X = 56
+      60% is X = 4D
+      50% is X = 40 (default)
+      40% is X = 34
+      33% is X = 2B
+      30% is X = 27
+      25% is X = 20
+      20% is X = 1A
+      17% is X = 16
+      10% is X = 0D
+      If you want the multiplier to be greater than 100%, add 0x80 to the above number.
+    </Description>
+    <Location file="BATTLE_BIN" offset="f3028">
+      f000a98f
+      01000234
+      05002215
+    </Location>
+    <Variable name="X" file="BATTLE_BIN" offset="f3034"/>
+    <Location file="BATTLE_BIN" offset="f3035">
+      000234
+      19005000
+      00000000
+      12100000
+      c2810200
+      9d060608
+      00000000
+    </Location>
+    <Location file="BATTLE_BIN" offset="f3050">
+      05004010
+    </Location>
+    <Variable name="X" file="BATTLE_BIN" offset="f3054"/>
+    <Location file="BATTLE_BIN" offset="f3055">
+      000234
+      19005200
+      00000000
+      12100000
+      c2910200
+      1cf20508
+      00000000
+    </Location>
+    <Location file="BATTLE_BIN" offset="115864">
+      14680508
+      00000000
+      00000000
+    </Location>
+    <Location file="BATTLE_BIN" offset="11aa6c">
+      0a680508
+      00000000
+      00000000
+      00000000
+      00000000
+    </Location>
+  </Patch>
+</Patches>

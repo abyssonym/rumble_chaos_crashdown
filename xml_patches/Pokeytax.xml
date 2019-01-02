@@ -1,0 +1,284 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Patches>
+<Patch name="Inherent RSM Limitation Hack">
+    <Description>Inherent RSM Limitation Hack</Description>
+    <Location file="WORLD_WORLD_BIN" offset="42D6C">
+      40100700
+      2010E200
+      00210200
+      0680023C
+      20204400
+      B8108424
+      01008290
+      FF00C330
+      06006210
+      0F008330
+      0E006328
+      FAFF0314
+      02008424
+      02000010
+      00000000
+      0040C634
+      01001026
+      00F50408
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+    </Location>
+    <Location file="WORLD_WORLD_BIN" offset="44B08">
+      0680013C
+    </Location>
+    <Location file="WORLD_WORLD_BIN" offset="44B28">
+      0680013C
+      40280300
+      20286500
+      00290500
+      20082500
+      B8102124
+      01002290
+      62008590
+      00000000
+      0200A214
+      02002124
+      620080A4
+      0F002530
+      F8FF0514
+      00000000
+      F8FF2120
+      01002290
+      64008590
+      00000000
+      0200A214
+      02002124
+      640080A4
+      0F002530
+      F8FF0514
+      00000000
+      F8FF2120
+      01002290
+      66008590
+      00000000
+      0200A214
+      02002124
+      660080A4
+      0F002530
+      F8FF0514
+      00000000
+      F8FF2120
+      62008194
+      64008294
+      00000000
+      02004114
+      00000000
+      620080A4
+      66008294
+      00000000
+      02004114
+      00000000
+      620080A4
+      64008194
+      00000000
+      02004114
+      80101400
+      640080A4
+    </Location>
+    <Location file="WORLD_WORLD_BIN" offset="5D400">
+      25101600
+      5D000334
+      06006214
+      FF01C330
+      3AFE6324
+      0800632C
+      02006010
+      00000000
+      0040C634
+      708B0408
+      00000000
+    </Location>
+    <Location file="WORLD_WORLD_BIN" offset="44B14">
+      0BF50408
+    </Location>
+    <Location file="WORLD_WORLD_BIN" offset="5D42c">
+      06008294
+      00000000
+      3AFE4224
+      0800422C
+      02004010
+      00000000
+      060080A4
+      C7920408
+      00000000
+    </Location>
+  </Patch>
+  <Patch name="Units rot or reanimate without skipped turns">
+    <Description>Units rot or reanimate without skipped turns</Description>
+    <Location file="BATTLE_BIN" offset="11C0B4">
+      53000492
+    </Location>
+    <Location file="BATTLE_BIN" offset="11C104">
+      54001F92
+    </Location>
+    <Location file="BATTLE_BIN" offset="11C110">
+      40008430
+    </Location>
+    <Location file="BATTLE_BIN" offset="11C11C">
+      0100FF33
+    </Location>
+    <Location file="BATTLE_BIN" offset="11C124">
+      82210400
+    </Location>
+    <Location file="BATTLE_BIN" offset="11C12C">
+      24F89F00
+    </Location>
+    <Location file="BATTLE_BIN" offset="11C140">
+      2530DF00
+    </Location>
+    <Location file="BATTLE_BIN" offset="11C1C0">
+      54001F92
+      02008010
+      0100FF33
+      0FFFC630
+      00F91F00
+      2530E603
+      1000C230
+    </Location>
+  </Patch>
+  <Patch name="Level down based on historic growths">
+    <Description>Level down based on historic growths</Description>
+    <Location file="SCUS_942_21" offset="4E28C">
+      23105502
+      03000334
+      E4700508
+      1A004300
+    </Location>
+    <Location file="BATTLE_BIN" offset="F5390">
+      12100000
+      00006392
+      06006492
+      0400632C
+      08006014
+      02000334
+      80008330
+      05006014
+      25180000
+      40008330
+      02006014
+      01000334
+      03000334
+      0580013C
+      20082200
+      0C000434
+      18008300
+      12200000
+      20202400
+      0CF18490
+      05000234
+      18004300
+      12100000
+      20102200
+      3CF14290
+      80230400
+      40130200
+      20104400
+      23100202
+      1B005700
+      12100000
+      AB760108
+      23800202
+    </Location>
+  </Patch>
+  <Patch name="R/S/M designates Learn on Hit">
+    <Description>Units with the specified support ability (value XX on byte WW) equipped are treated as having the specified job/skillset (job YY, skillset ZZ) for the duration of learn-on-hit checks. So if you specify byte 91, value 10, job 51, skillset 0c, units with Monster Talk equipped learn Time Magic (e.g. Haste 2 and Slow 2), not their current skillset. It should not interfere with the support ability's ordinary functioning.</Description>
+    <Location file="BATTLE_BIN" offset="F2F14">
+      03000292
+      1680053C
+      12000492
+      549FA524
+      0800A2A0
+    </Location>
+    <Variable name="WW" file="BATTLE_BIN" offset="F2F14"/>
+    <Location file="BATTLE_BIN" offset="F2F35">
+      000292
+      0400A4A0
+    </Location>
+    <Variable name="XX" file="BATTLE_BIN" offset="F2F2C"/>
+    <Location file="BATTLE_BIN" offset="F2F2D">
+      004230
+      04000210
+    </Location>
+    <Variable name="ZZ" file="BATTLE_BIN" offset="F2F30"/>
+    <Location file="BATTLE_BIN" offset="F2F31">
+      000234
+      120002A2
+    </Location>
+    <Variable name="YY" file="BATTLE_BIN" offset="F2F34"/>
+    <Location file="BATTLE_BIN" offset="F2F35">
+      000234
+      030002A2
+      DE390608
+      00000000
+    </Location>
+    <Location file="BATTLE_BIN" offset="F2F54">
+      52FF7322
+      0C000234
+      51000334
+      120062A2
+      030063A2
+      623A0608
+      00000000
+    </Location>
+    <Location file="BATTLE_BIN" offset="127774">
+      C5670508
+    </Location>
+    <Location file="BATTLE_BIN" offset="127774">
+      25104202
+      000062A0
+      D5670508
+    </Location>
+  </Patch>
+  <Patch name="Learn On Hit = XX%">
+    <Description>Learn On Hit = XX%</Description>
+    <Variable name="XX" file="BATTLE_BIN" default="32" offset="127844"/>
+    <Location file="BATTLE_BIN" offset="127845">
+      000534
+    </Location>
+  </Patch>
+  <Patch name="Teleport Chances Per Extra Tile Reduced by XX%">
+    <Description>Teleport Chances Per Extra Tile Reduced by XX%</Description>
+    <Variable name="XX" file="BATTLE_BIN" default="0A" offset="10FC70"/>
+    <Location file="BATTLE_BIN" offset="10FC71">
+      000534
+      1800A300
+      3378010C
+      12280000
+    </Location>
+  </Patch>
+  <Patch name="Auto Potion Ignores Potion Slot">
+    <Description>Auto Potion Ignores Potion Slot</Description>
+    <Location file="BATTLE_BIN" offset="117798">
+      20100000
+    </Location>
+  </Patch>
+  <Patch name="Auto Potion Ignores Hi-Potion Slot">
+    <Description>Auto Potion Ignores Hi-Potion Slot</Description>
+    <Location file="BATTLE_BIN" offset="1177AC">
+      20100000
+    </Location>
+  </Patch>
+  <Patch name="Auto Potion Ignores X-Potion Slot">
+    <Description>Auto Potion Ignores X-Potion Slot</Description>
+    <Location file="BATTLE_BIN" offset="1177C8">
+      20100000
+    </Location>
+  </Patch>
+  <Patch name="Float Status Grants Fly">
+    <Description>Float Status Grants Fly</Description>
+    <Location file="BATTLE_BIN" offset="118038">
+      0C00A534
+    </Location>
+  </Patch>
+</Patches>

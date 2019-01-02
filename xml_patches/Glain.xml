@@ -1,0 +1,2406 @@
+<?xml version="1.0" encoding="utf-8" ?> 
+<Patches>
+  <Patch name="Random unit gear based on story progression - override with 0x16b">
+    <Description>
+      Random unit gear based on story progression, but can be overridden with 0x16b for any unit.
+      (0x16b is the last row, last column in the ENTD for a unit, in the Unknown box, two underneath
+       the top value that has its own row.)
+    </Description>
+    <Location file="BATTLE_BIN" offset="F59BC" mode="ASM">  
+      lbu     t6,0x016b(t5)             # Load 0x016b from unit
+      lui     t0,0x8005
+      bne     t6,zero,SKP               # If not zero, jump to SKP (don't use shop availability)
+      nop
+      lbu     t6,0x78d8(t0)             # Load shop availability from memory
+      nop
+SKP:  sltiu   t7,t6,1               
+      jr      ra
+      addu    t6,t6,t7                  # If value = 0, set value = 1
+    </Location>
+    <Location file="SCUS_942_21" offset="4D49C" mode="ASM">
+      sw      ra,0x94(sp)
+      move    t5,a0
+      jal     0x8015c9bc                # Jump to new routine
+      li      v0,0x20
+    </Location>
+    <Location file="SCUS_942_21" offset="4D52C" mode="ASM">
+      nop
+    </Location>
+    <Location file="SCUS_942_21" offset="4D5D8" mode="ASM">
+      lbu     v1,0x0a(a1)
+    </Location>
+  </Patch>
+  <Patch name="Random unit gear based on story progression">
+    <Description>
+      Random unit gear based on story progression
+    </Description>
+    <Location file="BATTLE_BIN" offset="F59BC" mode="ASM">  
+      lui     t6,0x8005
+      lbu     t6,0x78d8(t6)         # Load shop availability from memory
+      nop
+      sltiu   t7,t6,1               
+      jr      ra
+      addu    t6,t6,t7              # If value = 0, set value = 1
+    </Location>
+    <Location file="SCUS_942_21" offset="4D49C" mode="ASM">
+      sw      ra,0x94(sp)
+      move    t5,a0
+      jal     0x8015c9bc            # Jump to new routine
+      li      v0,0x20
+    </Location>
+    <Location file="SCUS_942_21" offset="4D52C" mode="ASM">
+      nop
+    </Location>
+    <Location file="SCUS_942_21" offset="4D5D8" mode="ASM">
+      lbu     v1,0x0a(a1)
+    </Location>
+  </Patch> 
+  <Patch name="Random unit equipment more selective">
+    <Description>
+        Random unit equipment will now be more selective
+        of secondary item types. (You shouldn't see 
+        knights in Chapters 2 to 4 using linen robes)
+    </Description>
+    <Location file="SCUS_942_21" offset="4D53C" mode="ASM">
+      li      t7,0                  # ItemFound = false (initialize)
+    </Location>
+    <Location file="SCUS_942_21" offset="4D5F0" mode="ASM">
+      bne     v0,zero,SKP           # Skip list index increment if not a new item type
+      li      t7,1                  # ItemFound = true
+      addiu   t1,t1,1               # Increment list index
+      nop
+SKP:  move    t4,v1
+      move    v1,t1
+    </Location>
+    <Location file="SCUS_942_21" offset="4D628" mode="ASM">
+      addiu   s0,t1,1               # Length = list index + 1
+      beq     t7,zero,0x8005ce60    # If (no item found), skip
+    </Location>
+  </Patch>
+  <Patch name="All formulas apply elemental (v2)">
+    <Description>
+        All formulas apply elemental.
+        Affects HP Damage, MP Damage, HP Healing, and MP Healing.
+        
+        Ability element takes precedent over weapon element, and will be used unless
+        the ability's "Weapon Strike" and flag under "Hit Allies" are both checked, in which
+        case the Ability and Weapon elements will be combined.
+        
+        Optional: You can specify a multiplier to be applied to damage and/or a separate multiplier for healing.  
+        The format for the multipliers is 16.16 fixed point (e.g. 1.25 = 00014000).
+        A multiplier of zero (default) will be ignored.
+    </Description>
+    <Location file="BATTLE_BIN" offset="F5D30" mode="ASM">
+.label  @elemental_nullify, 0x80184e40
+.label  @apply_elemental, 0x80186ffc
+.label  @address_damage_multiplier, 0x8015cd20
+.label  @address_healing_multiplier, 0x8015cd24
+
+# ROUTINE: Formula tail routine
+@formula_tail:
+
+        addiu   sp, sp, -8
+        sw      ra, 4(sp)
+        
+        jal     @apply_elemental        
+        nop
+        jal     @apply_damage_healing_multipliers
+        nop
+
+        lw      ra, 4(sp)
+        addiu   sp, sp, 8
+        jr      ra
+        nop
+
+@elemental_inner:
+        addiu   sp, sp, -0x20
+        sw      ra, 0x10(sp)
+        sw      s0, 0x14(sp)
+        sw      s1, 0x18(sp)
+        
+        lui     t0, 0x8019
+        lw      t1, 0x2d90(t0)                 
+        lw      s1, 0x2d98(t0)                      # Target
+        lhu     t4, 0x10(t1)
+        
+    elem_absorb:
+        lbu     t6, 0x6d(s1)                        # Target's elemental absorption flags
+        move    s0, a0                              # Element
+        and     t6, t6, s0
+        beq     t6, zero, elem_nullify          
+        ori     t7, t4, 0x0400
+        sh      t7, 0x10(t1)
+        jal     @elemental_absorb
+        nop
+        
+    elem_nullify:
+        lbu     t5, 0x6e(s1)                        # Target's elemental nullification flags
+        lbu     t7, 0x6f(s1)                        # Target's elemental halving flags
+        and     t6, t5, s0
+        beq     t6, zero, elem_half
+        nop
+        
+        jal     @elemental_nullify_actions
+        nop
+        j       elem_end
+        nop
+    
+    elem_half:
+        and     t6, t7, s0
+        lbu     t7, 0x70(s1)                        # Target's elemental weakness flags
+        nop
+        beq     t6, zero, elem_weak
+        li      a0, 0x8000                          # Multiplier = 0.50 (..000.100..)
+        
+        jal     @set_action_mods
+        nop
+        
+    elem_weak:
+        and     t6, t7, s0
+        beq     t6, zero, elem_end
+        lui     t0, 0x8019
+        
+        lui     a0, 2                               # Multiplier = 2.00 (..010.000..)
+        jal     @set_action_mods
+        nop
+
+        lw      t1, 0x2d90(t0)
+        nop
+        lhu     t4, 0x10(t1)
+        nop
+        ori     t7, t4, 0x0800
+        sh      t7, 0x10(t1)
+        
+    elem_end: 
+        lw      s1, 0x18(sp)
+        lw      s0, 0x14(sp)
+        lw      ra, 0x10(sp)
+        addiu   sp, sp, 0x20
+        jr      ra
+        nop
+
+        
+# ROUTINE: Pre-processing for "apply elemental" routine
+#   Determination of element, and elemental strengthen
+#   Specific to apply elemental routine - don't call from elsewhere
+@apply_elemental_pre_process:
+        addiu   sp, sp, -16
+        sw      ra, 4(sp)
+        sw      v1, 8(sp)
+
+        jal     @elemental_determination
+        nop
+        move    s0, v0
+        
+        jal     @elemental_strengthen
+        move    a0, v0
+        
+        lw      v1, 8(sp)        
+        lw      ra, 4(sp)
+        addiu   sp, sp, 16
+        jr      ra
+        andi    v0, v1, 0x0080
+       
+       
+# ROUTINE: Determine element based on ability/weapon
+@elemental_determination:
+
+        addiu   sp, sp, -8
+        sw      ra, 4(sp)
+        
+        jal     @get_source_unit_misc_data_pointer
+        nop
+        lbu     t7, 0x15d(v0)                       #   Skillset ID
+        
+        lui     t0, 0x8019                          
+        lbu     t1, 0x38f4(t0)                      #   Load flags
+        lbu     t2, 0x38f3(t0)
+        sll     t1, t1, 8
+        or      t1, t1, t2
+        lbu     v0, 0x38f7(t0)                      #   Ability element
+        lbu     t4, 0x3904(t0)                      #   Weapon element
+        lhu     t5, 0x38d6(t0)                      #   Ability ID
+        li      t2, 0x2004        
+        
+        and     t3, t1, t2                          #   Check if "Weapon Strike" and flag under "Hit Allies" checked
+        xor     t3, t3, t2                          #   Zero if both flags checked, non-zero otherwise
+        sltiu   t3, t3, 1                           #   1 if both flags checked, 0 otherwise
+        sltiu   t6, t5, 1                           #   Check if Ability ID = 0 (Attack)
+        or      t6, t6, t3                          #   1 if both flags checked or ability is Attack, 0 otherwise
+        li      t2, 0x14                            #   ID for Throw skillset
+        xor     t2, t7, t2                          #   Zero if Skillset ID = 0x14 (Throw), non-zero otherwise
+        sltiu   t2, t2, 1                           #   1 if Skillset ID = 0x14 (Throw), 0 otherwise
+        or      t6, t6, t2                          #   1 if both flags checked or ability is Attack or skillset is Throw, 0 otherwise
+        
+        # subu    t6, zero, t6
+        sll     t6, t6, 31
+        sra     t6, t6, 31                          #   Bitmask: All ones if both flags checked or ability is Attack, 0 otherwise
+        and     t6, t6, t4                          #   (Elements to add) = Bitmask applied to (Weapon element)
+        
+        lw      ra, 4(sp)
+        addiu   sp, sp, 8
+        jr      ra                                  #   Return element
+        or      v0, v0, t6                          #   Add (Elements to add) to Element flags                          
+
+
+# ROUTINE: Apply elemental strengthen (a0 = Element)
+@elemental_strengthen:
+        addiu   sp, sp, -8
+        sw      ra, 4(sp)
+
+        lui     t0, 0x8019
+        lw      t3, 0x2d94(t0)                      
+        lw      t1, 0x2d90(t0)
+        lbu     t3, 0x0071(t3)
+        lhu     t2, 4(t1)  
+        and     t3, t3, a0
+        beq     t3, zero, elem_strengthen_end           # Skip if element not strengthened
+        lui     a0, 1
+        
+        ori     a0, a0, 0x4000                          # Multiplier = 1.25 (..001.010..)
+        jal     @set_action_mods
+        nop
+        
+    elem_strengthen_end:    
+        lw      ra, 4(sp)
+        addiu   sp, sp, 8
+        jr      ra
+        nop
+
+        
+@elemental_nullify_actions:
+        addiu   sp, sp, -16
+        sw      ra, 4(sp)
+
+        jal     @elemental_nullify              # Nullify current action
+        nop
+
+        lui     t0, 0x8019
+        lw      t1, 0x2d90(t0)
+        lw      t2, 0x2d8c(t0)
+        sw      t1, 8(sp)                       # Save action to stack
+        sw      t2, 0x2d90(t0)                  # Save drain action as current action
+
+        jal     @elemental_nullify              # Nullify current action (drain action)
+        nop
+
+        lw      t1, 8(sp)                       # Load action from stack
+        lui     t0, 0x8019
+        sw      t1, 0x2d90(t0)                  # Save current action back
+
+        lw      ra, 4(sp)
+        addiu   sp, sp, 16
+        jr      ra
+        nop 
+
+        
+@clear_elements:
+        lui     t0, 0x8019
+        sb      zero, 0x3904(t0)                 # Zero out weapon element
+        jr      ra
+        sb      zero, 0x38f7(t0)                 # Zero out ability element
+
+
+# ROUTINE: Elemental absorb
+@elemental_absorb:
+
+        addiu   sp, sp, -8
+        sw      ra, 4(sp)
+        
+        lui     t0, 0x8019
+        lw      t1, 0x2d90(t0)                  #   Action
+        lw      t2, 0x2d8c(t0)                  #   Return Action
+        
+        lhu     t3, 4(t1)                       #   HP Damage
+        lhu     t4, 6(t1)                       #   HP Healing
+        lhu     t5, 8(t1)                       #   MP Damage
+        lhu     t6, 10(t1)                      #   MP Healing
+        
+        addu    t7, t3, t4                      #   HP Damage + HP Healing
+        sh      t7, 6(t1)                       #   Save as HP Healing
+        addu    t7, t5, t6                      #   MP Damage + MP Healing
+        sh      t7, 10(t1)                      #   Save as MP Healing
+        sh      zero, 4(t1)                     #   Save zero as HP Damage
+        sh      zero, 8(t1)                     #   Save zero as MP Damage
+        
+        sltu    a0, zero, t3
+        subu    a0, zero, a0                    #   HP Damage bitmask
+        sltu    a1, zero, t5
+        subu    a1, zero, a1                    #   MP Damage bitmask
+        
+        lhu     t3, 4(t2)                       #   Returned HP Damage
+        lhu     t4, 6(t2)                       #   Returned HP Healing
+        lhu     t5, 8(t2)                       #   Returned MP Damage
+        lhu     t6, 10(t2)                      #   Returned MP Healing
+        
+        and     t8, t4, a0                      #   Added HP Healing = Returned HP Damage, if HP Damage > 0; 0 otherwise
+        and     t9, t6, a1                      #   Added MP Healing = Returned MP Damage, if MP Damage > 0; 0 otherwise
+        
+        addu    t7, t3, t8                      #   Returned HP Damage + Added HP Healing
+        sh      t7, 4(t2)                       #   Save as Returned HP Damage
+        addu    t7, t5, t9                      #   Returned MP Damage + Added MP Healing
+        sh      t7, 8(t2)                       #   Save as Returned MP Damage
+        
+        not     a0, a0
+        not     a1, a1                          #   Reverse bitmasks
+        and     t8, t4, a0                      #   Returned HP Healing = 0 if HP Damage > 0
+        sh      t8, 6(t2)                       #   Save as Returned HP Healing
+        and     t9, t6, a0                      #   Returned MP Healing = 0 if MP Damage > 0
+        sh      t9, 10(t2)                      #   Save as Returned MP Healing
+        
+        jal     @set_action_types
+        nop
+        
+        lw      ra, 4(sp)                       #   Return
+        addiu   sp, sp, 8
+        jr      ra
+        nop
+
+# ROUTINE: Set damage/healing multipliers
+@apply_damage_healing_multipliers:
+        
+        addiu   sp, sp, -8
+        sw      ra, 4(sp)
+
+        lui     t0, 0x8019
+        lw      a0, 0x2d90(t0)
+        nop
+        lhu     t1, 4(a0)
+        lhu     t2, 6(a0)
+        lhu     t3, 8(a0)
+        lhu     t4, 10(a0)
+        
+        addu    t5, t1, t3
+        addu    t6, t2, t4
+        
+    adhm_damage:
+        beq     t5, zero, adhm_healing
+        nop
+        
+        la      a0, @address_damage_multiplier
+        lw      a0, 0(a0)
+        nop
+        
+        beq     a0, zero, adhm_healing
+        nop
+        
+        jal     @set_action_mods
+        nop
+        
+    adhm_healing:
+        beq     t6, zero, adhm_end
+        nop
+        
+        la      a0, @address_healing_multiplier
+        lw      a0, 0(a0)
+        nop
+        
+        beq     a0, zero, adhm_end
+        nop
+        
+        jal     @set_action_mods
+        nop
+        
+    adhm_end:    
+        lw      ra, 4(sp)
+        addiu   sp, sp, 8
+        jr      ra
+        nop
+        
+# ROUTINE: Apply addend/multiplier to actions (Standard and return/drain action)
+# Parameters: a0 = Multiplier (16.16 fixed point)
+#   NOTE: This routine does not modify temporary (t) registers.
+
+@set_action_mods:
+    
+        addiu   sp, sp, -16
+        sw      ra, 4(sp)
+        sw      s0, 8(sp)
+        
+        move    s0, a0
+        
+        #   Standard action
+        lui     a1, 0x8019
+        lw      a1, 0x2d90(a1)
+        jal     @set_action_mod
+        nop
+        
+        #   Return action (drain)
+        lui     a1, 0x8019
+        lw      a1, 0x2d8c(a1)
+        jal     @set_action_mod
+        move    a0, s0
+        
+        lw      s0, 8(sp)
+        lw      ra, 4(sp)
+        addiu   sp, sp, 16
+        
+        jr      ra
+        nop
+    
+# ROUTINE: Apply addend/multiplier to action
+# Parameters: a0 = Multiplier (16.16 fixed point), a1 = Action
+#   NOTE: This routine does not modify temporary (t) registers.
+
+@set_action_mod:
+
+        addiu   sp, sp, -16
+        sw      ra, 4(sp)
+        sw      s0, 8(sp)
+        sw      s1, 12(sp)
+        
+        beq     a1, zero, set_action_mod_end
+        move    s0, a0
+        move    s1, a1
+
+        #   HP Damage
+        jal     @set_action_property_mod
+        li      a2, 4
+        
+        #   HP Healing
+        move    a0, s0
+        move    a1, s1
+        jal     @set_action_property_mod
+        li      a2, 6
+        
+        #   MP Damage
+        move    a0, s0
+        move    a1, s1
+        jal     @set_action_property_mod
+        li      a2, 8
+    
+        #   MP Healing
+        move    a0, s0
+        move    a1, s1
+        jal     @set_action_property_mod
+        li      a2, 10
+        
+    set_action_mod_end:
+        lw      s1, 12(sp)
+        lw      s0, 8(sp)
+        lw      ra, 4(sp)
+        addiu   sp, sp, 16
+        jr      ra
+        nop
+
+# ROUTINE: Apply addend/multiplier to action property (offset)
+# Parameters: a0 = Multiplier (16.16 fixed point), a1 = Action, a2 = Offset
+#   NOTE: This routine does not modify temporary (t) registers.
+
+@set_action_property_mod:
+
+        add     a3, a1, a2
+        lhu     v0, 0(a3)  
+        nop
+        
+        beq     v0, zero, set_action_property_mod_end
+        nop
+        
+        multu   v0, a0
+        
+        # Multiplying integer (32.0) by (16.16) fixed point gives (48.16) result
+        # HI: [16 | 16], LO: [16 | 16]; Significant 32 bit integer part is the two middle 16s
+        
+        # a1: [ HI RIGHT 16 | ZERO ]
+        mfhi    a1
+        sll     a1, a1, 16
+        
+        # a2: [ ZERO | LO LEFT 16 ]
+        mflo    v1
+        srl     a2, v1, 16
+        
+        # Check decimal part to determine whether to round up (add one to integer part).
+        sll     v1, v1, 16
+        srl     v1, v1, 31
+        addu    a2, a2, v1
+        
+        # v0: [ HI RIGHT 16 | LO LEFT 16 ]
+        or      v0, a1, a2
+        
+        # Cap value at 999
+        sltiu   v1, v0, 1000
+        bne     v1, zero, set_action_property_mod_end
+        nop
+        li      v0, 999
+    
+    set_action_property_mod_end:
+        jr      ra
+        sh      v0, 0(a3)
+        
+        
+# ROUTINE: Set action types
+@set_action_types:
+
+        addiu   sp, sp, -8
+        sw      ra, 4(sp)
+        
+        lui     a0, 0x8019
+        lw      a0, 0x2d90(a0)
+        jal     @set_action_type
+        nop
+        
+        lui     a0, 0x8019
+        lw      a0, 0x2d8c(a0)
+        jal     @set_action_type
+        nop
+        
+        lw      ra, 4(sp)
+        addiu   sp, sp, 8
+        jr      ra
+        nop
+        
+# ROUTINE: Set action type (a0 = Action)
+@set_action_type:
+
+        lbu     t0, 0x25(a0)
+        
+        lbu     t1, 4(a0)
+        lbu     t2, 6(a0)
+        lbu     t3, 8(a0)
+        lbu     t4, 10(a0)
+        
+        sltu    t1, zero, t1
+        sltu    t2, zero, t2
+        sltu    t3, zero, t3
+        sltu    t4, zero, t4
+        
+        sll     t1, t1, 7
+        sll     t2, t2, 6
+        sll     t3, t3, 5
+        sll     t4, t4, 4
+        
+        andi    t0, t0, 0x0f
+        
+        or      t0, t0, t1
+        or      t0, t0, t2
+        or      t0, t0, t3
+        or      t0, t0, t4
+        
+        jr      ra
+        sb      t0, 0x25(a0)
+        
+    </Location>
+    <Location file="BATTLE_BIN" offset="11DE98" mode="ASM">
+        jr      ra                      # Return immediately from original routine
+        nop
+    </Location>
+    <Location file="BATTLE_BIN" offset="11FFF8" mode="ASM">
+        jr      ra                      # Return immediately from original routine
+        
+        lui     v1, 0x8019              # Shift routine down one space
+        addiu   sp, sp, -0x18
+
+        lw      v1, 0x2d98(v1)
+        sw      ra, 0x14(sp)
+        lbu     v1, 0x5a(v1)
+        sw      s0, 0x10(sp)
+      
+        jal     @apply_elemental_pre_process
+        nop
+    </Location>
+    <Location file="BATTLE_BIN" offset="1249F0" mode="ASM">
+      j       @formula_tail      
+    </Location>
+    <Location file="BATTLE_BIN" offset="1200C8" mode="ASM">
+      jal     @elemental_nullify_actions
+    </Location>
+    <Location file="BATTLE_BIN" offset="1200E0" mode="ASM">
+      jal     @elemental_inner      # Call inner elemental routine at new location
+    </Location>
+    <Location file="BATTLE_BIN" offset="120124" mode="ASM">
+      j       0x80187140            # Jump over normal absorption block
+    </Location>
+    <Location file="BATTLE_BIN" offset="11EFA4" mode="ASM">
+      jr      ra                    # Blank out routine (Weapon element strengthen)
+      nop
+    </Location>
+    <Location file="BATTLE_BIN" offset="11EFFC" mode="ASM">
+      jr      ra                    # Blank out routine (Ability element strengthen)
+      nop
+    </Location>
+    <Location file="BATTLE_BIN" offset="CEE4" mode="ASM">
+      j       @clear_elements       # Action post: call routine to clear elements
+    </Location>
+    <Location file="BATTLE_BIN" offset="12002C" mode="ASM">
+      # Override oil double damage section
+      li    a0, 0x20000
+      jal   @set_action_mods
+      nop
+      lui   v1, 0x8019
+      lw    v1, 0x2d90(v1)
+      nop
+      nop
+    </Location>
+    <Location file="BATTLE_BIN" offset="120060" mode="ASM">
+      nop                           # Oil - don't overwrite action type
+      lbu     t0,0x25(a0)           # Load Action type
+      nop
+      ori     t0,t0,0x08            # Add status change
+      sb      t0,0x25(a0)           # Save as action type
+    </Location>
+    <Variable name="Damage Multiplier" file="BATTLE_BIN" offset="F5D20" bytes="4" default="00000000" />
+    <Variable name="Healing Multiplier" file="BATTLE_BIN" offset="F5D24" bytes="4" default="00000000" /> 
+  </Patch>
+  <Patch name="Swordskill element strengthen and Dark/Night Sword elemental (v2)">
+    <Description>
+      Swordskill element fix - like previous fixes, but with Dark/Night sword elemental, using (WP+Y) and can status proc like Holy Sword can; Also, elements should strengthen even if they're not on the weapon.
+    </Description>
+    <Location file="BATTLE_BIN" offset="F5A50" mode="ASM">
+@swordskill_load_MA_factors:
+      lui     a1, 0x8019
+      lw      a0, 0x2d94(a1)
+      lbu     v0, 0x3902(a1)        # WP
+      lbu     v1, 0x38fa(a1)        # Ability Y
+      lbu     a0, 0x0037(a0)        # MA
+      addu    v0, v0, v1            # (WP + Y)
+      sh      v0, 0x38d0(a1)        # YA = (WP + Y)
+      sh      a0, 0x38ce(a1)        # XA = MA
+      jr      ra
+      nop
+    </Location>
+    <Location file="BATTLE_BIN" offset="F5BD0" mode="ASM">
+@swordskill:
+        addiu   sp, sp, -0x18
+        sw      ra, 0x10(sp)
+        sw      s0, 0x0c(sp)
+        sw      s1, 0x08(sp)
+
+        move    s0, a0
+        jal     0x80188510                          # Physical Evade
+        nop
+        bne     v0, zero, swordskill_end            # Branch to end if evaded
+        nop
+
+        lbu     s1, 0x8015cbcf                      # Load "Use MA?" option
+        nop
+
+        bne     s1, zero, swordskill_load_MA
+        nop
+      
+    swordskill_load_PA:      
+        jal     0x80185e5c                          # Load PA and (WP+Y)
+        nop
+        j       swordskill_past_load_XA
+        nop
+      
+    swordskill_load_MA:
+        jal     @swordskill_load_MA_factors         # Load MA and (WP+Y)
+        nop
+
+    swordskill_past_load_XA:
+        lui     t0, 0x8019
+        lhu     t1, 0x38ce(t0)                      # XA
+        lbu     t2, 0x38f9(t0)                      # Ability X
+        lbu     a0, 0x38f7(t0)                      # Ability Element
+        lbu     a1, 0x3904(t0)                      # Weapon Element
+        lbu     a2, 0x38f4(t0)                      # Ability Flags 2
+        srav    t1, t1, t2               
+        sh      t1, 0x38ce(t0)                      # XA = XA / 2^X   
+        andi    a2, a2, 0x0020                      # Check Blank flag under Hit Allies
+        beq     a2, zero, swordskill_strengthen     # Skip to strengthen section if not flagged
+        nop
+
+        or      a0, a0, a1                          # Combine weapon and ability element
+      
+    swordskill_strengthen:  
+        sb      a0, 0x3904(t0)                      # Save as weapon element
+        sb      a0, 0x38f7(t0)                      # Save as ability element
+
+        jal     0x80185fa4                          # Element Strengthen Calculation
+        nop
+        
+        bne    s1, zero, swordskill_load_MA_damage
+        nop
+
+    swordskill_load_PA_damage:
+        jal     0x801886a4                          # Physical Damage Calculation
+        nop
+        jal     0x80186ff8                          # Elemental Damage Modification
+        nop
+        j       swordskill_past_XA_damage
+        nop
+
+    swordskill_load_MA_damage:
+        jal     0x80188744                          # Magic XA Modification
+        nop
+        jal     0x8018877c                          # Magic Damage Calculation
+        nop
+      
+    swordskill_past_XA_damage:
+        lui     v0, 0x8019
+        lw      v0, 0x2d90(v0)                      # Action
+        nop
+        lbu     v0, 0(v0)                           # Action Hit Status
+        nop
+        beq     v0, zero, swordskill_drain          # If Missed, skip to Drain section
+        nop
+
+        jal     0x801870fc                          # Elemental Absorption
+        nop
+      
+    swordskill_drain:  
+        beq     s0, zero, swordskill_status_proc    # Skip to status proc section if argument was 0 
+        nop
+      
+        li      t0, 2
+        beq     s0, t0, swordskill_MP_drain         # Skip to MP Drain section if argument was 2
+        nop
+      
+    swordskill_HP_drain:  
+        jal     0x80187248                          # HP Drain
+        nop
+        li      t0, 0x81
+        bne     v0, t0, swordskill_end              # Skip to end if undead
+        nop
+      
+        j       swordskill_status_proc              # Skip to status proc section
+        nop
+      
+    swordskill_MP_drain:  
+        jal     0x8018746c                          # MP Drain
+        nop
+      
+    swordskill_status_proc:  
+        jal     0x80187eb4                          # Status Proc
+        nop
+      
+    swordskill_end:  
+        lw      ra, 0x10(sp)
+        lw      s0, 0x0c(sp)
+        lw      s1, 0x08(sp)
+        addiu   sp, sp, 0x18
+        jr      ra
+        nop
+    </Location>
+    <Location file="BATTLE_BIN" offset="12026C" mode="ASM"> 
+      nop
+    </Location>
+    <Location file="BATTLE_BIN" offset="1202E0" mode="ASM"> 
+      nop
+    </Location>
+    <Location file="BATTLE_BIN" offset="12048C" mode="ASM"> 
+      nop
+    </Location>
+    <Location file="BATTLE_BIN" offset="122B20" mode="ASM">
+      j       @swordskill           # Call new routine with a0=0
+      li      a0, 0
+    </Location>
+    <Location file="BATTLE_BIN" offset="122C90" mode="ASM">
+      j       @swordskill           # Call new routine with a0=1
+      li      a0, 1
+    </Location>
+    <Location file="BATTLE_BIN" offset="122C50" mode="ASM">
+      j       @swordskill           # Call new routine with a0=2
+      li      a0, 2
+    </Location>
+    <Location file="BATTLE_BIN" offset="120338" mode="ASM">
+      li      v0, 0x81              # Drain routine: Return 0x81 as success
+    </Location>
+    <Variable name="Use MA? (0 = No, 1 = Yes)" file="BATTLE_BIN" offset="F5BCF" bytes="1" default="00" />
+  </Patch>
+  <Patch name="Apply defense (v2): Item (Unknown 1) = Physical damage reduction (%); (Unknown 2) = Magical damage reduction (%)">
+    <Description>
+      In the item data, this patch interprets Unknown 1 as Physical damage reduction (percentage) and Unknown 2 as Magical damage reduction (percentage).
+      The damage reduction percentage for each piece of equipment is added to determine the total damage reduction.
+      An ability's classification as physical or magical is determined by the 'Physical Attack' and 'Magical Attack' AI flags for the ability.
+      If an ability is flagged with both (this shouldn't happen, really), both damage reduction percentages (physical AND magical) will be applied 
+      (the sum of the two)!
+    </Description>
+    <Location file="BATTLE_BIN" offset="1249F0" mode="ASM">
+        j       0x8015d230
+    </Location>
+    <Location file="BATTLE_BIN" offset="F6230" mode="ASM">
+        addiu   sp, sp, -8
+        sw      ra, 4(sp)
+        
+        jal     0x80159130              # Call new defense routine
+        nop
+        
+        lhu     t0, 0x8015cd30          # Check for "All formulas apply elemental (v2)" patch
+        li      t1, 0xfff8
+        
+        bne     t0, t1, def_tail_end
+        nop
+        
+        jal     0x8015cd30              # If using "All formulas apply elemental (v2)" patch, call appropriate routine
+        nop
+        
+    def_tail_end:
+        lw      ra, 4(sp)
+        addiu   sp, sp, 8
+        jr      ra
+        nop
+    </Location>
+    <Location file="BATTLE_BIN" offset="F2130" mode="ASM">
+      lui     t0,0x8019
+      lw      t1,0x2d98(t0)         # Target unit
+      lhu     t2,0x38d6(t0)         # Ability ID
+      li      t3,0xff               # Code for empty slot
+      
+      sll     t2,t2,3               # Ability ID * 8
+      lbu     t4,0x8005ebf6(t2)     # Ability AI Behavior Flags 3
+      addiu   t1,t1,0x1a            # Unit equipment offset
+      andi    t8,t4,0x01            # Use physical defense (1 = true, 0 = false)
+      andi    t9,t4,0x02            # Use magical defense (2 = true, 0 = false)              
+
+      sll     t8,t8,31
+      sra     t8,t8,31              # Use physical defense (0xffffffff = true, 0 = false)
+      sll     t9,t9,30
+      sra     t9,t9,31              # Use magical defense (0xffffffff = true, 0 = false)
+      
+      lui     t2,0x8006             # Base address for item data
+      li      v0,0                  # Result = 0
+      li      v1,0                  # Loop counter = 0
+      
+LST:  lbu     t4,0(t1)              # Item ID for current equipment slot
+      addiu   t1,t1,1               # Increment slot
+      addiu   v1,v1,1               # Increment loop counter
+      beq     t4,t3,LCH             # If slot is empty, skip this item and continue loop
+      sll     t5,t4,1               # Item ID * 2
+      beq     t4,zero,LCH           # If slot = 0 (nothing), skip this item and continue loop
+      addu    t5,t5,t4              # Item ID * 3
+      sll     t5,t5,2               # Item ID * 12
+      addu    t5,t2,t5              
+      lbu     t6,0x2ebe(t5)         # Physical defense (0x06)
+      lbu     t7,0x2ec3(t5)         # Magical defense (0x0b)
+      and     t6,t6,t8              # Effective physical defense (0 if unused)
+      and     t7,t7,t9              # Effective magical defense (0 if unused)
+      addu    t5,t6,t7              # Defense value
+      addu    v0,v0,t5              # Add to defense tally
+      
+LCH:  sltiu   t6,v1,7
+      bne     t6,zero,LST           # Loop while counter is less than 7
+      nop
+      
+      lw      t1,0x2d90(t0)
+      lw      t2,0x2d8c(t0)
+      lhu     t3,4(t1)              # Load old HP damage
+      lhu     t4,6(t2)              # Load old returned HP healing (drain)
+      
+      li      t7,100
+      subu    t5,t7,v0
+      slt     t6,zero,t5
+      sll     t6,t6,31
+      sra     t6,t6,31
+      and     t5,t5,t6              # 100 - Defense% (Minimum 0)
+      
+      multu   t3,t5
+      mflo    t3                    # Old HP Damage * (100 - Defense%)
+      addiu   t3,t3,50              # Round the next division result
+      li      t8,0x51eb851f         
+      multu   t3,t8
+      mfhi    t3                    
+      sra     t3,t3,5               # Old HP Damage * (100 - Defense%) / 100
+      sh      t3,4(t1)              # Save new HP damage
+        
+      multu   t4,t5
+      mflo    t4                    # Old Returned HP Healing * (100 - Defense%)
+      addiu   t4,t4,50              # Round the next division result
+      nop
+      multu   t4,t8                
+      mfhi    t4
+      sra     t4,t4,5               # Old Returned HP Healing * (100 - Defense%) / 100
+      
+      jr      ra                    # Return defense tally (v0)
+      sh      t4,6(t2)              # Save new returned HP healing
+    </Location>
+  </Patch>
+  <Patch name="Crystals can include special job abilities (Base job matching check removed)">
+    <Description>
+      Crystals can contain abilities from special jobs regardless of the inheriting unit's base job. However, the inheriting unit's base job would have to include the ability AT THE SAME INDEX in order to learn it. (e.g. Ramza could learn Night Sword from Gafgarion's crystal if it was Gafgarion's 10th ability  and Ramza's 02 Squire class also contained Night Sword as the 10th ability.)
+    </Description>
+    <Location file="BATTLE_BIN" offset="1196E8" mode="ASM">
+      bne     t3,t3,0x80180880      #   Wiped out base job check, so won't skip consideration
+    </Location>
+    <Location file="BATTLE_BIN" offset="1197F4" mode="ASM">
+      j       0x8015cb50            #   Jump to new code (replaces nop)
+    </Location>
+    <Location file="BATTLE_BIN" offset="F5B50" mode="ASM">
+      bne     s5, zero, CON         #   If we're not considering the base job, skip this code
+      nop
+ 
+      lw      v1, 0x38(sp)          #   Base job of crystal unit
+      move    t4, v0                #   Save v0 (t4 is free in this procedure, and not overwritten by the below segment).
+ 
+      sll     v0, v1, 1
+      addu    v0, v0, v1
+      lui     v1, 0x8006
+      lw      v1, 0x6194(v1)        #   Start of job data
+      sll     v0, v0, 0x04
+      addu    v0, v0, v1            #   Job data for crystal unit
+      lbu     t1, 0(v0)
+      move    a1, s1                #   Argument 2: Ability index
+      jal     0x8005a568            #   Get ability ID
+      move    a0, t1                #   Argument 1: Skillset ID of crystal unit 
+      move    t2, v0
+      
+      move    v0, t4                #   Get old value of v0 from "saved" register
+      bne     t2, s4, SKP           #   IF (InheritingUnitAbility[index] != CrystalUnitAbility[index])
+      nop                           #       Branch to SKP
+      
+CON:  j       0x801807f8            #   Save this ability to the crystal
+      nop
+      
+SKP:  j       0x80180848            #   Skip this ability
+      nop
+    </Location>
+  </Patch>
+  <Patch name="Hide excessive HP/MP recovery">
+    <Description>
+      Excessive HP/MP recovery is not displayed.
+    </Description>
+    <Location file="BATTLE_BIN" offset="F2250" mode="ASM">
+      @hide_excessive_recovery:
+
+              addiu   sp, sp, -24
+              sw      ra, 4(sp)
+              sw      s0, 8(sp)
+              sw      s1, 12(sp)
+              sw      s2, 16(sp)
+              sw      s3, 20(sp)
+
+              lui     t0, 0x8019
+              lbu     t1, 0x38e8(t0)  # Active ability?
+              lw      s0, 0x2d90(t0)  # Action
+              lw      s1, 0x2d8c(t0)  # Return action
+              lw      s2, 0x2d98(t0)  # Action target
+              lw      s3, 0x2d94(t0)  # Return action target
+
+              # Skip if not a passive ability?
+              bne     t1, zero, hide_excessive_recovery_end
+              move    a0, s0
+
+              # Hide excessive recovery for action
+              jal     @hide_excessive_recovery_single
+              move    a1, s2
+
+              # Hide excessive recovery for return action
+              move    a0, s1
+              jal     @hide_excessive_recovery_single
+              move    a1, s3
+
+        hide_excessive_recovery_end:
+
+              lw      s3, 20(sp)
+              lw      s2, 16(sp)
+              lw      s1, 12(sp)
+              lw      s0, 8(sp)
+              lw      ra, 4(sp)
+              addiu   sp, sp, 24
+
+              jr      ra
+              nop
+
+      # a0 = Action, a1 = Target
+      @hide_excessive_recovery_single:
+
+              beq     a0, zero, hide_excessive_recovery_single_end
+              nop
+
+              lhu     t0, 0x28(a1)    # Target HP
+              lhu     t1, 0x2a(a1)    # Target Max HP
+              lhu     t2, 0x2c(a1)    # Target MP
+              lhu     t3, 0x2e(a1)    # Target Max MP
+              lbu     t4, 0x25(a0)    # Action display type
+
+              slt     t5, t0, t1      # 1 if HP not max
+              sltiu   t5, t5, 1       # 1 if HP IS max (boolean not)
+              sll     t5, t5, 6       # 0x40 if HP is max
+              not     t5, t5          # 0x40 flag is zeroed out if HP is max (binary not)
+
+              slt     t6, t2, t3      # 1 if MP not max
+              sltiu   t6, t6, 1       # 1 if MP IS max (boolean not)
+              sll     t6, t6, 4       # 0x10 if MP is max
+              not     t6, t6          # 0x10 flag is zeroed out if MP is max (binary not)
+
+              and     t4, t4, t5      # Action type: HP recovery flag zeroed out if HP is max
+              and     t4, t4, t6      # Action type: MP recovery flag zeroed out if MP is max
+
+        hide_excessive_recovery_single_end:
+
+              jr      ra
+              sb      t4, 0x25(a0)    # Save action display type
+    </Location>
+    <Location file="BATTLE_BIN" offset="18BFD0" mode="ASM" offsetMode="RAM">
+      lui     s1, 0x8019
+      jal     @hide_excessive_recovery
+      nop
+      lw      a1, 0x2d98(s1)
+      lw      a0, 0x2d90(s1)
+    </Location>
+  </Patch>
+  <Patch name="Signed Ability Y Values">
+    <Description>
+      Ability Y value is now signed and can accept integers between 
+      -128 and +127, inclusive. To specify a negative value for Y, 
+      take the number and add 256 (e.g. -3 would be input as 253).
+    </Description>
+    <Location file="BATTLE_BIN" offset="11ECA0" mode="ASM">
+      lb      v1,0x38fa(v1)
+    </Location>
+    <Location file="BATTLE_BIN" offset="11ECE0" mode="ASM">
+      lb      v1,0x38fa(v1)
+    </Location>
+    <Location file="BATTLE_BIN" offset="11ED20" mode="ASM">
+      lb      v1,0x38fa(v1)
+    </Location>
+    <Location file="BATTLE_BIN" offset="11ED60" mode="ASM">
+      lb      v1,0x38fa(v1)
+    </Location>
+    <Location file="BATTLE_BIN" offset="11EE10" mode="ASM">
+      lb      v1,0x38fa(v1)
+    </Location>
+    <Location file="BATTLE_BIN" offset="11EE70" mode="ASM">
+      lb      v1,0x38fa(v1)
+    </Location>
+    <Location file="BATTLE_BIN" offset="11F638" mode="ASM">
+      lb      v0,0x38fa(v0)
+    </Location>
+    <Location file="BATTLE_BIN" offset="11F6A0" mode="ASM">
+      lb      v0,0x38fa(v0)
+    </Location>
+    <Location file="BATTLE_BIN" offset="11F820" mode="ASM">
+      lb      v1,0x38fa(v1)
+    </Location>
+    <Location file="BATTLE_BIN" offset="11F8F4" mode="ASM">
+      lb      v0,0x38fa(v0)
+    </Location>
+    <Location file="BATTLE_BIN" offset="11F930" mode="ASM">
+      lb      v1,0x38fa(v1)
+    </Location>
+    <Location file="BATTLE_BIN" offset="11FC64" mode="ASM">
+      lb      v0,0x38fa(v0)
+    </Location>
+    <Location file="BATTLE_BIN" offset="11FC80" mode="ASM">
+      lb      v0,0x38fa(v0)
+    </Location>
+    <Location file="BATTLE_BIN" offset="11FC9C" mode="ASM">
+      lb      v0,0x38fa(v0)
+    </Location>
+    <Location file="BATTLE_BIN" offset="11FCB8" mode="ASM">
+      lb      v0,0x38fa(v0)
+    </Location>
+    <Location file="BATTLE_BIN" offset="11FD04" mode="ASM">
+      lb      v0,0x38fa(v0)
+    </Location>
+    <Location file="BATTLE_BIN" offset="11FD30" mode="ASM">
+      lb      v0,0x38fa(v0)
+    </Location>
+    <Location file="BATTLE_BIN" offset="11FD74" mode="ASM">
+      lb      v1,0x38fa(v1)
+    </Location>
+    <Location file="BATTLE_BIN" offset="11FEA8" mode="ASM">
+      lb      v0,0x38fa(v0)
+    </Location>
+    <Location file="BATTLE_BIN" offset="121C40" mode="ASM">
+      lb      v1,0x38fa(v1)
+    </Location>
+    <Location file="BATTLE_BIN" offset="1236C4" mode="ASM">
+      lb      v0,0x38fa(v0)
+    </Location>
+    <Location file="BATTLE_BIN" offset="123724" mode="ASM">
+      lb      v0,0x38fa(v0)
+    </Location>
+  </Patch>
+  <Patch name="Target's Faith in Spell damage calculations becomes XX%">
+    <Location file="BATTLE_BIN" offset="1201F8" mode="ASM">
+      li     v0, 0x46
+      nop
+    </Location>
+    <Variable name="XX" file="BATTLE_BIN" offset="1201F8" default="46"/>
+  </Patch>
+  <Patch name="[Half of MP] becomes [No MP Cost]">
+    <Description>[Half of MP] becomes [No MP Cost]</Description>
+    <Location file="BATTLE_BIN" offset="116B6C" mode="ASM">
+      addu a0,zero,zero
+    </Location>
+  </Patch>
+  <Patch name="Require Materia Blade -> Require Item Type X (Default Lance)">
+    <Description>
+      Require Materia Blade -> Require Item Type X (Default 0x0F = Lance)
+      Weapon Type List:
+        00 = Fists
+        01 = Daggers
+        02 = Ninjato
+        03 = Sword
+        04 = Knight Sword
+        05 = Katana
+        06 = Axe
+        07 = Rod
+        08 = Staff
+        09 = Flail
+        0A = Gun
+        0B = Crossbow
+        0C = Bow
+        0D = Instrument
+        0E = Book
+        0F = Lance
+        10 = Stick/Pole
+        11 = Bag
+        12 = Carpet/Veil
+    </Description>
+    <Location file="SCUS_942_21" offset="4CE24" mode="ASM">
+      li      t0,0x0f               # Default: Lance
+      move    v1,a1
+      sll     t1,v1,1
+      addu    t1,t1,v1
+      sll     t1,t1,2
+      lbu     v0,0x80062ebd(t1)     # Find item type
+      lbu     t3,0x0184(s1)         # Load equip flags
+      subu    t1,v0,t0              # Check if item type = specified type
+      sltiu   t1,t1,1
+      sll     t1,t1,2                   
+      or      t3,t3,t1              # If so, set 0x04 bit ("Materia Blade" equipped) of equip flags
+      j       0x8005c668
+      sb      t3,0x0184(s1)         # Save equip flags to memory
+    </Location>
+    <Variable name="X" file="SCUS_942_21" offset="4CE24" default="0F" />
+  </Patch>
+  <Patch name="Fix Reraise Graphic Width">
+    <Description>
+        The pixel width of the "Reraise" graphic is set to the wrong value normally (26, when it should be 28).  This patch fixes that.
+    </Description>
+    <Location file="BATTLE_BIN" offset="14CF92" offsetMode="RAM">
+        1C
+    </Location>
+  </Patch>
+  <Patch name="Start button skips events, effects, battle and event text, etc.">
+    <Description>
+        Start button skips events, effects, battle and event text, map titles, unit movement, chapter title and end graphics, the gameover screen, and the ending credits.
+    </Description>
+    <Location file="BATTLE_BIN" offset="15BB85" mode="DATA" offsetMode="RAM">
+        000000
+        00000000
+        03010002
+    </Location>
+    <Location file="BATTLE_BIN" offset="15BB90" mode="DATA" offsetMode="RAM">
+        00000000
+        00000000
+        00000000
+        00000000
+    </Location>
+    <Location file="BATTLE_BIN" offset="15BBA0" mode="DATA" offsetMode="RAM">
+        FFFF2F86
+        DE018FE1
+        C180A00E
+        611C3C56
+        6F37D6BF
+        00000000
+        00000000
+        00004000
+    </Location>
+    <Location file="BATTLE_BIN" offset="15BBC0" mode="DATA" offsetMode="RAM">
+        FFFFFFFF
+        FFFFFFFD
+        CFFFBFFF
+        FFDFFFD7
+        FF6FFFFF
+        00000000
+        00000000
+        00004000
+    </Location>
+    <Location file="BATTLE_BIN" offset="15BC00" mode="ASM" offsetMode="RAM" inputFile="XmlPatches\Include\skip_events.asm" />
+    <Location file="BATTLE_BIN" offset="1316D0" mode="ASM" offsetMode="RAM">
+        #   Add Start button to list of buttons that advances text
+        andi    v0, v0, 0x0960
+    </Location>
+    <Location file="BATTLE_BIN" offset="1316D8" mode="ASM" offsetMode="RAM">
+        #   Save button input to stack
+        sw      v0, 0x0c(sp)
+    </Location>
+    <Location file="BATTLE_BIN" offset="131B68" mode="ASM" offsetMode="RAM">
+        jal     @advance_dialog_text_hook
+    </Location>
+    <Location file="BATTLE_BIN" offset="1465A4" mode="ASM" offsetMode="RAM">
+        jal     @camera_hook
+    </Location>
+    <Location file="BATTLE_BIN" offset="13DBFC" mode="ASM" offsetMode="RAM">
+        sb      zero, 8(sp)             #   Last event instruction ID = 0 (initial)
+        lbu     v0, 0(s4)
+        li      v1, 0x1e
+        bne     v0, a0, 0x8013dc18
+        nop
+        addiu   s6, s6, 1
+        sw      s4, 12(sp)              #   Store last camera instruction pointer at sp + 12
+        beq     v0, v1, 0x8013dc38
+    </Location>
+    <Location file="BATTLE_BIN" offset="13DC24" mode="ASM" offsetMode="RAM">
+        lbu     t0, -0x2e90(at)
+        sb      v0, 8(sp)               #   Store last event instruction ID to sp + 8
+        addiu   t0, t0, 1
+        j       0x8013dc00
+        addu    s4, s4, t0
+    </Location>
+    <Location file="BATTLE_BIN" offset="13DF44" mode="ASM" offsetMode="RAM">
+        jal     @camera_fusion_hook
+    </Location>
+    <Location file="BATTLE_BIN" offset="6D96C" mode="ASM" offsetMode="RAM">
+        jal     @process_single_unit_movement_hook
+        nop
+    </Location>
+    <Location file="BATTLE_BIN" offset="146DF8" mode="ASM" offsetMode="RAM">
+        jal     @sprite_move_hook
+        sw      v0, 0x44(sp)
+    </Location>
+    <Location file="BATTLE_BIN" offset="14C880" mode="ASM" offsetMode="RAM">
+        jal     @wait_hook
+    </Location>
+    <Location file="BATTLE_BIN" offset="1309F8" mode="ASM" offsetMode="RAM">
+        jal     @determine_dialog_text_hook
+    </Location>
+    <Location file="BATTLE_BIN" offset="1314E4" mode="ASM" offsetMode="RAM">
+        jal     @skip_dialog_text_hook
+    </Location>
+    <Location file="EVENT_ATTACK_OUT" offset="1C9DDC" mode="ASM" offsetMode="RAM">
+        jal     @show_map_title_hook
+        li      t0, 0x9da4
+    </Location>
+    <Location file="EVENT_ATTACK_OUT" offset="1C9E28" mode="ASM" offsetMode="RAM">
+        jal     @show_map_title_hook
+        li      t0, 0x9df0
+    </Location>
+    <Location file="EVENT_ATTACK_OUT" offset="1C9E8C" mode="ASM" offsetMode="RAM">
+        jal     @show_map_title_hook
+        li      t0, 0x9e40
+    </Location>
+    <Location file="BATTLE_BIN" offset="1A1B30" mode="ASM" offsetMode="RAM">
+        jal     @effect_hook
+        nop
+    </Location>
+    <Location file="BATTLE_BIN" offset="1B4820" mode="ASM" offsetMode="RAM">
+        jal     @effect_second_hook
+        nop
+    </Location>
+    <Location file="BATTLE_BIN" offset="77650" mode="ASM" offsetMode="RAM">
+        j       @effect_targets_hook
+    </Location>
+    <Location file="BATTLE_BIN" offset="1A189C" mode="ASM" offsetMode="RAM">
+        j       @play_effect_tail
+    </Location>
+    <Location file="EVENT_ETC_OUT" offset="1BF224" mode="ASM" offsetMode="RAM">
+        addu    t0, v0, v1
+        jal     @show_graphic_chapter_end_hook
+    </Location>
+    <Location file="EVENT_ETC_OUT" offset="1BF26C" mode="ASM" offsetMode="RAM">
+        addu    t0, v0, v1
+        jal     @show_graphic_chapter_end_hook
+    </Location>
+    <Location file="EVENT_ETC_OUT" offset="1BF2B4" mode="ASM" offsetMode="RAM">
+        addu    t0, v0, v1
+        jal     @show_graphic_chapter_end_hook
+    </Location>
+    <Location file="EVENT_ETC_OUT" offset="1BF2F8" mode="ASM" offsetMode="RAM">
+        addu    t0, v0, v1
+        jal     @show_graphic_chapter_end_hook
+    </Location>
+    <Location file="EVENT_ETC_OUT" offset="1BF334" mode="ASM" offsetMode="RAM">
+        addu    t0, v0, v1
+        jal     @show_graphic_chapter_end_hook
+    </Location>
+    <Location file="EVENT_ETC_OUT" offset="1C04B8" mode="ASM" offsetMode="RAM">
+        lh      t0, 0x1e(s3)
+        jal     @show_graphic_gameover_hook
+        addu    s0, s0, v1
+    </Location>
+    <Location file="EVENT_ETC_OUT" offset="1C0524" mode="ASM" offsetMode="RAM">
+        li      t0, 0x258
+        jal     @show_graphic_gameover_hook
+        addu    s0, s0, v0
+    </Location>
+    <Location file="EVENT_ETC_OUT" offset="1C0598" mode="ASM" offsetMode="RAM">
+        li      t0, 0x80
+        jal     @show_graphic_gameover_hook
+        addu    s0, s0, v0
+    </Location>
+    <Location file="EVENT_ETC_OUT" offset="1C0240" mode="ASM" offsetMode="RAM">
+        lh      t0, 0x1c(s5)
+        jal     @show_graphic_chapter_start_hook
+        addu    s1, s1, v1
+    </Location>
+    <Location file="EVENT_ETC_OUT" offset="1C02D4" mode="ASM" offsetMode="RAM">
+        li      t0, 0x50
+        jal     @show_graphic_chapter_start_hook
+        addu    s1, s1, v0
+    </Location>
+    <Location file="EVENT_ETC_OUT" offset="1C0370" mode="ASM" offsetMode="RAM">
+        li      t0, 0x80
+        jal     @show_graphic_chapter_start_hook
+        addu    s1, s1, v0
+    </Location>
+    <Location file="BATTLE_BIN" offset="78620" mode="ASM" offsetMode="RAM">
+        jal     @check_event_button_input
+        nop
+    </Location>
+    <Location file="BATTLE_BIN" offset="143C24" mode="ASM" offsetMode="RAM">
+        jal     @event_start_hook
+        nop 
+    </Location>
+    <Location file="BATTLE_BIN" offset="143D3C" mode="ASM" offsetMode="RAM">
+        jal     @check_event_skip
+        move    s3, v0 
+    </Location>
+    <Location file="BATTLE_BIN" offset="145008" mode="ASM" offsetMode="RAM">
+        j       @sprite_move_event_instruction_hook
+    </Location>
+    <Location file="BATTLE_BIN" offset="1452F0" mode="ASM" offsetMode="RAM">
+        j       0x80145304      #   Jump over deadlock-causing specific thread wait (thread ID 2)
+    </Location>
+    <Location file="BATTLE_BIN" offset="14A43C" mode="ASM" offsetMode="RAM">
+        jal     @wait_value_hook
+    </Location>
+    <Location file="BATTLE_BIN" offset="79198" mode="ASM" offsetMode="RAM">
+        jal     @reveal_hook
+    </Location>
+    <Location file="EVENT_REQUIRE_OUT" offset="1C4AAC" mode="ASM" offsetMode="RAM">
+        j       @post_battle_tail
+    </Location>
+    <Location file="OPEN_OPEN_BIN" offset="672DC" mode="ASM" offsetMode="RAM">
+        j       0x8006824c
+    </Location>
+    <Location file="OPEN_OPEN_BIN" offset="68220" mode="ASM" offsetMode="RAM">
+        #   Rewrite routine to save space
+        lui     t0, 0x8004
+        lbu     v0, 0x73a1(t0)
+        lbu     v1, 0x73a2(t0)
+        lui     at, 0x8008
+        sw      zero, 0x642c(at)
+        sw      zero, 0x6428(at)
+        sw      zero, 0x6424(at)
+        sw      zero, 0x6420(at)
+        sw      v0, 0x6418(at)
+        jr      ra
+        sw      v1, 0x641c(at)
+    </Location>
+    <Location file="OPEN_OPEN_BIN" offset="6824C" mode="ASM" offsetMode="RAM">
+        #   Branch out of loop if Start was pressed
+        lui     t0, 0x8008
+        lw      t0, 0x51bc(t0)
+        nop
+        andi    t0, t0, 0x0800
+        bne     t0, zero, 0x800672ec
+        nop
+        j       0x800672e4
+    </Location>
+    <Location file="OPEN_OPEN_BIN" offset="68268" mode="ASM" offsetMode="RAM">
+        lui     at, 0x8008
+        lw      v0, 0x55a4(at)
+    </Location>
+  </Patch>
+  <Patch name="Speed shortens Ability CT">
+    <Description>
+        (New CT) = ((CT * (CT Factor))) + (Speed - 1)) / Speed    (For Speed >= (CT Factor))
+        ((CT Multiplier) = (CT Factor) / Speed)
+        Default (CT Factor) = 5
+    </Description>
+    <Location file="BATTLE_BIN" offset="15D290" mode="ASM" offsetMode="RAM">
+        #   HOOK: Attack Preparation (Ability CT)
+        #   Parameters:
+        #       v0 = Ability data pointer
+        #       s2 = Ability CT
+        #       s3 = Unit (in-battle) data pointer
+        #   Returns:
+        #       v0 = Ability data flags 3 ( *(v0 + 5), byte )
+        #       s2 = New CT value
+        @attack_preparation_ability_ct_hook:
+                addiu   sp, sp, -16
+                sw      ra, 4(sp)
+                sw      s0, 8(sp)
+        
+                lbu     s0, 5(v0)
+                
+                lbu     a1, 0x38(s3)        #   Load unit's Speed
+                jal     @find_ability_ct
+                move    a0, s2
+                
+                move    s2, v0
+                move    v0, s0              #   (Requirement for calling routine)
+            
+                lw      s0, 8(sp)
+                lw      ra, 4(sp)
+                addiu   sp, sp, 16
+                jr      ra
+                nop
+        
+        #   HOOK: Load skillset ability data (Ability CT)
+        #   Parameters:
+        #       a0 = Current ability data block 2 pointer (Pointer into array starting at 0x8005fbf0)
+        #       *(sp + 12) = Unit (in-battle) data pointer
+        #   Returns:
+        #       v0 = New CT value
+        #       v1 = Current ability Flags 3 value (= *(a0 + 5), byte)
+        @load_skillset_ability_data_ct_hook:
+                lw      t2, 12(sp)          #   Unit (in-battle) data pointer
+        
+                addiu   sp, sp, -16
+                sw      ra, 4(sp)
+                sw      s1, 8(sp)
+        
+                lbu     t0, 12(a0)          
+                lbu     s1, 5(a0)           #   (Required for calling routine)
+                
+                lbu     a1, 0x38(t2)        #   Load unit's Speed
+                jal     @find_ability_ct
+                andi    a0, t0, 0x7f        #   Ability CT
+                
+                move    v1, s1
+                
+                lw      s1, 8(sp)
+                lw      ra, 4(sp)
+                addiu   sp, sp, 16
+                jr      ra
+                nop
+        
+        #   ROUTINE: Find ability CT
+        #   Parameters:
+        #       a0 = Ability CT
+        #       a1 = Speed
+        #   Returns:
+        #       v0 = New CT value
+        @find_ability_ct:
+                lbu     t1, 0x8015d28f
+                move    v0, a0              #   Default: Keep CT the same
+        
+                sltu    t0, a1, t1          #   If (Speed is less than (CT Factor)), return with no change
+                bne     t0, zero, find_ability_ct_end
+                nop
+
+                # ((CT Multiplier) = (CT Factor) / Speed)
+                # CT = ((CT * (CT Factor)) + (Speed - 1)) / Speed
+                
+                multu   a0, t1
+                mflo    t0                  #   (CT * (CT Factor))
+                
+                addiu   t1, a1, -1          #   (Speed - 1)
+                addu    t0, t0, t1          #   (CT * (CT Factor)) + (Speed - 1)
+                divu    t0, a1
+                mflo    v0                  #   ((CT * (CT Factor)) + (Speed - 1)) / Speed
+            
+            find_ability_ct_end:
+                jr      ra
+                nop
+    </Location>
+    <Location file="BATTLE_BIN" offset="17C84C" mode="ASM" offsetMode="RAM">
+        jal     @attack_preparation_ability_ct_hook
+    </Location>
+    <Location file="BATTLE_BIN" offset="181838" mode="ASM" offsetMode="RAM">
+        sw      s0, 12(sp)
+    </Location>
+    <Location file="BATTLE_BIN" offset="181A48" mode="ASM" offsetMode="RAM">
+        jal     @load_skillset_ability_data_ct_hook
+    </Location>
+    <Variable name="CT Factor" file="BATTLE_BIN" offset="F628F" bytes="1" default="05" />
+  </Patch>
+  <Patch name="Geomancy single ability">
+    <Description>Geomancy single ability</Description>
+    <!-- Ability properties corresponding to vanilla elemental ability order (Pitfall to Lava Ball) -->
+    <!-- Each entry has format [Inflict Status ID, Element, Effect ID] -->
+    <Location file="BATTLE_BIN" offset="15D350" mode="DATA" offsetMode="RAM">
+        41 01 79
+        42 04 7A
+        43 08 7B
+        44 08 7C
+        45 08 7D
+        46 10 7E
+        47 80 7F
+        48 04 80
+        49 10 81
+        4A 20 82
+        4B 10 83
+        4C 80 84
+    </Location>
+    <Location file="BATTLE_BIN" offset="15D374" mode="ASM" offsetMode="RAM">
+        .label  @address_geomancy_properties_array, 0x8015d350
+
+        .label  @address_geomancy_tile_array, 0x8005e9d0
+        .label  @address_caster_tile_type, 0x801938cd
+        .label  @address_ability_id, 0x801938d6
+        .label  @address_ability_element, 0x801938f7
+        .label  @address_ability_inflict_status_id, 0x801938fb
+        .label  @address_ability_effect_array, 0x801b63f0
+
+        @geomancy_replace:
+                addiu   sp, sp, -16
+                sw      ra, 4(sp)
+                
+                lbu     t0, @address_caster_tile_type
+                lbu     t1, @address_ability_id
+                lbu     t0, @address_geomancy_tile_array (t0)       #   LookupID   
+                sll     t2, t1, 1                                   #   Ability ID * 2
+                addu    t1, t2, t1                                  #   Ability ID * 3
+                la      t2, @address_geomancy_element_array
+                addu    t1, t1, t2                                  #   Base address for element property array
+                
+                addiu   t0, t0, -126                                #   EntryID = LookupID - 126
+                
+                lbu     t2, 0(t1)                                   #   Inflict Status ID
+                lbu     t3, 1(t1)                                   #   Element
+                lbu     t4, 2(t1)                                   #   Effect ID
+                
+                sb      t2, @address_ability_inflict_status_id      #   Store new Inflict Status ID
+                sb      t3, @address_ability_element                #   Store new Element
+                sll     t2, t0, 1
+                sb      t4, @address_ability_effect_array (t2)      #   Store new Effect ID
+                
+                jal     0x80185d40                                  #   Set (PA + Y) / 2 as Y
+                nop
+                
+                lw      ra, 4(sp)
+                addiu   sp, sp, 16
+                jr      ra
+                nop
+    </Location>
+    <Location file="BATTLE_BIN" offset="1896CC" mode="ASM" offsetMode="RAM">
+        jal     @geomancy_replace
+    </Location>
+    <Location file="BATTLE_BIN" offset="17E348" mode="ASM" offsetMode="RAM">
+        li      a2, 0x007e
+    </Location>
+    <Variable name="Geomancy Ability ID" file="BATTLE_BIN" offset="117348" bytes="2" default="007E" />
+  </Patch>
+  <Patch name="JP scroll glitch actual fix (Disable paging on confirm menu)">
+    <Description>
+        Disables paging when a confirm menu is up so there is no way to do the JP scroll glitch.
+    </Description>
+    <Location file="WORLD_WORLD_BIN" offset="148100" mode="ASM" offsetMode="RAM">
+        @menu_page_hook:
+                addiu   sp, sp, -16
+                sw      ra, 4(sp)
+        
+                lbu     t0, 0x801c8550
+                nop
+                bne     t0, zero, menu_page_hook_end
+                nop
+        
+                jal     0x80129b7c
+                nop
+            
+            menu_page_hook_end:
+                lw      ra, 4(sp)
+                addiu   sp, sp, 16
+                jr      ra
+                nop
+    </Location>
+    <Location file="WORLD_WORLD_BIN" offset="128DBC" mode="ASM" offsetMode="RAM">
+        jal     @menu_page_hook
+    </Location>
+  </Patch>
+  <Patch name="Unit slots backfilled when unit is removed from party">
+    <Description>
+        When a unit is removed from the party, other units backfill the slot so that it doesn't leave a gap in the party.
+    </Description>
+    <Location file="BATTLE_BIN" offset="159330" mode="ASM" offsetMode="RAM">
+        .label  @battle_unit_data_start, 0x801908cc
+
+        #   Modify battle unit party indeces when backfilling unit slots.
+        #   Parameters:
+        #       a0 = Party unit index to backfill into
+        #       a1 = Sentinel value (last valid index) (15 for non-guest, 19 for guest)
+        @modify_battle_unit_party_indeces:
+
+                la      t0, @battle_unit_data_start     #   Current battle unit
+                li      t1, 0                           #   Current battle unit index
+
+                                                        #   do {
+            modify_battle_unit_party_indeces_loop:
+                lbu     t3, 2(t0)                       #       Party unit index
+                nop
+                sltu    t4, t3, a0                      #       Skip to loop bottom if Party unit index is less than removed unit index
+                bne     t4, zero, modify_battle_unit_party_indeces_loop_bottom
+                sltu    t4, a1, t3                      #       Skip to loop bottom if Party unit index is greater than sentinel value
+                bne     t4, zero, modify_battle_unit_party_indeces_loop_bottom
+                li      t5, 0xff                        #       Skip to loop bottom if unit isn't in party
+                beq     t3, t5, modify_battle_unit_party_indeces_loop_bottom
+                nop                                     #       If Party unit index == Removed unit index, store 0xff (not in party) as new party unit index for this unit
+                bne     t3, a0, modify_battle_unit_party_indeces_subtract
+                nop
+                j       modify_battle_unit_party_indeces_loop_bottom
+                sb      t5, 2(t0)
+                                                        
+            modify_battle_unit_party_indeces_subtract:   
+                addiu   t5, t3, -1                      #       Otherwise, store party unit index - 1
+                sb      t5, 2(t0)
+            
+            modify_battle_unit_party_indeces_loop_bottom:
+                addiu   t0, t0, 448                     #       Next current battle unit
+                addiu   t1, t1, 1                       #       Next battle unit index
+                sltiu   t2, t1, 21
+                bne     t2, zero, modify_battle_unit_party_indeces_loop
+                nop                                     #   } while (index is less than 21);
+                
+                jr      ra
+                nop
+    </Location>
+    <Location file="SCUS_942_21" offset="27600" mode="ASM" offsetMode="RAM">
+        .label  @party_data_start, 0x80057f74
+        .label  @regenerate_formation_unit_name_string, 0x80108920
+
+        .eqv    %unit_data_size, 256
+
+        #   ROUTINE: Backfill into a unit slot.  The unit being backfilled over is removed from the party.
+        #       Parameters:
+        #           a0 = Unit slot index to backfill into
+        @backfill_into_unit_slot:
+
+                addiu   sp, sp, -32
+                sw      ra, 4(sp)
+                sw      s0, 8(sp)
+                sw      s1, 12(sp)
+                sw      s2, 16(sp)
+                sw      s3, 20(sp)
+                
+                la      t0, @party_data_start       
+                sll     s0, a0, 8                   #   Unit slot index * sizeof(unit) (256)
+                addu    s0, s0, t0                  #   Current unit slot (unitSlot)
+                move    s1, a0                      #   Current slot index
+                move    s3, a0                      #   Slot index
+                
+                #   Find sentinel index: depends on whether unit is a Guest (slot 16 - 19) or not
+                sltiu   t0, a0, 16
+                bne     t0, zero, backfill_unit_slots_pre_loop
+                li      s2, 15                      #   Sentinel index (15 for non-guest)
+                li      s2, 19                      #   Sentinel index (19 for guest)
+                
+            backfill_unit_slots_pre_loop:
+                #   Skip loop if we're already at the sentinel index (15 for non-guest, 19 for guest)
+                beq     s1, s2, backfill_unit_slots_post_loop
+                nop
+                
+            backfill_unit_slots_loop:               #   do {
+                move    a0, s0
+                addiu   a1, s0, %unit_data_size
+                jal     @copy_bytes                 #       memcpy (unitSlotPtr, unitSlotPtr + sizeof(unit), sizeof(unit))
+                li      a2, %unit_data_size
+                
+                lbu     t0, 1(s0)                   #       Load copied slot index
+                li      t1, 0xff
+                beq     t0, t1, backfill_unit_slots_loop_bottom
+                nop
+                                                    #       if (Loaded slot index != 0xff)
+                sb      s1, 1(s0)                   #           Save current slot index into unit data
+                
+            backfill_unit_slots_loop_bottom:
+                addiu   s1, s1, 1                   #       unitSlot++
+                bne     s1, s2, backfill_unit_slots_loop
+                addiu   s0, s0, %unit_data_size     #       unitSlotPtr += sizeof(unit)
+                                                    #   } while (unitSlot != sentinelValue)
+            backfill_unit_slots_post_loop:
+                #   Mark last (sentinel) slot as empty
+                sll     t0, s2, 8                   #   Sentinel index * sizeof(unit) (256)
+                la      t1, @party_data_start
+                addu    t0, t1, t0                  #   Sentinel unit pointer
+                li      t1, 0xff
+                sb      t1, 1(t0)                   #   Store sentinel slot as empty (Slot index = 0xff)
+            
+                #   If not in BATTLE.BIN, skip to the end
+                lui     t0, 0x8006
+                lw      t1, 0x7000(t0)
+                ori     t2, t0, 0x8888
+                xor     t0, t1, t2
+                bne     t0, zero, backfill_unit_slots_end
+                nop
+                
+                jal     @modify_battle_unit_party_indeces
+                move    a0, s3
+            
+            backfill_unit_slots_end:
+                lw      s3, 20(sp)
+                lw      s2, 16(sp)
+                lw      s1, 12(sp)
+                lw      s0, 8(sp)
+                lw      ra, 4(sp)
+                addiu   sp, sp, 32
+                jr      ra
+                nop
+
+                
+        #   ROUTINE: Copy bytes
+        #   Basically a memcpy implementation, but nothing fancy.  Just copies data byte by byte.
+        #       Parameters:
+        #           a0 = (dest) Destination pointer
+        #           a1 = (src)  Source pointer
+        #           a2 = (size) Number of bytes to copy
+        @copy_bytes:
+
+                beq     a2, zero, copy_bytes_end
+                nop
+                lbu     t1, 0(a1)
+                addiu   a1, a1, 1
+                sb      t1, 0(a0)
+                addiu   a0, a0, 1
+                j       @copy_bytes
+                addiu   a2, a2, -1
+                
+            copy_bytes_end:
+                jr      ra
+                nop
+    </Location>
+    <Location file="SCUS_942_21" offset="59FE0" mode="ASM" offsetMode="RAM">
+        j       @backfill_into_unit_slot
+        nop
+    </Location>
+    <Location file="WORLD_WORLD_BIN" offset="1209BC" mode="ASM" offsetMode="RAM">
+        j       @regenerate_formation_unit_name_string
+    </Location>
+  </Patch>
+  <Patch name="Speed up text crawls">
+    <Description>
+        Speeds up text crawls significantly.
+        Text delays longer than a certain amount are changed to that amount.  Default is 2.  Lower is faster.
+    </Description>
+    <Location file="BATTLE_BIN" offset="15C9F0" mode="ASM" offsetMode="RAM">
+        @text_delay_hook:
+                .eqv    %max_normal_delay, 2
+                .eqv    %min_hard_stop, 45
+
+                li      t2, %max_normal_delay
+                sltiu   t1, t0, %min_hard_stop
+                beq     t1, zero, text_delay_hook_end
+                sltu    t1, t0, t2
+                bne     t1, zero, text_delay_hook_end
+                nop
+                
+                move    t0, t2
+                
+            text_delay_hook_end:
+                jr      ra
+                nop
+    </Location>
+    <Location file="BATTLE_BIN" offset="132718" mode="ASM" offsetMode="RAM">
+        jal     @text_delay_hook
+    </Location>
+    <Variable name="Text delay" file="BATTLE_BIN" offset="F59F0" bytes="1" default="2" /> 
+  </Patch>
+  <Patch name="Switch unit number with L1 and R1 buttons (formation)">
+    <Description>
+        Switch unit number with L1 and R1 buttons in the formation screen.  Changes unit order as appropriate.  L1 and R1 still work normally (switching the selected unit) in menus.
+    </Description>
+    <Location file="WORLD_WORLD_BIN" offset="1481FF" mode="DATA" offsetMode="RAM">
+        00
+    </Location>
+    <Location file="WORLD_WORLD_BIN" offset="148200" mode="ASM" offsetMode="RAM">
+        .label  @address_skip_portrait_transition, 0x801481ff
+
+        @swap_formation_unit_hook:
+                addiu   sp, sp, -24
+                sw      ra, 4(sp)
+                sw      a3, 8(sp)
+
+                move    a1, a0
+                jal     @swap_formation_unit
+                move    a0, t0
+                sw      v0, 12(sp)
+                
+                sb      zero, 0x8018bad4
+                jal     0x801140bc
+                nop
+                
+                jal     0x80108920
+                nop
+                
+                lw      v0, 12(sp)
+                lw      a3, 8(sp)
+                lw      ra, 4(sp)
+                addiu   sp, sp, 24
+                j       0x8012bcf8
+                move    t0, v0
+
+        @portrait_transition_hook:
+                lui     t2, %hi(@address_skip_portrait_transition)
+                lbu     t1, %lo(@address_skip_portrait_transition) (t2)
+                nop
+                
+                beq     t1, zero, portrait_transition_hook_default
+                addiu   t1, t1, -1
+                
+                sw      v1, 0x0058(sp)
+                j       portrait_transition_hook_end
+                sb      t1, %lo(@address_skip_portrait_transition) (t2)
+                
+            portrait_transition_hook_default:    
+                sw      v0, 0x0050(sp)
+                
+            portrait_transition_hook_end:
+                jr      ra
+                nop
+                
+        #   swap_formation_unit (formationIndex, offset)
+        @swap_formation_unit:
+                addiu   sp, sp, -16
+                sw      ra, 4(sp)
+                
+                move    v0, a0                  #   formationIndex
+                sll     t0, a0, 2
+                lw      t0, 0x801cd5ec(t0)
+                addu    t1, a0, a1              #   offsetFormationIndex
+                lhu     a0, 0x2c(t0)            #   unitIndex
+                move    t2, a1                  #   offset
+                addu    a1, a0, a1              #   offsetUnitIndex
+                
+                #   Skip if either unit index = 0 or either unit index >= 16
+                beq     a0, zero, swap_formation_unit_end
+                nop
+                beq     a1, zero, swap_formation_unit_end
+                sltiu   t0, a0, 16  
+                beq     t0, zero, swap_formation_unit_end
+                sltiu   t0, a1, 16
+                beq     t0, zero, swap_formation_unit_end
+                nop
+                
+                #   Find unit index of offset formation unit
+                sll     t0, t1, 2
+                lw      t0, 0x801cd5ec(t0)
+                nop
+                lhu     t0, 0x2c(t0)
+                nop
+                
+                #   If it's the same as the offset unit index...
+                bne     t0, a1, swap_formation_unit_swap
+                li      t0, 1
+                #   ...move the selected formation unit index.
+                addu    v0, v0, t2
+                
+            swap_formation_unit_swap:
+                sb      t0, @address_skip_portrait_transition
+                sw      v0, 8(sp)
+                jal     @swap_unit_data
+                nop
+                lw      v0, 8(sp)
+                
+            swap_formation_unit_end:
+                lw      ra, 4(sp)
+                addiu   sp, sp, 16
+                jr      ra
+                nop
+
+        #   swap_unit_data (index1, index2)
+        @swap_unit_data:
+                addiu   sp, sp, -32
+                sw      ra, 4(sp)
+                sw      s0, 8(sp)
+                sw      s1, 12(sp)
+                sw      s2, 16(sp)
+                sw      s3, 20(sp)
+                
+                move    s0, a0
+                move    s1, a1
+                
+                sll     s2, a0, 8
+                sll     s3, a1, 8
+                la      t0, 0x80057f74
+                addu    s2, s2, t0
+                addu    s3, s3, t0
+                
+                move    a0, s2
+                move    a1, s3
+                jal     @swap_data
+                li      a2, 256
+                
+            swap_unit_data_first_index:
+                lbu     t1, 1(s2)
+                li      t0, 0xff
+                beq     t1, t0, swap_unit_data_second_index
+                nop
+                sb      s0, 1(s2)
+            
+            swap_unit_data_second_index:    
+                lbu     t1, 1(s3)
+                nop
+                beq     t1, t0, swap_unit_data_end
+                nop
+                sb      s1, 1(s3)
+            
+            swap_unit_data_end:    
+                lw      s3, 20(sp)
+                lw      s2, 16(sp)
+                lw      s1, 12(sp)
+                lw      s0, 8(sp)
+                lw      ra, 4(sp)
+                addiu   sp, sp, 32
+                jr      ra
+                nop
+                
+        #   swap_data (ptr1, ptr2, size)
+        @swap_data:
+                beq     a2, zero, swap_data_end
+                addiu   a2, a2, -1
+                lbu     t0, 0(a0)
+                lbu     t1, 0(a1)
+                sb      t0, 0(a1)
+                sb      t1, 0(a0)
+                addiu   a0, a0, 1
+                j       @swap_data
+                addiu   a1, a1, 1
+                
+            swap_data_end:
+                jr      ra
+                nop
+    </Location>
+    <Location file="WORLD_WORLD_BIN" offset="10DB28" mode="ASM" offsetMode="RAM">
+        jal     @portrait_transition_hook
+        li      v0, 2
+    </Location>
+    <Location file="WORLD_WORLD_BIN" offset="12BCC8" mode="ASM" offsetMode="RAM">
+        j       @swap_formation_unit_hook
+        li      a0, 1
+    </Location>
+    <Location file="WORLD_WORLD_BIN" offset="12BCE8" mode="ASM" offsetMode="RAM">
+        j       @swap_formation_unit_hook
+        li      a0, -1
+    </Location>
+  </Patch>
+  <Patch name="Press buttons to win!">
+    <Description>
+        Press a button combination to win.  Default is L1 + Select.
+        Button codes:
+            0x8000  Left
+            0x4000  Down
+            0x2000  Right
+            0x1000  Up
+            0x0800  Start
+            0x0400  R3
+            0x0200  L3
+            0x0100  Select
+            0x0080  Square
+            0x0040  X
+            0x0020  Circle
+            0x0010  Triangle
+            0x0008  R1
+            0x0004  L1
+            0x0002  R2
+            0x0001  L2
+    </Description>
+    <Location file="BATTLE_BIN" offset="1593B0" mode="ASM" offsetMode="RAM">
+        @check_button_win:
+                lw      t0, 0x80045944
+                lhu     t1, 0x801593ae
+                la      v1, 0x80049a18
+                and     t0, t0, t1              
+                bne     t0, t1, check_button_win_end
+                li      t5, 0x19
+            
+                addu    t0, v0, v1
+                li      t1, 0
+                
+            check_button_win_loop:
+                lhu     t2, 0(t0)
+                nop
+                beq     t2, t5, check_button_win_past_loop
+                nop
+                lbu     t3, 0x801696bc(t2)
+                nop
+                sll     t3, t3, 1
+                addiu   t3, t3, 2
+                addiu   t1, t1, 1
+                sltiu   t4, t1, 256
+                bne     t4, zero, check_button_win_loop
+                addu    t0, t0, t3
+            
+            check_button_win_past_loop:
+                bne     t2, t5, check_button_win_end
+                nop
+                lhu     t0, 2(t0)
+                nop
+                sll     t3, t0, 1
+                lhu     t1, 0x8004e5d0(t3)
+                li      t2, 0x80
+                andi    t1, t1, 0xf300
+                sra     t1, t1, 8
+                beq     t1, t2, check_button_win_change
+                li      t2, 0x81
+                beq     t1, t2, check_button_win_change
+                nop
+                j       check_button_win_end
+                nop
+                
+            check_button_win_change:
+                sw      t0, 0x800577b8
+                la      ra, 0x80142674
+                li      v0, 1
+            
+            check_button_win_end:
+                jr      ra
+                nop
+                
+        @check_button_outcome:
+                lw      t0, 0x80045944
+                lhu     t1, 0x801593ae
+                nop
+                and     t0, t0, t1              
+                bne     t0, t1, check_button_outcome_end
+                nop
+            
+                li      v0, 0
+            
+            check_button_outcome_end:
+                jr      ra
+                nop
+    </Location>
+    <Location file="BATTLE_BIN" offset="1425F4" mode="ASM" offsetMode="RAM">
+        jal     @check_button_win
+        nop
+    </Location>
+    <Location file="BATTLE_BIN" offset="1834B4" mode="ASM" offsetMode="RAM">
+        j       @check_button_outcome
+    </Location>
+    <Variable name="Buttons" file="BATTLE_BIN" offset="F23AE" bytes="2" default="104" /> 
+  </Patch>
+  <Patch name="Load Formation ignored if unit not in party">
+    <Location file="SCUS_942_21" offset="27200" mode="ASM" offsetMode="RAM">
+        @load_formation_hook:
+                addiu   sp, sp, -24
+                sw      ra, 4(sp)
+                sw      a0, 8(sp)
+                sw      a1, 12(sp)
+        
+                lbu     a0, 0(s2)
+                jal     0x80059f94
+                nop
+        
+                li      t0, -1
+                bne     v0, t0, load_formation_hook_end
+                li      t0, 8
+                
+                lbu     t1, 1(s2)
+                not     t0, t0
+                and     t0, t1, t0
+                sb      t0, 1(s2)
+                
+            load_formation_hook_end:
+                lw      a1, 12(sp)
+                lw      a0, 8(sp)
+                lw      ra, 4(sp)
+                addiu   sp, sp, 24
+                jr      ra
+                nop
+    </Location>
+    <Location file="SCUS_942_21" offset="5AC5C" mode="ASM" offsetMode="RAM">
+        jal     @load_formation_hook
+    </Location>
+  </Patch>
+  <Patch name="Break out of multi-battle sequences">
+      <Description>
+        Break out of multi-battle sequences by pressing a button combination directly after exiting the formation screen.  Default is L1 + R1.
+        Includes the "Load Formation ignored if unit not in party" patch, because that situation can occur if breaking out of a sequence where a Guest has already left the party.
+        Button codes:
+            0x8000  Left
+            0x4000  Down
+            0x2000  Right
+            0x1000  Up
+            0x0800  Start
+            0x0400  R3
+            0x0200  L3
+            0x0100  Select
+            0x0080  Square
+            0x0040  X
+            0x0020  Circle
+            0x0010  Triangle
+            0x0008  R1
+            0x0004  L1
+            0x0002  R2
+            0x0001  L2
+      </Description>
+      <Location file="WORLD_WORLD_BIN" offset="148150" mode="ASM" offsetMode="RAM">
+        @close_formation_screen_hook:
+                addiu   sp, sp, -24
+                sw      ra, 4(sp)
+                sw      s0, 8(sp)
+                sw      s1, 12(sp)
+                
+                move    s1, a0
+                jal     0x8001db58
+                move    s0, v0
+                and     t0, v0, s1
+                bne     t0, s1, close_formation_screen_hook_end
+                move    v0, s0
+        
+                li      v0, 0
+        
+            close_formation_screen_hook_end:
+                lw      s1, 12(sp)
+                lw      s0, 8(sp)
+                lw      ra, 4(sp)
+                addiu   sp, sp, 24
+                jr      ra
+                nop
+      </Location>
+      <Location file="WORLD_WLDCORE_BIN" offset="685D8" mode="ASM" offsetMode="RAM">
+          j       @close_formation_screen_hook
+          li      a0, 0x000c
+      </Location>
+      <Location file="SCUS_942_21" offset="27200" mode="ASM" offsetMode="RAM">
+        @load_formation_hook:
+                addiu   sp, sp, -24
+                sw      ra, 4(sp)
+                sw      a0, 8(sp)
+                sw      a1, 12(sp)
+        
+                lbu     a0, 0(s2)
+                jal     0x80059f94
+                nop
+        
+                li      t0, -1
+                bne     v0, t0, load_formation_hook_end
+                li      t0, 8
+                
+                lbu     t1, 1(s2)
+                not     t0, t0
+                and     t0, t1, t0
+                sb      t0, 1(s2)
+                
+            load_formation_hook_end:
+                lw      a1, 12(sp)
+                lw      a0, 8(sp)
+                lw      ra, 4(sp)
+                addiu   sp, sp, 24
+                jr      ra
+                nop
+    </Location>
+    <Location file="SCUS_942_21" offset="5AC5C" mode="ASM" offsetMode="RAM">
+        jal     @load_formation_hook
+    </Location>
+    <Variable name="Buttons" file="WORLD_WLDCORE_BIN" offset="15DC" bytes="2" default="C" /> 
+  </Patch>
+  <Patch name="Equipment duplication glitch fixes">
+    <Description>
+        Fixes the equipment duplication glitches that can be triggered from using Best Fit in the shops.
+    </Description>
+    <Location file="WORLD_WORLD_BIN" offset="124360" mode="ASM" offsetMode="RAM">
+        b       0x80124378
+    </Location>
+    <Location file="WORLD_WORLD_BIN" offset="1367FC" mode="ASM" offsetMode="RAM">
+        beq     v0, zero, 0x80136818
+    </Location>
+  </Patch>
+  <Patch name="Level down fix">
+    <Description>
+        Fixes leveling down to subtract raw stats based on old level instead of new level, so it should subtract the same amount gained in the previous level.  Also fixes level up abilities so that they add the same amount as leveling up via experience gain.
+    </Description>
+    <Location file="BATTLE_BIN" offset="18C870" mode="ASM" offsetMode="RAM">
+        sw      s0, 0x0c(sp)
+    </Location>
+    <Location file="BATTLE_BIN" offset="18C8E0" mode="ASM" offsetMode="RAM">
+        move    s0, v1
+    </Location>
+    <Location file="BATTLE_BIN" offset="18C8EC" mode="ASM" offsetMode="RAM">
+        lui     a0, 0x8019
+        lw      a0, 0x2d98(a0)
+        jal     0x8005da10
+        nop
+        lui     a0, 0x8019
+        lw      a0, 0x2d98(a0)
+        nop
+        sb      s0, 0x22(a0)
+    </Location>
+    <Location file="BATTLE_BIN" offset="18C914" mode="ASM" offsetMode="RAM">
+        lw      s0, 0x0c(sp)
+        jr      ra
+        addiu   sp, sp, 0x18
+    </Location>
+  </Patch>
+  <Patch name="Crits always deal bonus damage">
+    <Description>
+        Crit XA bonus minimum is 1 instead of 0.  Maximum is still XA - 1.
+    </Description>
+    <Location file="BATTLE_BIN" offset="186528" mode="ASM" offsetMode="RAM">
+        lh      v1, 0x38ce(a0)
+        nop
+        sltiu   t0, v1, 1
+        addu    v1, v1, t0
+        addiu   t0, v1, -1
+        mult    v0, t0
+        mflo    v0
+        addiu   v1, v1, 1
+    </Location>
+    <Location file="BATTLE_BIN" offset="186554" mode="ASM" offsetMode="RAM">
+        sh      v0, 0x38ce(a0)
+    </Location>
+  </Patch>
+  <Patch name="Always crit">
+    <Location file="BATTLE_BIN" offset="186500" mode="ASM" offsetMode="RAM">
+        lui     v0, 0x8019
+        lw      v0, -0x0a04(v0)
+    </Location>
+  </Patch>
+  <Patch name="Brave story can point to non-setup events">
+    <Description>
+        Changes when the brave story variable is unset to being when you leave the menu as opposed to when you enter a new event.
+    </Description>
+    <Location file="BATTLE_BIN" offset="142E84" mode="ASM" offsetMode="RAM">
+        nop
+    </Location>
+    <Location file="WORLD_WLDCORE_BIN" offset="83220" mode="ASM" offsetMode="RAM">
+        jal     0x800903e4
+        addiu   a0, a0, -0x1108
+        bne     v0, zero, 0x80083428
+        li      a0, 0x1fc
+        jal     0x800ef25c
+        li      a1, 0
+        jal     0x80090d30
+        li      a0, 2
+        lui     t0, 0x800c
+        lw      a2, -0x4b10(t0)
+        nop
+        addiu   v0, a2, -2
+        sll     a0, v0, 1
+        addu    a0, a0, v0
+        sll     a0, a0, 3
+        subu    a0, a0, v0
+        sll     a0, a0, 2
+        addiu   at, t0, -0x466c
+    </Location>
+  </Patch>
+  <Patch name="Formula 3B: Mana Burn / Feedback (MA * Y) (v2)">
+    <Description>
+        Changes formula 3B to a mana burn/feedback ability 
+        using MA * Y, physical evade.
+        For magic evade, change '0x80188510' to '0x801885b8'. To overwrite
+        a different formula, change the offset of the second Location tag.
+    </Description>
+    <Location file="BATTLE_BIN" offset="F6400" mode="ASM">
+    @formula_feedback:
+      
+        addiu   sp, sp, -0x18
+        sw      ra, 0x10(sp)
+        
+        jal     0x80188510              # Physical Evade Calculation
+        nop                             
+        bne     v0, zero, feedback_end  # If Evaded, Skip           
+        nop
+        
+        jal     0x80185c94              # Get Ability Power
+        nop
+        jal     0x80188964              # Calculate MA * Y Damage
+        nop
+        
+        lui     t0, 0x8019 
+        lw      v0, 0x2d98(t0)
+        lw      v1, 0x2d90(t0)
+        nop
+        
+        lhu     t0, 4(v1)               # Load HP Damage
+        lhu     a0, 0x2c(v0)            # Load target MP
+        li      v0, 0xa0
+        
+        slt     t1, a0, t0
+        beq     t1, zero, feedback_store
+        nop
+        
+        move    t0, a0                  # Cap damage at target MP
+    
+    feedback_store:
+        sb      v0, 0x25(v1)            # Save Action Type = HP Damage + MP Damage
+        sh      t0, 0x08(v1)            # Save MP Damage = Capped damage
+        sh      t0, 0x04(v1)            # Save HP Damage = Capped damage
+      
+    feedback_end:  
+        lw      ra, 0x10(sp)
+        addiu   sp, sp, 0x18
+        jr      ra
+        nop
+    </Location>
+    <Location file="BATTLE_BIN" offset="11FD58" mode="ASM">
+        j       @formula_feedback
+        nop
+    </Location>
+  </Patch>
+  <Patch name="Formula 11: Magic Damage = MA * (WP+Y)">
+    <Description>
+    Changes formula 11 to magic damage, MA * (WP+Y), physical evade.
+        For magic evade, change '0x80188510' to '0x801885b8'. To overwrite
+        a different formula, change the first offset.
+    </Description>
+    <Location file="BATTLE_BIN" offset="122124" mode="ASM">
+      j       0x8015cb00            # Jump to new section
+    </Location>
+    <Location file="BATTLE_BIN" offset="F5B00" mode="ASM">
+      addiu   sp,sp,-0x18
+      sw      ra,0x0010(sp)
+      jal     0x80188510            # Physical Evade
+      nop
+      bne     v0,zero,END           # Branch to END if evaded
+      nop
+      jal     0x8015ca50            # Call new routine
+      nop
+      jal     0x80188964            # Calculate MA * Y Damage
+      nop
+END:  lw      ra,0x10(sp)
+      addiu   sp,sp,0x18
+      jr      ra
+      nop
+    </Location>
+    <Location file="BATTLE_BIN" offset="F5A50" mode="ASM">
+      lui     at,0x8019
+      lw      a0,0x2d94(at)
+      lbu     v0,0x3902(at)         # WP
+      lbu     v1,0x38fa(at)         # Y
+      lbu     a0,0x0037(a0)         # MA
+      addu    v0,v0,v1              # WP + Y
+      sh      v0,0x38d0(at)         # YA = WP + Y
+      sh      a0,0x38ce(at)         # XA = MA
+      jr      ra
+      nop
+    </Location>
+  </Patch>
+  <Patch name="Formulas [17], [3e], and [44] can be elementally canceled">
+    <Description>
+      Formulas [17], [3e], and [44] can be elementally canceled
+    </Description>
+    <Location file="BATTLE_BIN" offset="11FE54" mode="ASM">
+      lui     a0,0x8019
+      lw      v0,0x2d98(a0)
+      lw      v1,0x2d90(a0)
+      lhu     a0,0x002c(v0)         # Target MP
+      li      v0,0x80
+      sb      v0,0x25(v1)           # Action type = HP Damage
+      j       0x80186ff8            # Apply Elemental
+      sh      a0,0x04(v1)           # Action HP Damage = Target MP
+    </Location>
+    <Location file="BATTLE_BIN" offset="11F6EC" mode="ASM">
+      lui     v1,0x8019
+      lw      v1,0x2d98(v1)         
+      li      a0,0x80               
+      lhu     v0,0x0028(v1)         # Target HP
+      nop
+      addiu   v0,v0,-1              # HP - 1
+      slt     a1,v0,zero
+      lui     v1,0x8019
+      lw      v1,0x2d90(v1)
+      addu    v0,v0,a1              
+      sh      v0,0x04(v1)           # Action HP Damage = MAX(HP - 1, 0)
+      j       0x80186ff8            # Apply Elemental
+      sb      a0,0x25(v1)           # Action type = HP Damage
+    </Location>
+  </Patch>
+  <Patch name="Formula 54 becomes HealMP_(Y%)">
+    <Description>
+      Formula 54 becomes HealMP_(Y%)
+    </Description>
+    <Location file="BATTLE_BIN" offset="F20DC" mode="ASM">
+        @formula_54:
+          lui     v0,0x8019
+          lw      v1,0x2d98(v0)
+          lb      a0,0x38fa(v0)         # Ability Y
+          lh      v1,0x002e(v1)         # Target MP
+          li      a1,100
+          mult    a0,v1
+          mflo    a0                    # MP * Y
+          lw      a2,0x2d90(v0)
+          li      a3,0x10
+          div     a0,a1
+          mflo    a0                    # MP * Y / 100
+          sh      a0,0x0a(a2)           # Set as MP Healing
+          jr      ra
+          sb      a3,0x25(a2)           # Action type = MP Healing
+    </Location>
+    <Location file="BATTLE_BIN" offset="123668" mode="ASM">
+      j       @formula_54               # Jump to new section
+      nop
+    </Location>
+  </Patch>
+  <Patch name="Formula 44: Use HP instead of MP">
+    <Description>Formula 44: Use HP instead of MP</Description>
+    <Location file="BATTLE_BIN" offset="11FE64" mode="ASM">
+      lhu     a0,0x28(v0)           # Load HP (instead of MP)
+    </Location>
+  </Patch>
+</Patches>

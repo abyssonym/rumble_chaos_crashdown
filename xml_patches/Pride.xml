@@ -1,0 +1,967 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+
+<Patches>
+
+	<Patch name="MP Switch Overflows damage to HP">
+		<Description>Any excess damage from MP Switch no longer goes to waste. It will damage the target's HP if there is any excess. &#13;&#10;The Variable changes the % of damage (xx/128) that the MP portion takes, the default is the vanilla 1:1 ratio. Changing this number to x40 would cause the MP damage to take 50% less damage until MP is reduced into spillover range.</Description>
+		<Variable name="xx" file="BATTLE_BIN" offset="126220" default="40" />
+		<Location file="BATTLE_BIN" offset="1261B8">
+			1980043C
+			982D848C
+			E8FFBD27
+			1000BFAF
+			140070AE
+			90018394	<!-- Load HP Damage -->
+			2C008294	<!-- Load Current MP -->
+			2D006010
+			21808000
+			2B004010
+			00000000
+			E134060C
+			00000000
+			27004014
+			90010696	<!-- Load HP Damage -->
+			1980023C
+			FCF5428C
+			94010596	<!-- Load MP Damage -->
+			22004014
+			00000000
+			2128C500
+			E803A22C
+			02004014
+			00000000
+			E7030534	<!-- Cap Damage -->
+			2C000396	<!-- Load Current MP -->
+		</Location>
+		<Location file="BATTLE_BIN" offset="126221">
+			000434
+			1800A400	<!-- Damage * constant -->
+			12200000
+			C2210400	<!-- Damage * constant / 128 -->
+			1980023C
+			9CD24224
+			00004290	<!-- Load always skip flag -->
+			00000000
+			09004010	<!-- Branch if always forcing to only store mp damage -->
+			2A106400
+			07004010	<!-- Branch if only damaging MP -->
+			00000000
+			2310C400	<!-- HP Damage - MP Damage -->
+			900102A6	<!-- Store new HP Damage -->
+			940103A6	<!-- Store MP Damage as Current MP -->
+			A0000234
+			A3340608
+			B10102A2	<!-- Store Hit byte as HP/MP Damage -->
+			B1010292
+			20000334
+			7F004230
+			B10102A2	<!-- Remove HP Damage flag -->
+			900100A6	<!-- Store HP Damage as 0 -->
+			B10103A2	<!-- Store Hit byte as MP Damage -->
+			940104A6	<!-- Store MP Damage as MP Damage -->
+			B1010234
+			0E0002A6	<!-- Store reaction id -->
+			1000BF8F
+			1400B08F
+			0800E003
+			1800BD27
+		</Location>
+		<Variable name="Set to 0 have no spill over" file="BATTLE_BIN" offset="12629C" default="00" />
+	</Patch>
+
+	<Patch name="Remove Spill Over JP">
+		<Description>Does what it says, no units will gain spill over jp</Description>
+		<Location file="BATTLE_BIN" offset="117980">
+			00000000
+		</Location>
+	</Patch>
+
+	<Patch name="0 Gil earned from Level Bonus">
+		<Location file="BATTLE_BIN" offset="119EFC">
+			1C0080AC
+		</Location>
+	</Patch>
+
+	<Patch name="% MP gained at turn start">
+		<Description>Gain 5% (default) MP at the start of the unit's turn</Description>
+		<Variable name="" file="BATTLE_BIN" offset="F7608" default="07" />
+		<Location file="BATTLE_BIN" offset="F7604">
+			2E000296	<!-- Load Max MP -->
+		</Location>
+		<Location file="BATTLE_BIN" offset="F7609">
+			000334
+			18004300	<!-- MP * constant -->
+			12180000
+			C2190300	<!-- MA * constant / 128 -->
+			960103A6	<!-- Store as MP Recovery -->
+			24000292	<!-- Load Unit Brave -->
+			10000334
+			0800E003
+			B10103A2	<!-- Store hit type -->
+		</Location>
+		<Location file="BATTLE_BIN" offset="11C280">
+			8179050C	<!-- New routine -->
+		</Location>
+	</Patch>
+
+	<Patch name="Random enemies can appear with PA Save, MA Save, &amp; Speed Save">
+		<Description>Removes an (intended?) bug that removed PA Save, MA Save, and Speed Save from being randomly selected on enemies.</Description>
+		<Location file="SCUS_942_21" offset="4DA78">
+			A6010234	<!-- Ability ID = 1A6 (PA Save); 1A9 is the vanilla default -->
+		</Location>
+	</Patch>
+
+	<Patch name="Charge gains unique status effects">
+		<Description>Charge can have an assigned status inflict ID, overwriting the weapons status effect (IE Poison Shot inflicts Poison). Use the Patcher to determine what Status ID to use under the &quot;Inflict Status&quot; tab.</Description>
+		<Location file="BATTLE_BIN" offset="1247E4">
+			1200A397	<!-- Load Ability ID -->
+			0680013C
+			6AFE6324	<!-- Ability ID - x196 -->
+			0800622C
+			02004014
+			1980043C
+			00000334	<!-- r3 = Charge + 1 -->
+			40100300	<!-- ID * 2 -->
+			21082200	<!-- r1 = x80060000 + ID * 2 -->
+			45102290	<!-- Load Charge Power -->
+			1680013C
+			4CE62124	<!-- r1 = Charge Status ID Offset -->
+			8B79050C	<!-- Skip loading formula -->
+			E43882A0	<!-- r1 = Charge Status ID Offset -->
+		</Location>
+		<Location file="BATTLE_BIN" offset="F762C">
+			21082300	<!-- r1 = Offset + Charge Ability ID -->
+			00002390	<!-- Load Status ID -->
+			07001034	<!-- Formula ID = 07 -->
+			02006010	<!-- Branch if Status ID = 0 -->
+			00000000
+			DA3883A0	<!-- Store new Status ID -->
+			0800E003
+			00000000
+		</Location>
+		<Variable name="Charge +1" file="BATTLE_BIN" offset="F764C" default="00" />
+		<Variable name="Charge +2" file="BATTLE_BIN" offset="F764D" default="00" />
+		<Variable name="Charge +3" file="BATTLE_BIN" offset="F764E" default="00" />
+		<Variable name="Charge +4" file="BATTLE_BIN" offset="F764F" default="00" />
+		<Variable name="Charge +5" file="BATTLE_BIN" offset="F7650" default="00" />
+		<Variable name="Charge +7" file="BATTLE_BIN" offset="F7651" default="00" />
+		<Variable name="Charge +10" file="BATTLE_BIN" offset="F7652" default="00" />
+		<Variable name="Charge +20" file="BATTLE_BIN" offset="F7653" default="00" />
+	</Patch>
+
+	<Patch name="Required Level for World Map Condition">
+		<Location file="WORLD_WLDCORE_BIN" offset="37EA8">
+			90D51380	<!-- Change pointer table to new address -->
+		</Location>
+		<Location file="WORLD_WORLD_BIN" offset="5D590">
+			E8FFBD27
+			1000BFAF
+			1400B0AF
+			F472010C	<!-- Get highest level from the party -->
+			21800000	<!-- Clear r16 -->
+			21804000	<!-- Move highest level to r16 -->
+			0D80053C
+			5046A524	<!-- r5 = 0x800d4650 -->
+			0000A394	<!-- script counter -->
+			FCFFA424	<!-- r4 = 0x800d464c -->
+			0000848C	<!-- load offset to script string -->
+			40100300	<!-- counter * 2 -->
+			21104400	<!-- r2 = next location in script -->
+			00004294	<!-- load required level -->
+			01006324	<!-- script location ++ -->
+			0000A3A4	<!-- Store increase in script read -->
+			2A100202
+			07004010	<!-- Branch if highest level is not at least equal the requirement -->
+			00000000
+			0D80033C
+			44466324
+			0000628C
+			00000000
+			02004234
+			000062AC	<!-- Skip rest of code -->
+			1400B08F
+			1000BF8F
+			1800BD27
+			0800E003
+			00000000
+		</Location>
+	</Patch>
+
+	<Patch name="World Map Script Relocation">
+		<Description>Relocates the World Map script to x80142ae0 so you can add extra data without colliding with other relevant data.</Description>
+		<Location file="WORLD_WLDCORE_BIN" offset="2FA54">
+			E02A1480
+		</Location>
+	</Patch>
+
+	<Patch name="Ability Animation 07 00 00 will always swing item">
+		<Description>Removes the Ability Flag 'Weapon Strike' from being required to swing a weapon during animation 07 00 00.&#13;&#10;Should be no more unwanted punching while using an attack unless unequipped.</Description>
+		<Location file="BATTLE_BIN" offset="124760">
+			00000000
+		</Location>
+	</Patch>
+
+	<Patch name="Item Attribute Rewrite 1.1">
+		<Description>A rewrite of the Item Attribute routine which also sets the 'Required' flags for Materia Blade and Swords and caps Max HP/MP for units.&#13;&#10;You can equip a secondary Item Attribute to any item with the first unknown Item Data and even R/S/M with the second unknown.&#13;&#10;The second unknown adds x100 to the value so to equip Short Charge to an Item, the value would be E2 (x1E2 being Short Charges Ability ID)</Description>
+		<Variable name="Item ID required for Limit Skill (default: Materia Blade)" file="SCUS_942_21" offset="4CE18" default="20" />
+		<Variable name="X" file="SCUS_942_21" offset="4CE4C" default="03" />
+		<Variable name="Y" file="SCUS_942_21" offset="4CE54" default="02" />
+		<Variable name="HP/MP Cap for non-??? Unit" file="SCUS_942_21" offset="4CF64" default="03e7" bytes="2" />
+		<Variable name="HP/MP Cap for ??? Unit" file="SCUS_942_21" offset="4CF68" default="FFFF" bytes="2" />
+		<Location file="SCUS_942_21" offset="4CDC8">
+			E0FFBD27
+			1C00BFAF
+			1800B1AF
+			1400B0AF
+			21888000	<!-- r17 = Unit Data Pointer -->
+			2180A000	<!-- r16 = Level Up Check -->
+			33002426	<!-- r4 = Bonus Stats -->
+			9179010C	<!-- Zero out bonus stats -->
+			03000534
+			21202002	<!-- r4 = Unit Data -->
+			206E010C	<!-- Calculate Actual Stats -->
+			01000526	<!-- r16 + 1 -->
+			06002292	<!-- Load Unit Gender -->
+			21500000	<!-- Clear r10 (Equipment Counter) -->
+			21580000	<!-- Clear r11 (Secondary Attribute Check) -->
+			20004230
+			77004014	<!-- Branch if a Monster -->
+			840120A2	<!-- Zero out Equipped Flags -->
+			21102A02	<!-- Unit's Equipment Pointer -->
+			1A004790	<!-- r7 =  Equipment ID -->
+		</Location>
+		<Location file="SCUS_942_21" offset="4CE19">
+			000634	<!-- r6 = 20 (Materia Blade) -->
+			216A010C	<!-- Result: r2 = Item Data Pointer -->
+			2120E000	<!-- r4 = Equipment ID -->
+			21484000	<!-- r9 = Item Data Pointer -->
+			0500E614	<!-- Branch if Materia Blade is not item -->
+			8000E42C
+			84012292	<!-- Load Equipped Flag -->
+			00000000
+			04004234	<!-- Activate "Materia Blade" -->
+			840122A2	<!-- Store new Equipped Flag -->
+			0B008010	<!-- Branch if not a weapon -->
+			00000000
+			05002291	<!-- Load Weapon type -->
+		</Location>
+		<Location file="SCUS_942_21" offset="4CE4D">
+			000334	<!-- r3 = Subtract from r2 -->
+			23104300
+		</Location>
+		<Location file="SCUS_942_21" offset="4CE55">
+			00422C
+			05004010	<!-- Branch if item is not a sword -->
+			00000000
+			84012292	<!-- Load Equipped Flag -->
+			00000000
+			08004234	<!-- Activate "Sword" -->
+			840122A2	<!-- Store new Equipped Flag -->
+			FF000234	<!-- r2 = ff -->
+			56004710	<!-- Branch if nothing is equipped -->
+			00000000
+			03006011	<!-- Branch if secondary Attribute hasn't been checked -->
+			00000000
+			A4710108	<!-- Skip Loading Generic Attribute -->
+			06002491	<!-- Load Unknown Byte -->
+			07002491	<!-- Load Item Attribute ID -->
+			19000334	<!-- r3 = 25 -->
+			19006400	<!-- ID * 25 -->
+			12180000	<!-- r3 = ID * 25 -->
+			0680023C
+			C4424224	<!-- r2 = Offset to 1st Attribute Offset -->
+			33002626	<!-- r6 = bonus stat pointer -->
+			21804300	<!-- r16 = Offset to Specific Attribute -->
+			21280002	<!-- r5 = Offset to Specific Attribute -->
+			36002826	<!-- r8 = Offset to stat pointer -->
+			0000A290	<!-- Load Item Attribute Stat -->
+			0000C390	<!-- Load Bonus Stat -->
+			00000000
+			21186200	<!-- Bonus Stat + Attribute Stat -->
+			0001622C
+			02004014	<!-- Branch if stat < 100 -->
+			0100A524	<!-- Attribute Data pointer + 1 -->
+			FF000334	<!-- set stat to ff -->
+			0000C3A0	<!-- Store bonus stat -->
+			0100C624	<!-- bonus stat pointer + 1 -->
+			2A10C800
+			F4FF4014	<!-- Branch if all stats have not been checked -->
+			00000000
+			03000282	<!-- Load Move (attribute) -->
+			3A002392	<!-- Load Move (unit) -->
+			04000482	<!-- Load Jump (attribute) -->
+			3B002592	<!-- Load Jump (item) -->
+			21184300	<!-- Attribute Move + Unit Move -->
+			FE00622C
+			02004014	<!-- Branch if Move < FE -->
+			4E002626	<!-- r6 = Unit's Innate Status Pointer -->
+			FD000334	<!-- Move = fd (hard cap to move) -->
+			3A0023A2	<!-- Store Unit's new move -->
+			21188500	<!-- Attribute Jump + Unit Jump -->
+			0800622C
+			02004014	<!-- Branch if Jump < 8 -->
+			21280000	<!-- Clear r5 (counter) -->
+			07000334	<!-- Jump = 7 (hard cap to jump) -->
+			3B0023A2	<!-- Store unit's new jump -->
+			0F000634	<!-- r6 = Limit -->
+			4E002426	<!-- r4 = Unit's Status Pointer -->
+			2F72010C	<!-- Store Attribute into Unit Status -->
+			05000526	<!-- r5 = Attribute Status Pointer -->
+			05000634	<!-- r6 = Limit -->
+			6D002426	<!-- r4 = Unit's Element Pointer -->
+			2F72010C	<!-- Store Attribute into Unit Element -->
+			14000526	<!-- r5 = Attribute Element Pointer -->
+			CCFF6011	<!-- Loop around to check secondary attribute -->
+			01000B24	<!-- r11 + 1 -->
+			21580000	<!-- Clear r0 -->
+			06002392	<!-- Load Gender type -->
+			03002291	<!-- Load Equip's Item Type -->
+			04006330
+			02006010	<!-- Branch if not ??? -->
+		</Location>
+		<Location file="SCUS_942_21" offset="4CF66">
+			1034	<!-- r16 = HP/MP CAP -->
+		</Location>
+		<Location file="SCUS_942_21" offset="4CF6A">
+			1034	<!-- r16 = Uncap HP/MP for ??? Units (65535) -->
+			30004230
+			17004010	<!-- Branch if not Helm/Armor -->
+			00000000
+			04002491	<!-- Load 2nd table ID -->
+			2A002396	<!-- Load Max HP -->
+			40200400	<!-- ID * 2 -->
+			0680013C
+			21202400
+			D83E8290	<!-- Load HP Bonus -->
+			00000000
+			21186200	<!-- Max HP + HP Bonus -->
+			2B100302
+			02004010	<!-- Branch if HP doesn't break limit -->
+			00000000
+			21180002	<!-- Set Max HP to cap -->
+			2E002296	<!-- Load Max MP -->
+			2A0023A6	<!-- Store new Max HP -->
+			D93E8390	<!-- Load MP Bonus -->
+			00000000
+			21184300	<!-- Max MP + MP Bonus -->
+			2B100302
+			02004010	<!-- Branch if MP does not break cap -->
+			00000000
+			21180002	<!-- Set Max MP to cap -->
+			2E0023A6	<!-- Store new Max MP -->
+			01004A25	<!-- Counter ++ -->
+			2472010C
+			21202002	<!-- Unit Data to r4 -->
+			07004229
+			8CFF4014	<!-- Branch if all items haven't been checked -->
+			21102A02	<!-- Prep next check -->
+			28002396	<!-- Load Current HP -->
+			2A002696	<!-- Load Max HP -->
+			00000000
+			2B10C300
+			02004010
+			00000000
+			280026A6	<!-- Store new Current HP -->
+			2C002396	<!-- Load Current MP -->
+			2E002696	<!-- Load Max Mp -->
+			00000000
+			2B10C300
+			02004010
+			30002526
+			2C0026A6	<!-- Store new Max MP -->
+			32002626	<!-- r6 = Unit's Data Pointer (Original SP) -->
+			33002426	<!-- r4 = Unit's Data Pointer (Bonus PA) -->
+			0300A280	<!-- Load Unit's Bonus Stat -->
+			0000A390	<!-- Load Unit's Original Stat -->
+			00000000
+			21184300	<!-- Original Stat += Bonus Stat -->
+			2A10A600
+			05004010	<!-- Branch if New Stat is Speed -->
+			6400622C
+			08004014	<!-- Branch if New Stat < 100 -->
+			00000000
+			1A720108
+			63000334	<!-- New Stat = 99 -->
+			FFFF6230
+			3300422C
+			02004014	<!-- Branch if New Speed < 51 -->
+			00000000
+			32000334	<!-- New Speed = 50 -->
+			0600A3A0	<!-- Store Unit's Actual Stat = New Stat -->
+			0100A524	<!-- Stat Pointer += 1 -->
+			2A10A400
+			ECFF4014	<!-- Branch if all stats haven't been set -->
+			00000000
+			1C00BF8F
+			1800B18F
+			1400B08F
+			0800E003
+			2000BD27
+			E8FFBD27
+			1000BFAF
+			0B002591	<!-- Load Item Second Unknown -->
+			00000000
+			0001A524	<!-- x100 + Second Unknown -->
+			0B6E010C	<!-- Store Item R/S/M -->
+			00000000
+			1000BF8F
+			1800BD27
+			0800E003
+			00000000
+			21080000	<!-- Clear Counter -->
+			00008290	<!-- Load X Value -->
+			0000A390	<!-- Load Y Value -->
+			01002124	<!-- Counter ++ -->
+			25104300	<!-- Combine X & Y value -->
+			000082A0	<!-- Store new value -->
+			01008424	<!-- Pointer X + 1 -->
+			2A102600
+			F8FF4014	<!-- Branch if Counter hasn't reached limit -->
+			0100A524	<!-- Pointer Y + 1 -->
+			0800E003
+			00000000
+		</Location>
+		<Location file="WORLD_WORLD_BIN" offset="42F9C">
+			D8FFBD27
+			1000B0AF
+			1400B1AF
+			1800B2AF
+			1C00B3AF
+			21808000
+			2190A000
+			2188C000
+			2198E000
+			2000BFAF
+			21204002
+			908B040C	<!-- Clear Data -->
+			21282002
+			FF031032	<!-- r16 = Item ID -->
+			FFFF0226
+			FD00422C
+			59004010	<!-- Branch to end if not an Item -->
+			00000000
+			216A010C
+			21200002	<!-- Move ID to r4 -->
+			21204000	<!-- Move Item Data Pointer to r4 -->
+			0680013C	<!-- r1 = 0x80060000 -->
+			8000022A
+			0F004010	<!-- Branch if Item is not a Weapon -->
+			9000022A
+			04008390	<!-- Load Second Table ID -->
+			00000000
+			C0180300	<!-- ID * 8 -->
+			21182300	<!-- 80060000 + ID * 8 -->
+			BD3A6290	<!-- Load Weapon Power -->
+			BC3A6390	<!-- Load Weapon Evade -->
+			04006012
+			00000000
+			080023A6	<!-- Store Weapon Power to Display -->
+			2E8C0408	<!-- Jump to Check Attribute -->
+			0C0022A6	<!-- Store Weapon Evade to Display -->
+			060023A6	<!-- Store Weapon Power to Display -->
+			2E8C0408	<!-- Jump to Check Attribute -->
+			0A0022A6	<!-- Store Weapon Evade to Display -->
+			0A004010	<!-- Branch if Item is not a Shield -->
+			D000022A
+			04008390	<!-- Load Second Table ID -->
+			00000000
+			40180300	<!-- ID * 2 -->
+			21182300	<!-- 80060000 + ID * 2 -->
+			B83E6290	<!-- Load Shield Physical Evade -->
+			B93E6390	<!-- Load Shield Magic Evade -->
+			160022A6	<!-- Store Physical Evade to Display -->
+			2E8C0408
+			200023A6	<!-- Store Magical Evade to Display -->
+			0A004010	<!-- Branch if not Head/Bodygear -->
+			F000022A
+			04008390	<!-- Load Second Table ID -->
+			00000000
+			40180300	<!-- ID * 2 -->
+			21182300	<!-- 80060000 + ID * 2 -->
+			D83E6290	<!-- Load HP Bonus -->
+			D93E6390	<!-- Load MP Bonus -->
+			0E0042A6	<!-- Store HP to Display -->
+			2E8C0408
+			140043A6	<!-- Store MP to Display -->
+			09004010	<!-- Branch if not an accessory -->
+			00000000
+			04008390	<!-- Load Second Table ID -->
+			00000000
+			40180300	<!-- ID * 2 -->
+			21182300	<!-- 80060000 + ID * 2 -->
+			583F6290	<!-- Load Accessory Physical Evade -->
+			593F6390	<!-- Load Accessory Magical Evade -->
+			180022A6	<!-- Store Physical Evade to Display -->
+			220023A6	<!-- Store Magical Evade to Display -->
+			06008290	<!-- Load Secondary Attribute -->
+			19000334
+			18004300
+			12100000
+			07008490	<!-- Load Primary Attribute -->
+			00000000
+			18006400
+			12180000
+			21182300	<!-- r3 = Primary Attribute -->
+			21202200	<!-- r4 = Secondary Attribute -->
+			C7426180
+			C7428280
+			00000000
+			21104100
+			000022A6	<!-- Store Move -->
+			C6426180
+			C6428280
+			00000000
+			21104100
+			020022A6	<!-- Store Jump -->
+			C8426180
+			C8428280
+			00000000
+			21104100
+			040022A6	<!-- Store Speed -->
+			C4426180
+			C4428280
+			00000000
+			21104100
+			120022A6	<!-- Store PA -->
+			C5426180
+			C5428280
+			00000000
+			21104100
+			1C0022A6	<!-- Store MA -->
+			2000BF8F
+			1C00B38F
+			1800B28F
+			1400B18F
+			1000B08F
+			2800BD27
+			0800E003
+			00000000
+		</Location>
+	</Patch>
+
+	<Patch name="Weapon Range &amp; Others Disable Movement">
+		<Description>Weapon Ranged, Linear AOE, and Draw Out AOE type with a Charge Time all disable Movement</Description>
+		<Location file="BATTLE_BIN" offset="115808">
+			9579050C	<!-- Load Used Ability ID -->
+			00000000
+		</Location>
+		<Location file="BATTLE_BIN" offset="F7654">
+			D8FFBD27
+			2000BFAF
+			6AFE0226
+			0800422C
+			19004014	<!-- Branch if it is a Charge Ability -->
+			00000000
+			C0101000	<!-- Ability ID * 8 -->
+			23105000	<!-- Ability ID * 7 -->
+			40100200	<!-- Ability ID * 14 -->
+			0680033C
+			F0FB6324
+			21306200	<!-- r6 = Ability Data Offset -->
+			0C00C290	<!-- Load Ability CT -->
+			0300C390	<!-- Load Ability 1st Ability Flags -->
+			0400C490	<!-- Load Ability 2nd Ability Flags -->
+			0E004010	<!-- Branch if Ability has no CT -->
+			20006330
+			09006014	<!-- Branch if disabling move -->
+			04008430
+			07008014	<!-- Branch if Linear Attack is active (Disable Move) -->
+			00000000
+			0000C390	<!-- Load Ability Range -->
+			0100C490	<!-- Load Ability AOE -->
+			06006014	<!-- Branch if Ability Range > 0 -->
+			00000000
+			04008010	<!-- Branch if AOE = 0 -->
+			00000000
+			01000234
+			21B80000
+			870162A2	<!-- Store Movement Taken -->
+			7001022E
+			2000BF8F
+			2800BD27
+			0800E003
+			00000000
+		</Location>
+	</Patch>
+
+	<Patch name="Status CT Timer">
+		<Description>Every Status can now have a CT by setting the time in the FFTPatcher and setting the variable x01 to x0F.&#13;&#10;You are still limited to only 16 timers but they can share CTs. I.E. Poison and Regen can share a CT but will need to cancel and/or not allow them to stack on each other.&#13;&#10;If the status does not have a CT, set the variable to FF.&#13;&#10;It also comes package with two new Supports: To increase/decrease the length of the CT timers.</Description>
+		<Location file="SCUS_942_21" offset="4E370">
+			E8FFBD27	<!-- r4 = Unit Data Pointer; r5 = Counter; r6 = Initialize Status -->
+			1000BFAF
+			02000234
+			03004514	<!-- Branch if Status to check is not Dead -->
+			21388000	<!-- r7 = Unit Data Pointer -->
+			179C000C	<!-- Set Dead CT -->
+			FF000834	<!-- (Immortal Dead Timer) -->
+			FF76010C	<!-- Get Status Storage Location -->
+			00000000
+			0680023C
+			00190500	<!-- Counter * 16 -->
+			21104300	<!-- 0x80060000 + Counter * 16 -->
+			E75D4890	<!-- r8 = Status CT -->
+			00000000
+			10000011	<!-- Branch to End if Status has no CT -->
+			21100000	<!-- Clear r2 -->
+			0400C010	<!-- Branch to next section if beginning status -->
+			00000000
+			5D0020A0
+			FB760108	<!-- Jump to End -->
+			21100000	<!-- Clear r2 -->
+			27000334
+			05006514	<!-- Branch if Status is not Death Sentence -->
+			21100000	<!-- Clear r2 -->
+			219C000C	<!-- Death Sentence -->
+			00000000
+			04004014	<!-- Branch if r2 = xffff -->
+			00000000
+			289C000C	<!-- Check CT Status Supports -->
+			00000000
+			5D0023A0	<!-- Store Status CT -->
+			1000BF8F
+			1800BD27
+			0800E003
+			00000000
+			0280023C
+			21104500
+			E0704290	<!-- r2 = Status Storage Location -->
+			0800E003
+			21084700	<!-- r1 = Unit Data Pointer + Storage Offset -->
+		</Location>
+		<Location file="SCUS_942_21" offset="1785C">
+			0500E290	<!-- Load Unit Battle Flags -->
+			0600E390	<!-- Load Unit Gender -->
+			04004230
+			04004014	<!-- Branch if Unit is Immortal -->
+			09006230
+			02004014
+			00000000
+			03000834	<!-- r8 = 3 -->
+			0800E003	<!-- Return -->
+			0700E8A0	<!-- Store Dead Timer -->
+			6C00E290	<!-- Load Death Sentence CT -->
+			00000000
+			02004010	<!-- Branch if DS CT = 0 -->
+			21100000	<!-- Clear r2 -->
+			FFFF0224	<!-- r2 = xFFFF if Death Sentence is being set -->
+			0800E003
+			00000000
+			9000E490	<!-- Load Unit Supports -->
+			21180001
+			80008430
+			04008010	<!-- Branch if Support is not active -->
+			00000000
+			40200300
+			21208300
+			42180400	<!-- r3 = CT * 3 / 2 -->
+			9000E490	<!-- Load Unit Supports -->
+			00000000
+			80008430
+			02008010	<!-- Branch if Support is not active -->
+			00000000
+			42180300	<!-- CT / 2 -->
+			0800E003
+			00000000
+			FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000102030405060708090A0B0C0D0E0F
+		</Location>
+		<Location file="BATTLE_BIN" offset="126910">
+			E8FFBD27
+			0C00BFAF
+			1000B1AF
+			1400B0AF
+			C0100400	<!-- Counter * 8 -->
+			23104400	<!-- Counter * 7 -->
+			80110200	<!-- Counter * 448 -->
+			1980043C
+			CC088424
+			21204400	<!-- r4 = Unit Data Pointer -->
+			8136060C	<!-- Store Unit Locations -->
+			21808000	<!-- r16 = Unit Data Pointer -->
+			21880000	<!-- Clear r17 (Counter) -->
+			B879050C	<!-- Get Status Decrease -->
+			80000934
+			01003126	<!-- Counter ++ -->
+			2800222E
+			FBFF4014	<!-- Loop until all status are checked -->
+			00000000
+			C912060C	<!-- Validate Status Change -->
+			21200000	<!-- Clear r4 -->
+			05004010	<!-- Branch if Status cannot be cleared -->
+			08000234
+			1980033C
+			902D638C
+			00000000
+			250062A0	<!-- Store as Status Change -->
+			0C00BF8F
+			1000B18F
+			1400B08F
+			0800E003
+			1800BD27
+		</Location>
+		<Location file="BATTLE_BIN" offset="F76E0">
+			E8FFBD27
+			1000BFAF
+			02000234
+			22005110	<!-- Branch to end if Status check is Dead -->
+			27000234
+			20005110	<!-- Branch to end if Status is Death Sentence -->
+			00000000
+			C3401100	<!-- Counter / 8 -->
+			21381001	<!-- Unit ID + Counter / 8 -->
+			07002332	<!-- r3 = Bit to Check -->
+			BB01E290	<!-- Status Inflict -->
+			07306900	<!-- r6 = Bit to check -->
+			24104600
+			4E00E390	<!-- Load Innate Status -->
+			17004010	<!-- Branch to end if Status not active -->
+			24106600
+			15004014	<!-- Branch to end if Status is innate -->
+			21380002	<!-- r7 = Unit Data Pointer -->
+			FF76010C	<!-- Get Status Storage -->
+			21282002	<!-- r5 = Counter -->
+			FF000334
+			10006210	<!-- Branch to End if not storing Status -->
+			00000000
+			5D002290	<!-- Load Status CT -->
+			00000000
+			FFFF4224	<!-- CT - 1 -->
+			5D0022A0	<!-- Store new CT -->
+			FF004230
+			09004014	<!-- Branch if Status CT is not 0 -->
+			00000000
+			1980033C
+			902D638C
+			00000000
+			21186800
+			20006290	<!-- Load Status Removal -->
+			00000000
+			25104600
+			200062A0	<!-- Store new Status Removal -->
+			1000BF8F
+			1800BD27
+			0800E003
+			00000000
+		</Location>
+	</Patch>
+
+	<Patch name="Move +1/2/3 &amp; Jump +1/2/3 edits">
+		<Description>Turns Move +1 into Move +?&#13;&#10;Turns Move +2 into Jump +?&#13;&#10;Turns Move + 3 into PA +?&#13;&#10;Turns Jump +1 into MA +?&#13;&#10;Turns Jump +2 into Speed +?&#13;&#10;Turns Jump +3 into Class Evade +?</Description>
+		<Variable name="Move +" file="SCUS_942_21" offset="4D118" default="01" />
+		<Variable name="Move +" file="WORLD_WORLD_BIN" offset="5E454" default="01" />
+		<Variable name="Jump +" file="SCUS_942_21" offset="4D12C" default="02" />
+		<Variable name="Jump +" file="WORLD_WORLD_BIN" offset="5E468" default="02" />
+		<Variable name="PA +" file="SCUS_942_21" offset="4D140" default="02" />
+		<Variable name="PA +" file="WORLD_WORLD_BIN" offset="5E47C" default="02" />
+		<Variable name="MA +" file="SCUS_942_21" offset="4D154" default="02" />
+		<Variable name="MA +" file="WORLD_WORLD_BIN" offset="5E490" default="02" />
+		<Variable name="Speed +" file="SCUS_942_21" offset="4D168" default="01" />
+		<Variable name="Speed +" file="WORLD_WORLD_BIN" offset="5E4A4" default="01" />
+		<Variable name="Class Evasion +" file="SCUS_942_21" offset="17914" default="14" />
+		<Variable name="Class Evasion +" file="WORLD_WORLD_BIN" offset="5E4B8" default="14" />
+		<Location file="SCUS_942_21" offset="4D104">
+			93008690	<!-- Load 1st set of Movements -->
+			3A008290	<!-- Load unit's Movement -->
+			8000C330
+			03006010	<!-- Branch if unit does not have Move +1 -->
+			4000C330
+		</Location>
+		<Location file="SCUS_942_21" offset="4D119">
+			004224	<!-- Move + 1 -->
+			3A0082A0	<!-- Store new Move -->
+			3B008590	<!-- Load unit's Jump -->
+			03006010	<!-- Branch if the unit doesn't have Jump +2 -->
+			2000C330
+		</Location>
+		<Location file="SCUS_942_21" offset="4D12D">
+			00A524	<!-- Jump + 2 -->
+			3B0085A0	<!-- Store new Jump -->
+			36008290	<!-- Load Unit's PA -->
+			03006010	<!-- Branch if unit does not have Attack Boost -->
+			1000C330
+		</Location>
+		<Location file="SCUS_942_21" offset="4D141">
+			004224	<!-- PA + 2 -->
+			360082A0	<!-- Store new PA -->
+			37008590	<!-- Load Unit's MA -->
+			03006010	<!-- Branch if the unit doesn't have Magic Boost -->
+			0800C330
+		</Location>
+		<Location file="SCUS_942_21" offset="4D155">
+			00A524	<!-- MA + 2 -->
+			370085A0	<!-- Store new MA -->
+			38008290	<!-- Load Speed -->
+			03006010
+			00000000
+		</Location>
+		<Location file="SCUS_942_21" offset="4D169">
+			004224	<!-- Speed + 1 -->
+			380082A0	<!-- Store new Speed -->
+			429C0008
+			0400C330	<!-- Prep Jump +3 check -->
+			00000000
+			0800E003
+			00000000
+		</Location>
+		<Location file="SCUS_942_21" offset="17908">
+			43008290	<!-- Load Class Evade -->
+			03006010	<!-- Branch if not equipped -->
+			00000000
+		</Location>
+		<Location file="SCUS_942_21" offset="17915">
+			004224	<!-- EV + 20 -->
+			430082A0	<!-- Store new CE -->
+			5E720108
+			00000000
+		</Location>
+		<Location file="WORLD_WORLD_BIN" offset="42F58">
+			F2F8040C
+			00000000
+			E08B0408
+			00000000
+		</Location>
+		<Location file="WORLD_WORLD_BIN" offset="42EAC">
+			12F9040C
+			00000000
+			BC8B0408
+			00000000
+		</Location>
+		<Location file="WORLD_WORLD_BIN" offset="5E3C8">
+			7800A297
+			3800A397
+			00000000
+			23104300
+			000042A6
+			7C00A297
+			3C00A397
+			00000000
+			23104300
+			040042A6
+			8A00A297
+			4A00A397
+			00000000
+			23104300
+			120042A6
+			9400A297
+			5400A397
+			00000000
+			23104300
+			1C0042A6
+			7A00A297
+			3A00A397
+			00000000
+			23104300
+			020042A6
+			8C00A297
+			4C00A397
+			00000000
+			23104300
+			140042A6
+			0800E003
+			00000000
+			E6010234
+			02005014
+			00000234
+		</Location>
+		<Location file="WORLD_WORLD_BIN" offset="5E455">
+			000234
+			000022A6
+			E7010234
+			02005014
+			00000234
+		</Location>
+		<Location file="WORLD_WORLD_BIN" offset="5E469">
+			000234
+			040022A6
+			E8010234
+			02005014
+			00000234
+		</Location>
+		<Location file="WORLD_WORLD_BIN" offset="5E47D">
+			000234
+			120022A6
+			E9010234
+			02005014
+			00000234
+		</Location>
+		<Location file="WORLD_WORLD_BIN" offset="5E491">
+			000234
+			1C0022A6
+			EA010234
+			02005014
+			00000234
+		</Location>
+		<Location file="WORLD_WORLD_BIN" offset="5E4A5">
+			000234
+			020022A6
+			EB010234
+			02005014
+			00000234
+		</Location>
+		<Location file="WORLD_WORLD_BIN" offset="5E4B9">
+			000234
+			140022A6
+			0800E003
+			00000000
+		</Location>
+	</Patch>
+
+	<Patch name="Transparent not lost on action or taking damage">
+		<Description>Transparent status is no longer removed after taking an action or taking damage.&#13;&#10;This is intended to be used with CT Magic. Unless you want permanent Transparent.</Description>
+		<Location file="BATTLE_BIN" offset="126894">
+			15000010	<!-- Unconditional branch, as opposed to branch if no action taken -->
+		</Location>
+		<Location file="BATTLE_BIN" offset="125440">
+			00000000
+		</Location>
+		<Location file="BATTLE_BIN" offset="123C8C">
+			11000010
+		</Location>
+	</Patch>
+
+	<Patch name="Defend not removed on act">
+		<Description>Defend status is no longer removed after taking an action.&#13;&#10;This is intended to be used with CT Magic. Unless you want permanent Defending.</Description>
+		<Location file="BATTLE_BIN" offset="11C26C">
+			04000010	<!-- Unconditional branch, as opposed to branch if doesn't have defend -->
+		</Location>
+	</Patch>
+
+	<Patch name="New Support: Inflict Status (ID) to Weapon Attacks">
+		<Description>Inflict Status: ID to weapon attacks (except Fists) that do not have a proc already.&#13;&#10;Check your FFTPatcher to make sure you are adding (or cancelling) the status you want to be. Defaulted to 09 (Poison).&#13;&#10;This is defaulted over Secret Hunt. Edit unit data to choose which data is checked. See http://ffhacktics.com/wiki/Data/Table_Locations for more information.</Description>
+		<Variable name="Unit Data" file="BATTLE_BIN" offset="F779C" default="91" />
+		<Variable name="Bit" file="BATTLE_BIN" offset="F77A4" default="40" />
+		<Variable name="Status ID" file="BATTLE_BIN" offset="F77B0" default="09" />
+		<Location file="BATTLE_BIN" offset="124560">
+			E279050C
+			00000000
+		</Location>
+		<Location file="BATTLE_BIN" offset="F7788">
+			1980013C	<!-- r1 - r3 free -->
+			942D228C	<!-- Load Attacker's Data -->
+			08008014	<!-- Branch if the weapon already has a proc -->
+			00000000
+			04002392	<!-- Load Weapon Power -->
+		</Location>
+		<Location file="BATTLE_BIN" offset="F779D">
+			004290	<!-- Load Support set -->
+			04006010	<!-- Branch if Weapon Power = 0 (No Fists) -->
+		</Location>
+		<Location file="BATTLE_BIN" offset="F77A5">
+			004230
+			02004010	<!-- Branch if support set not active -->
+			00000000
+		</Location>
+		<Location file="BATTLE_BIN" offset="F77B1">
+			000434
+			0800E003
+			DA3824A0	<!-- Store Proc ID -->
+		</Location>
+	</Patch>
+
+	<Patch name="Disable Secret Hunt">
+		<Description>Removes the vanilla function of Secret Hunt; poaching monsters.</Description>
+		<Location file="BATTLE_BIN" offset="120D8C">
+			19000010	<!-- Unconditional branch -->
+		</Location>
+	</Patch>
+
+</Patches>

@@ -1,0 +1,1357 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Patches>
+  <Patch name="Death Sentence - Ignore Cancel:Dead">
+    <Location file="BATTLE_BIN" offset="11C234">
+      00000000
+      00000000
+    </Location> 
+    <Location file="BATTLE_BIN" offset="11C24C">
+      00000000
+      280000A6
+    </Location> 
+  </Patch>
+
+  <Patch name="Jump damage bonus applies only to users of Weapon Type Y.">
+    <Description>
+      Weapon Type List:
+        00 = Fists
+        01 = Daggers
+        02 = Ninjato
+        03 = Sword
+        04 = Knight Sword
+        05 = Katana
+        06 = Axe
+        07 = Rod
+        08 = Staff
+        09 = Flail
+        0A = Gun
+        0B = Crossbow
+        0C = Bow
+        0D = Instrument
+        0E = Book
+        0F = Spear
+        10 = Stick/Pole
+        11 = Bag
+        12 = Carpet/Veil
+    </Description>
+    <Variable name="Y" file="BATTLE_BIN" default="0F" offset="11eeb8"/>
+  </Patch>
+
+  <Patch name="Jump damage is X / 128 * PA * WP, regardless of weapon.">
+    <Description>
+        190% is X = F4
+        183% is X = EB
+        180% is X = E7
+        175% is X = E0
+        170% is X = DA
+        166% is X = D6
+        160% is X = CD
+        150% is X = C0 (default)
+        140% is X = B4
+        133% is X = AB
+        130% is X = A7
+        125% is X = A0
+        120% is X = 9A
+        117% is X = 96
+        110% is X = 8D
+        100% is X = 80
+      If you want the multiplier to be less than 100%, subtract 0x80 from the above number.
+      If you want to the bonus to be true for only one weapon type (by default, spears), don't change 11EEC2.
+      If you want one weapon type (by default, spears) to be PA * WP and everything else to take your custom multiplier, don't change 11EEC2; instead, change 11EEC3 from 14 to 10.
+    </Description>
+    <Location file="BATTLE_BIN" offset="11eec2">
+      63
+    </Location>
+    <Variable name="X" file="BATTLE_BIN" default="C0" offset="11eed8"/>
+    <Location file="BATTLE_BIN" offset="11eed9">
+      000234
+      19004300
+      12180000
+      BF170608
+      C2110300
+    </Location>
+  </Patch>
+
+  <Patch name="No starting items">
+    <Location file="SCUS_942_21" offset="3322c">
+	  <!--
+	  Old: 0x80042A2C   li $v0,0x05
+	  New: 0x80042A2C   j 0x80042AA8
+	  -->
+      aa 0a 01 08
+    </Location>
+  </Patch>
+
+  <Patch name="Broken / stolen items can be bought back at Fur Shop">
+    <Location file="BATTLE_BIN" offset="126468">
+      22 4e 05 08
+      00 00 00 00
+      00 00 00 00
+      00 00 00 00
+    </Location>
+    <Location file="BATTLE_BIN" offset="0ec888">
+      2E004490
+      00000000
+      30008430
+      08008014
+      00000000
+      0580043C
+      94948434
+      21208500
+      00008290
+      00000000
+      01004224
+      000082A0
+      1980023C
+      902D428C
+      1C350608
+      10004294
+    </Location>
+  </Patch>
+
+  <Patch name="AI attacks transparent unit v1.1">
+    <Location file="BATTLE_BIN" offset="12fd66">00</Location>
+  </Patch>
+  <Patch name="Transparent loses 100% accuracy bonus">
+    <Location file="BATTLE_BIN" offset="11e4d0">00</Location>
+  </Patch>
+  <Patch name="No Random Battles">
+    <Location file="WORLD_WLDCORE_BIN" offset="02770a">00</Location>
+  </Patch>
+<!--
+  <Patch name="Defending multiplies physical damage by X / 128">
+    <Description>
+        100% is X = 80
+        90% is X = 74
+        83% is X = 6B
+        80% is X = 67
+        75% is X = 60
+        70% is X = 5A
+        66% is X = 56
+        60% is X = 4D
+        50% is X = 40
+        40% is X = 34
+        33% is X = 2B
+        30% is X = 27
+        25% is X = 20
+        20% is X = 1A
+        17% is X = 16
+        10% is X = D
+      If you want a multiplier greater than 100%, add 0x80 to the above number.
+      If you want Defending to also double evasion, don't change 11E48A
+    </Description>
+    <Location file="BATTLE_BIN" offset="11f314">
+      4b 4d 05 08
+      19 80 01 3C
+    </Location>
+    <Location file="BATTLE_BIN" offset="11e48a">42</Location>
+    <Location file="BATTLE_BIN" offset="0ec52c">
+      982D238C
+      CE382284
+      58006390
+    </Location>
+    <Variable name="X" file="BATTLE_BIN" offset="EC528"/>
+    <Location file="BATTLE_BIN" offset="0ec529">
+      000134
+      02006330
+      03006010
+      19002200
+      12180000
+      02120300
+      0800E003
+      CE3822A4
+    </Location>
+  </Patch>
+-->
+
+  <Patch name="Wall loses all hard-coding.">
+    <Description>
+      This means the only effects of wall are what you set in FFT Patcher.
+    </Description>
+    <Location file="BATTLE_BIN" offset="124ae2">42</Location>
+    <Location file="BATTLE_BIN" offset="137F56">00</Location>
+  </Patch>
+
+  <Patch name="Wall reduces most forms of HP damage to 1">
+    <Description>
+      You will still take damage from falling, poison, and traps.
+      If you want the AI to ignore units with wall, don't change 137F56.
+    </Description>
+    <Location file="BATTLE_BIN" offset="124ae2">42</Location>
+    <Location file="BATTLE_BIN" offset="137F56">00</Location>
+    <Location file="BATTLE_BIN" offset="124b80">
+      1980013C
+      902D238C
+      154E0508
+      04006284
+    </Location>
+    <Location file="BATTLE_BIN" offset="ec854">
+      982D218C
+      07000210
+      00000000
+      5B002190
+      00000000
+      01002130
+      02000110
+      00000000
+      01000234
+      E52E0608
+      040062A4
+    </Location>
+  </Patch>
+  <Patch name="Wall reduces physical XA to 1, duration : 1 turn">
+    <Description>
+      This affects any formula affected by protect. XA is the stat (PA/MA/SP) that is modified by zodiacs, Attack/DEFUP, and other factors.
+      If you want the AI to ignore units with wall, don't change 137F56.
+    </Description>
+    <Location file="BATTLE_BIN" offset="124ae2">42</Location>
+    <Location file="BATTLE_BIN" offset="137F56">00</Location>
+    <Location file="BATTLE_BIN" offset="11f3bc">
+      d24d0508
+      5B006290
+    </Location>
+    <Location file="BATTLE_BIN" offset="1267f0">
+      d94d0508
+      01000234
+    </Location>
+    <Location file="BATTLE_BIN" offset="0ec748">
+      1980043C
+      01004230
+      02004010
+      00000000
+      CE3880A0
+      F1180608
+      5C006290
+    </Location>
+    <Location file="BATTLE_BIN" offset="0ec764">
+      640002A2
+      FE350608
+      80006230
+    </Location>
+  </Patch>
+  <Patch name="JP scroll glitch fix v1.2">
+    <Location file="WORLD_WORLD_BIN" offset="03fad0">
+      D5010508
+      2B205100
+    </Location>
+    <Location file="WORLD_WORLD_BIN" offset="060754">
+      02008014
+      98000434
+      23105100
+      B67E0408
+      00000000
+    </Location>
+  </Patch>
+  <Patch name="Special characters can do propositions">
+    <Location file="WORLD_WLDCORE_BIN" offset="CD9C">04</Location>
+    <Location file="WORLD_WLDCORE_BIN" offset="E834">04</Location>
+  </Patch>
+  <Patch name="The first X monsters are mountable.">
+    <Description>
+      The list of monsters:
+        01 : Chocobo
+        02 : Black Chocobo
+        03 : Red Chocobo
+        04 : Goblin
+        05 : Black Goblin
+        06 : Gobbledeguck (Gobbledegook)
+        07 : Bomb
+        08 : Grenade
+        09 : Explosive (Exploder)
+        0A : Red Panther
+        0B : Cuar (Coeurl)
+        0C : Vampire (Vampire Cat)
+        0D : Pisco Demon (Piscodaemon)
+        0E : Squidlarkin (Squidraken)
+        0F : Mindflare (Mindflayer)
+        10 : Skeleton
+        11 : Bone Snatch (Bonesnatch)
+        12 : Living Bone (Skeletal Fiend)
+        13 : Ghoul
+        14 : Gust (Ghast)
+        15 : Revnant (Revenant)
+        16 : Flotiball (Floating Eye)
+        17 : Ahriman
+        18 : Plague (Plague Horror)
+        19 : Juravis (Jura Aevis)
+        1A : Steel Hawk (Steelhawk)
+        1B : Cocatoris (Cockatrice)
+        1C : Uribo (Pig)
+        1D : Porky (Swine)
+        1E : Wildbow (Wild Boar)
+        1F : Woodman (Dryad)
+        20 : Trent
+        21 : Taiju (Elder Treant)
+        22 : Bull Demon (Wisenkin)
+        23 : Minitaurus (Minotaur)
+        24 : Sacred (Sekhret)
+        25 : Morbol (Malboro)
+        26 : Ochu
+        27 : Great Morbol (Greater Malboro)
+        28 : Behemoth
+        29 : King Behemoth (Behemoth King)
+        2A : Dark Behemoth
+        2B : Dragon
+        2C : Blue Dragon
+        2D : Red Dragon
+        2E : Hyudra (Hydra)
+        2F : Hydra (Greater Hydra)
+        30 : Tiamat 
+    </Description>
+    <Variable name="X" file="BATTLE_BIN" default="03" offset="10D3E4"/>
+  </Patch>
+  <Patch name="Job X is mountable">
+    <Description>
+      The list of jobs:
+        00 :
+        01 : Squire
+        02 : Squire
+        03 : Squire
+        04 : Squire
+        05 : Holy Knight
+        06 : Arc Knight (Ark Knight)
+        07 : Squire
+        08 : Arc Knight (Ark Knight)
+        09 : Lune Knight (Rune Knight)
+        0A : Duke
+        0B : Duke
+        0C : Princess
+        0D : Holy Swordsman (Sword Saint)
+        0E : High Priest (High Confessor)
+        0F : Dragoner (Dragonkin)
+        10 : Holy Priest (Celebrant)
+        11 : Dark Knight (Fell Knight)
+        12 : Hell Knight (Netherseer)
+        13 : Bishop (Elder)
+        14 : Cleric
+        15 : Astrologist (Astrologer)
+        16 : Engineer (Machinist)
+        17 : Dark Knight (Fell Knight)
+        18 : Cardinal
+        19 : Heaven Knight (Skyseer)
+        1A : Hell Knight (Netherseer)
+        1B : Arc Knight (Ark Knight)
+        1C : Delita's Sis (Commoner)
+        1D : Arc Duke (Grand Duke)
+        1E : Holy Knight
+        1F : Temple Knight (Templar)
+        20 : White Knight
+        21 : Arc Witch (Witch of the Coven)
+        22 : Engineer (Machinist)
+        23 : Bi-Count (Viscount)
+        24 : Divine Knight
+        25 : Divine Knight
+        26 : Knight Blade (Nightblade)
+        27 : Sorceror
+        28 : White Knight
+        29 : Heaven Knight (Skyseer)
+        2A : Divine Knight
+        2B : Engineer (Machinist)
+        2C : Cleric
+        2D : Assassin
+        2E : Assassin
+        2F : Divine Knight
+        30 : Cleric
+        31 : Phony Saint (False Saint)
+        32 : Soldier
+        33 : Arc Knight (Ark Knight)
+        34 : Holy Knight
+        35 : Chemist
+        36 : Priest (White Mage)
+        37 : Wizard (Black Mage)
+        38 : Oracle (Mystic)
+        39 :
+        3A :
+        3B :
+        3C : Warlock (Gigas)
+        3D : Knight
+        3E : Angel of Death (Death Seraph)
+        3F : Archer
+        40 : Regulator (Bringer of Order)
+        41 : Holy Angel (High Seraph)
+        42 : Wizard (Black Mage)
+        43 : Impure King (The Impure)
+        44 : Time Mage
+        45 : Ghost of Fury (The Wroth)
+        46 : Oracle (Mystic)
+        47 : Summoner
+        48 : Holy Dragon
+        49 : Arch Angel (Arch Seraph)
+        4A : Squire
+        4B : Chemist
+        4C : Knight
+        4D : Archer
+        4E : Monk
+        4F : Priest (White Mage)
+        50 : Wizard (Black Mage)
+        51 : Time Mage
+        52 : Summoner
+        53 : Thief
+        54 : Mediator (Orator)
+        55 : Oracle (Mystic)
+        56 : Geomancer
+        57 : Lancer (Dragoon)
+        58 : Samurai
+        59 : Ninja
+        5A : Calculator (Arithmetician)
+        5B : Bard
+        5C : Dancer
+        5D : Mime
+        5E : Chocobo
+        5F : Black Chocobo
+        60 : Red Chocobo
+        61 : Goblin
+        62 : Black Goblin
+        63 : Gobbledeguck (Gobbledegook)
+        64 : Bomb
+        65 : Grenade
+        66 : Explosive (Exploder)
+        67 : Red Panther
+        68 : Cuar (Coeurl)
+        69 : Vampire (Vampire Cat)
+        6A : Pisco Demon (Piscodaemon)
+        6B : Squidlarkin (Squidraken)
+        6C : Mindflare (Mindflayer)
+        6D : Skeleton
+        6E : Bone Snatch (Bonesnatch)
+        6F : Living Bone (Skeletal Fiend)
+        70 : Ghoul
+        71 : Gust (Ghast)
+        72 : Revnant (Revenant)
+        73 : Flotiball (Floating Eye)
+        74 : Ahriman
+        75 : Plague (Plague Horror)
+        76 : Juravis (Jura Aevis)
+        77 : Steel Hawk (Steelhawk)
+        78 : Cocatoris (Cockatrice)
+        79 : Uribo (Pig)
+        7A : Porky (Swine)
+        7B : Wildbow (Wild Boar)
+        7C : Woodman (Dryad)
+        7D : Trent
+        7E : Taiju (Elder Treant)
+        7F : Bull Demon (Wisenkin)
+        80 : Minitaurus (Minotaur)
+        81 : Sacred (Sekhret)
+        82 : Morbol (Malboro)
+        83 : Ochu
+        84 : Great Morbol (Greater Malboro)
+        85 : Behemoth
+        86 : King Behemoth (Behemoth King)
+        87 : Dark Behemoth
+        88 : Dragon
+        89 : Blue Dragon
+        8A : Red Dragon
+        8B : Hyudra (Hydra)
+        8C : Hydra (Greater Hydra)
+        8D : Tiamat
+        8E : None (Na-shi)
+        8F : None (Na-shi)
+        90 : Byblos
+        91 : Steel Giant (Automaton)
+        92 : None (Na-shi)
+        93 : None (Na-shi)
+        94 : None (Na-shi)
+        95 : None (Na-shi)
+        96 : Apanda (Reaver)
+        97 : Serpentarius
+        98 : Holy Dragon
+        99 : Archaic Demon (Archeodaemon)
+        9A : Ultima Demon (Ultima Daemon)
+        9B :
+        9C :
+        9D :
+        9E :
+        9F :
+        A0 : PSP ONLY (Dark Knight)
+        A1 : PSP ONLY (Onion Knight)
+        A2 : PSP ONLY (Sky Pirate)
+        A3 : PSP ONLY (Game Hunter)
+        A4 : PSP ONLY (Onion Knight)
+        A5 : PSP ONLY (Deathknight)
+        A6 : PSP ONLY (Templar)
+        A7 : PSP ONLY (Celebrant)
+        A8 : PSP ONLY (Dark Dragon) 
+    </Description>
+    <Location file="BATTLE_BIN" offset="10d3d0">03008290</Location>
+    <Location file="BATTLE_BIN" offset="10d3d8">
+      434d0508
+      21808000
+    </Location>
+    <Variable name="X" file="BATTLE_BIN" offset="EC50C"/>
+    <Location file="BATTLE_BIN" offset="EC50D">
+      000134
+      23084100
+      03002010
+      00000000
+      F8D00508
+      00000000
+      FBD00508
+      00000000
+    </Location>
+  </Patch>
+  <Patch name="No monster breeding">
+    <Location file="WORLD_WORLD_BIN" offset="045b6e">42</Location>
+  </Patch>
+  <Patch name="Mighty sword has XX% chance to break equipment">
+    <Description>
+      This makes it so that the mighty swordskills have a % chance to break equipment, but always function as normal damage swordskills. Maintenance prevents item breakage, but not damage. If you want Maintenance to prevent damage, change 0C to 26 at 122BA4.  Change "XX" to whatever chance to break you want. I also changed the damage formula to (WP+Y)*PA like the other swordskills, and divided the damage by 2 to prevent roflstomping. If you don't want this, change the 42100200 to 00000000 at 122C04.
+    </Description>    
+    <Location file="BATTLE_BIN" offset="122B94">
+      E8FFBD27
+      1000BFAF
+      8E1D060C
+      00000000
+      0C004014
+      64000434
+      B63B060C
+    </Location>
+    <Variable name="XX" file="BATTLE_BIN" default="64" offset="122BB0" />
+    <Location file="BATTLE_BIN" offset="122BB1">
+      000534
+    </Location>
+    <Location file="BATTLE_BIN" offset="122BB4">
+      08004014
+      00000000
+      721E060C
+      00000000
+      1E004014
+      1980033C
+      902D638C
+      04000234
+      100062A0
+      01000234
+      020060A0
+      4421060C
+      000062A0
+      15004014
+      00000000      
+      9717060C
+      00000000
+      E917060C
+      00000000
+      A921060C
+      00000000
+      1980033C
+      902D638C
+      42100200
+      040062A4
+      1980043C
+      DC388290
+      00000000
+      2A0062A0
+      00000000
+      00000000
+      F41B060C
+      00000000
+      3F1C060C
+      00000000
+      1000BF8F
+      1800BD27
+      0800E003
+      00000000
+    </Location>
+  </Patch>
+  <Patch name="Selling items at Fur Shop costs 1/4 normal price">
+    <Location file="WORLD_WORLD_BIN" offset="04374c">82</Location>
+  </Patch>
+  <Patch name="Buying items at Fur Shop costs 1 x normal price">
+    <Location file="WORLD_WORLD_BIN" offset="057A04">03</Location>
+  </Patch>
+
+  <Patch name="Poison damage is based off CurHP">
+    <Location file="BATTLE_BIN" offset="126800">28</Location>
+  </Patch>
+
+  <Patch name="Poison damage is 1/4 of HP.">
+    <Location file="BATTLE_BIN" offset="12680c">82</Location>
+  </Patch>
+
+  <Patch name="Poison damage is 1/8 * Min(999,MaxHP)">
+    <Location file="BATTLE_BIN" offset="126804">
+      054e050C
+      E803432C
+    </Location>
+    <Location file="BATTLE_BIN" offset="0ec814">
+      02006014
+      00000000
+      E7030234
+      1980033C
+      902D638C
+      0800E003
+      00000000
+    </Location>
+  </Patch>
+  <Patch name="Regen heal is 1/8 * Min(999,MaxHP)">
+    <Location file="BATTLE_BIN" offset="12682c">
+      054e050C
+      E803432C
+    </Location>
+    <Location file="BATTLE_BIN" offset="0ec814">
+      02006014
+      00000000
+      E7030234
+      1980033C
+      902D638C
+      0800E003
+      00000000
+    </Location>
+  </Patch>
+
+  <Patch name="Change % HP formulas to use Min(999,MaxHP)">
+    <Description>
+      Formulas affected include 09 (Demi), 0D (Raise), 0E (Death), 10 (Life Drain), 35 (Revive), 47 (Blood Suck), 4D (Mutilate), and 53 (Hurricane).
+    </Description>
+    <Location file="BATTLE_BIN" offset="11F624">
+      2108E003
+      DF54000C
+      1980023C
+      21F82000
+      1980033C
+      FA386390
+    </Location>
+    <Location file="BATTLE_BIN" offset="EC7FC">
+      982D428C
+      00000000
+      2A004290
+      054e0508
+      E803432C
+    </Location>
+    <Location file="BATTLE_BIN" offset="0ec814">
+      02006014
+      00000000
+      E7030234
+      1980033C
+      902D638C
+      0800E003
+      00000000
+    </Location>
+  </Patch>
+
+  <Patch name="Soldier Office can rename any units (including humans and special characters)">
+    <Location file="WORLD_WORLD_BIN" offset="041205">15</Location>
+  </Patch>
+
+  <Patch name="Cannot recruit any soldier from Soldier Office">
+    <Location file="WORLD_WORLD_BIN" offset="584C6">03</Location>
+  </Patch>
+
+  <Patch name="Blade Grasp trigger: weapon attacks">
+    <Description>
+      Blade Grasp now only blocks weapons with ID W through W + X - 1 and weapons with ID Y through Y + Z - 1.
+      Weapon Type List:
+        00 = Fists
+        01 = Daggers
+        02 = Ninjato
+        03 = Sword
+        04 = Knight Sword
+        05 = Katana
+        06 = Axe
+        07 = Rod
+        08 = Staff
+        09 = Flail
+        0A = Gun
+        0B = Crossbow
+        0C = Bow
+        0D = Instrument
+        0E = Book
+        0F = Spear
+        10 = Stick/Pole
+        11 = Bag
+        12 = Carpet/Veil
+        20 = Shuriken
+        21 = Bomb
+      For example, if I want to block only bladed weapons, then I want to block Daggers through Axes and Spears.  This means I need to block IDs 01-06 and 0F.  Thus, W = 01, X = 06, Y = 0F, Z = 01.
+    </Description>
+    <Location file="BATTLE_BIN" offset="126054">564E0508</Location>
+    <Location file="BATTLE_BIN" offset="12605C">20</Location>
+    <Location file="BATTLE_BIN" offset="ec958">
+      D8384390
+      0C000434
+      19008300
+      12200000
+      0680053C
+      2128A400
+      BD2EA490
+    </Location>
+    <Variable name="W" file="BATTLE_BIN" offset="EC974"/>      
+    <Location file="BATTLE_BIN" offset="ec975">  
+      000134
+      23088100
+    </Location>
+    <Variable name="X" file="BATTLE_BIN" offset="EC97C"/>            
+    <Location file="BATTLE_BIN" offset="ec97D">  
+      00212C
+      03002014
+    </Location>
+    <Variable name="Y" file="BATTLE_BIN" offset="EC984"/>            
+    <Location file="BATTLE_BIN" offset="ec985">  
+      000534
+      23088500
+    </Location>
+    <Variable name="Z" file="BATTLE_BIN" offset="EC98C"/>            
+    <Location file="BATTLE_BIN" offset="ec98D">  
+      00212C
+      02002014
+      00000524
+      F3384590
+      17340608
+      2110A000
+    </Location>
+  </Patch>
+
+  <Patch name="Equip Change innate all">
+    <Location file="BATTLE_BIN" offset="11a4de">20</Location>
+  </Patch>
+  <Patch name="Defend innate all v1.1">
+    <Location file="BATTLE_BIN" offset="11A4CA">20</Location>
+    <Location file="BATTLE_BIN" offset="1324D2">42</Location>
+  </Patch>
+  <Patch name="Defend Up innate all">
+    <Location file="BATTLE_BIN" offset="11F2E6">20</Location>
+  </Patch>
+
+  <Patch name="Magic Defend Up innate all">
+    <Location file="BATTLE_BIN" offset="11F336">20</Location>
+  </Patch>
+
+  <Patch name="All monsters can use Beastmaster moves.">
+    <Location file="BATTLE_BIN" offset="11B634">01000234</Location> 
+    <Location file="BATTLE_BIN" offset="133960">
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+    </Location> 
+  </Patch>
+
+  <Patch name="Secret Hunt innate all">
+    <Location file="BATTLE_BIN" offset="120D8E">20</Location>
+  </Patch>
+
+  <Patch name="Move Find Item innate all v1.1">
+    <Location file="BATTLE_BIN" offset="1190B8">1C4D0508</Location>
+    <Location file="BATTLE_BIN" offset="EC470">
+      06004192
+      00006290
+      20002130
+      03002014
+      00000000
+      32000608
+      00000000
+      39000608
+      00000000
+    </Location>
+  </Patch>
+
+  <Patch name="Secret Hunt ability isn't needed to enter Fur Shop">
+    <Location file="WORLD_WORLD_BIN" offset="57166">20</Location>
+  </Patch>
+
+  <Patch name="Require Sword - Require Weapons">
+    <Description>
+      Require Weapons now only requires weapons with ID X through X + Y - 1.
+      Weapon Type List:
+        00 = Fists
+        01 = Daggers
+        02 = Ninjato
+        03 = Sword
+        04 = Knight Sword
+        05 = Katana
+        06 = Axe
+        07 = Rod
+        08 = Staff
+        09 = Flail
+        0A = Gun
+        0B = Crossbow
+        0C = Bow
+        0D = Instrument
+        0E = Book
+        0F = Spear
+        10 = Stick/Pole
+        11 = Bag
+        12 = Carpet/Veil
+      For example, if I want Require Ranged, then I want to accept Gun through Bow.  This means I need to let IDs 0A-0C.  Thus, X = 0A, Y = 03.
+    </Description>
+    <Variable name="X" file="SCUS_942_21" default="03" offset="4CE64"/>            
+    <Location file="SCUS_942_21" offset="4CE65">  
+      000134
+      23104100
+    </Location>
+    <Variable name="Y" file="SCUS_942_21" default="02" offset="4CE6C"/>  
+    <Location file="SCUS_942_21" offset="4CE6D">  
+      00422C
+    </Location>
+  </Patch>
+  <Patch name="Equip X Hack">
+    <Description>
+	EQ1s
+	  0x80 - Barehanded
+	  0x40 - Knife
+	  0x20 - Ninja Blade
+	  0x10 - Sword
+	  0x08 - Knight's Sword
+	  0x04 - Katana
+	  0x02 - Axe
+	  0x01 - Rod
+	EQ2s
+	  0x80 - Staff
+	  0x40 - Flail
+	  0x20 - Gun
+	  0x10 - Crossbow
+	  0x08 - Bow
+	  0x04 - Instrument
+	  0x02 - Book
+	  0x01 - Polearm
+	EQ3s
+	  0x80 - Pole
+	  0x40 - Bag
+	  0x20 - Cloth
+	  0x10 - Shield
+	  0x08 - Helmet
+	  0x04 - Hat
+	  0x02 - Hair Adornment
+	  0x01 - Armor
+	EQ4s
+	  0x80 - Clothing
+	  0x40 - Robe
+	  0x20 - Shoes
+	  0x10 - Armguard
+	  0x08 - Ring
+	  0x04 - Armlet
+	  0x02 - Cloak
+	  0x01 - Perfume
+        For example, if I want Equip Armor to be Equip Knight Gear (Knight Sword + Sword + Shield + Helm + Armor), then EQ1 = 10 + 8 = 18, EQ2 = 00, EQ3 = 10 + 08 + 01 = 19, EQ4 = 00.
+    </Description>
+    <Location file="SCUS_942_21" offset="4CA7C">
+      00000534
+      8F008390
+      00000000
+      0418A300
+      80006230
+      08004010
+      0680033C
+      80100500
+      21184300
+      E8C2638C
+      4A00828C
+      00000000
+      25104300
+      4A0082AC
+      0100A524
+      0800A32C
+      F0FF6014
+      0A00A22C
+      06004010
+      00000000
+      06008390
+      00000000
+      0418A300
+      A4700108
+      00806230
+      0800E003
+      00000000
+    </Location>
+    <Variable name="EQA1" file="BATTLE_BIN" default="0" offset="4CAE8"/>
+    <Variable name="EQA2" file="BATTLE_BIN" default="0" offset="4CAE9"/>
+    <Variable name="EQA3" file="BATTLE_BIN" default="9" offset="4CAEA"/>
+    <Variable name="EQA4" file="BATTLE_BIN" default="0" offset="4CAEB"/>
+    <Variable name="EQB1" file="BATTLE_BIN" default="0" offset="4CAEC"/>
+    <Variable name="EQB2" file="BATTLE_BIN" default="0" offset="4CAED"/>
+    <Variable name="EQB3" file="BATTLE_BIN" default="10" offset="4CAEE"/>
+    <Variable name="EQB4" file="BATTLE_BIN" default="0" offset="4CAEF"/>
+    <Variable name="EQC1" file="BATTLE_BIN" default="10" offset="4CAF0"/>
+    <Variable name="EQC2" file="BATTLE_BIN" default="0" offset="4CAF1"/>
+    <Variable name="EQC3" file="BATTLE_BIN" default="0" offset="4CAF2"/>
+    <Variable name="EQC4" file="BATTLE_BIN" default="0" offset="4CAF3"/>
+    <Variable name="EQD1" file="BATTLE_BIN" default="4" offset="4CAF4"/>
+    <Variable name="EQD2" file="BATTLE_BIN" default="0" offset="4CAF5"/>
+    <Variable name="EQD3" file="BATTLE_BIN" default="0" offset="4CAF6"/>
+    <Variable name="EQD4" file="BATTLE_BIN" default="0" offset="4CAF7"/>
+    <Variable name="EQE1" file="BATTLE_BIN" default="0" offset="4CAF8"/>
+    <Variable name="EQE2" file="BATTLE_BIN" default="10" offset="4CAF9"/>
+    <Variable name="EQE3" file="BATTLE_BIN" default="0" offset="4CAFA"/>
+    <Variable name="EQE4" file="BATTLE_BIN" default="0" offset="4CAFB"/>
+    <Variable name="EQF1" file="BATTLE_BIN" default="0" offset="4CAFC"/>
+    <Variable name="EQF2" file="BATTLE_BIN" default="1" offset="4CAFD"/>
+    <Variable name="EQF3" file="BATTLE_BIN" default="0" offset="4CAFE"/>
+    <Variable name="EQF4" file="BATTLE_BIN" default="0" offset="4CAFF"/>
+    <Variable name="EQG1" file="BATTLE_BIN" default="2" offset="4CB00"/>
+    <Variable name="EQG2" file="BATTLE_BIN" default="0" offset="4CB01"/>
+    <Variable name="EQG3" file="BATTLE_BIN" default="0" offset="4CB02"/>
+    <Variable name="EQG4" file="BATTLE_BIN" default="0" offset="4CB03"/>
+    <Variable name="EQH1" file="BATTLE_BIN" default="0" offset="4CB04"/>
+    <Variable name="EQH2" file="BATTLE_BIN" default="20" offset="4CB05"/>
+    <Variable name="EQH3" file="BATTLE_BIN" default="0" offset="4CB06"/>
+    <Variable name="EQH4" file="BATTLE_BIN" default="0" offset="4CB07"/>
+    <Variable name="EQI1" file="BATTLE_BIN" default="0" offset="4CB08"/>
+    <Variable name="EQI2" file="BATTLE_BIN" default="0" offset="4CB09"/>
+    <Variable name="EQI3" file="BATTLE_BIN" default="0" offset="4CB0A"/>
+    <Variable name="EQI4" file="BATTLE_BIN" default="0" offset="4CB0B"/>
+    <Variable name="EQJ1" file="BATTLE_BIN" default="0" offset="4CB0C"/>
+    <Variable name="EQJ2" file="BATTLE_BIN" default="0" offset="4CB0D"/>
+    <Variable name="EQJ3" file="BATTLE_BIN" default="42" offset="4CB0E"/>
+    <Variable name="EQJ4" file="BATTLE_BIN" default="1" offset="4CB0F"/>
+  </Patch>
+  <Patch name="Undead units receive 25% max HP damage from Phoenix Down">
+    <Location file="BATTLE_BIN" offset="123334">82100200</Location>
+  </Patch>
+  <Patch name="Undead units ignore Phoenix Down">
+    <Location file="BATTLE_BIN" offset="123D22">02</Location>
+  </Patch>
+  <Patch name="Undead units receive 0 damage from all healing ability">
+    <Location file="BATTLE_BIN" offset="12038C">040060a4</Location>
+  </Patch>
+
+  <Patch name="Max of X items per battle (v2)">
+    <Description>Should set Y to X+1</Description>
+    <Location file="BATTLE_BIN" offset="11b864">6F4D0508</Location>
+    <Location file="BATTLE_BIN" offset="119ed4">8F4D0508</Location>
+    <Location file="BATTLE_BIN" offset="ec5bc">
+      21900000
+      0580013C
+      D0972134
+      1580023C
+      AC354234
+      00002390
+      00000000
+    </Location>
+    <Variable name="Y" file="BATTLE_BIN" offset="EC5D8"/>
+    <Location file="BATTLE_BIN" offset="ec5d9">
+      00642C
+      05008014
+      00000000
+      00000000
+    </Location>
+    <Variable name="X" file="BATTLE_BIN" offset="EC5E8"/>
+    <Location file="BATTLE_BIN" offset="EC5E9">
+      000424
+      804D0508
+      23186400
+      21200300
+      21180000
+      000024A0
+      000043A0
+      01002124
+      01004224
+      01005226
+      0E00442E
+      EEFF8014
+      00000000
+      1580033C
+      BB356334
+      000060A0
+      1980013C
+      1A0A0608
+      21900000
+    </Location>
+    <Location file="BATTLE_BIN" offset="EC634">
+      1580023C
+      BB354290
+      00000000
+      22004014
+      00000000
+      1580023C
+      AC024234
+      000044AC
+      040045AC
+      080046AC
+      21300000
+      0580023C
+      D0974234
+      1580033C
+      AC356334
+      00004490
+      00006590
+      00000000
+      21208500
+      6400852C
+      0200A014
+      00000000
+      63000424
+      000044A0
+      01004224
+      01006324
+      0100C624
+      0E00C42C
+      F2FF8014
+      00000000
+      01000424
+      1580023C
+      BB3544A0
+      1580023C
+      AC024234
+      0000448C
+      0400458C
+      0800468C
+      1980023C
+      44384294
+      B7030608
+      00000000
+    </Location>
+  </Patch>
+
+  <Patch name="Status effect evadability hack">
+    <Description>
+      V1/V2:
+	0x80 - Faith
+	0x40 - Innocent
+	0x20 - Charm
+	0x10 - Sleep
+	0x08 - Don't Move
+	0x04 - Don't Act
+	0x02 - Reflect
+	0x01 - Death Sentence
+      W1/W2:
+	0x80 - Oil
+	0x40 - Float
+	0x20 - Reraise
+	0x10 - Transparent
+	0x08 - Berserk
+	0x04 - Chicken
+	0x02 - Frog
+	0x01 - Critical
+      X1/X2:
+	0x80 - Poison
+	0x40 - Regen
+	0x20 - Protect
+	0x10 - Shell
+	0x08 - Haste
+	0x04 - Slow
+	0x02 - Stop
+	0x01 - Wall
+      Y1/Y2:
+	0x80 - 
+	0x40 - Crystal
+	0x20 - Dead
+	0x10 - Undead
+	0x08 - Charging
+	0x04 - Jump
+	0x02 - Defending
+	0x01 - Performing
+      Z1/Z2:
+	0x80 - Petrify
+	0x40 - Invite
+	0x20 - Darkness
+	0x10 - Confusion
+	0x08 - Silence
+	0x04 - Blood Suck
+	0x02 - Cursed
+	0x01 - Treasure
+      V1/W1/X1/Y1/Z1 correspond to status effects that cancel evasion.
+      V2/W2/X2/Y2/Z2 correspond to status effects that double evasion.
+      To figure out the correct number for a variable, you add up the numbers corresponding to all the status effects for a given variable. If you didn't use any statii belonging to a certain variable, that variable has value 00.
+      For example, if I want Sleep and Don't Act to cancel evasion, then V1 = 10 (Sleep) + 4 (Don't Act) = 14. All other variables are 00.
+      For example, if I want Transparent, Chicken, Frog, and Critical to double evasion, then W2 = 10 (Transparent) + 4 (Chicken) + 2 (Frog) + 1 (Critical) =  17.
+    </Description>
+    <Location file="BATTLE_BIN" offset="11E404">
+      5C00A290
+      5800A38C
+    </Location>
+    <Variable name="V1" file="BATTLE_BIN" default="14" offset="11E40C"/>
+    <Location file="BATTLE_BIN" offset="11E40D">
+      004230
+    </Location>
+    <Variable name="W1" file="BATTLE_BIN" offset="11E410"/>
+    <Variable name="X1" file="BATTLE_BIN" default="02" offset="11E411"/>
+    <Location file="BATTLE_BIN" offset="11E412">
+      013C
+    </Location>
+    <Variable name="Y1" file="BATTLE_BIN" default="09" offset="11E414"/>
+    <Variable name="Z1" file="BATTLE_BIN" default="10" offset="11E415"/>
+    <Location file="BATTLE_BIN" offset="11E416">
+      2134
+      24186100
+      25206200
+      05008010
+      00000000
+      1980043C
+      DE388424
+      9179010C
+      04000534
+      1980053C
+      982DA58C
+      00000000
+      5C00A290
+      5800A38C
+    </Location>
+    <Variable name="V2" file="BATTLE_BIN" offset="11E44C"/>
+    <Location file="BATTLE_BIN" offset="11E44D">
+      004230
+    </Location>
+    <Variable name="W2" file="BATTLE_BIN" offset="11E450"/>
+    <Variable name="X2" file="BATTLE_BIN" offset="11E451"/>
+    <Location file="BATTLE_BIN" offset="11E452">
+      013C
+    </Location>
+    <Variable name="Y2" file="BATTLE_BIN" default="02" offset="11E454"/>
+    <Variable name="Z2" file="BATTLE_BIN" offset="11E455"/>
+    <Location file="BATTLE_BIN" offset="11E456">
+      2134
+      24186100
+      25106200
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+    </Location>
+  </Patch>
+
+  <Patch name="Status effect bonus damage hack">
+    <Description>
+      V1/V2/V3:
+	0x80 - Faith
+	0x40 - Innocent
+	0x20 - Charm
+	0x10 - Sleep
+	0x08 - Don't Move
+	0x04 - Don't Act
+	0x02 - Reflect
+	0x01 - Death Sentence
+      W1/W2/W3:
+	0x80 - Oil
+	0x40 - Float
+	0x20 - Reraise
+	0x10 - Transparent
+	0x08 - Berserk
+	0x04 - Chicken
+	0x02 - Frog
+	0x01 - Critical
+      X1/X2/X3:
+	0x80 - Poison
+	0x40 - Regen
+	0x20 - Protect
+	0x10 - Shell
+	0x08 - Haste
+	0x04 - Slow
+	0x02 - Stop
+	0x01 - Wall
+      Y1/Y2/Y3:
+	0x80 - 
+	0x40 - Crystal
+	0x20 - Dead
+	0x10 - Undead
+	0x08 - Charging
+	0x04 - Jump
+	0x02 - Defending
+	0x01 - Performing
+      Z1/Z2/Z3:
+	0x80 - Petrify
+	0x40 - Invite
+	0x20 - Darkness
+	0x10 - Confusion
+	0x08 - Silence
+	0x04 - Blood Suck
+	0x02 - Cursed
+	0x01 - Treasure
+      V1/W1/X1/Y1/Z1 correspond to status effects that multiply physical attacks by M1 / 128.
+      V2/W2/X2/Y2/Z2 correspond to status effects that multiply physical attacks by M2 / 128. These stack with the M1 multiplier.
+      V3/W3/X3/Y3/Z3 correspond to status effects that multiply magical attacks by M3 / 128.
+        190% is M1/M2/M3 = F4
+        183% is M1/M2/M3 = EB
+        180% is M1/M2/M3 = E7
+        175% is M1/M2/M3 = E0
+        170% is M1/M2/M3 = DA
+        166% is M1/M2/M3 = D6
+        160% is M1/M2/M3 = CD
+        150% is M1/M2/M3 = C0 (default)
+        140% is M1/M2/M3 = B4
+        133% is M1/M2/M3 = AB
+        130% is M1/M2/M3 = A7
+        125% is M1/M2/M3 = A0
+        120% is M1/M2/M3 = 9A
+        117% is M1/M2/M3 = 96
+        110% is M1/M2/M3 = 8D
+        90% is M1/M2/M3 = 74
+        83% is M1/M2/M3 = 6B
+        80% is M1/M2/M3 = 67
+        75% is M1/M2/M3 = 60
+        70% is M1/M2/M3 = 5A
+        66% is M1/M2/M3 = 56
+        60% is M1/M2/M3 = 4D
+        50% is M1/M2/M3 = 40
+        40% is M1/M2/M3 = 34
+        33% is M1/M2/M3 = 2B
+        30% is M1/M2/M3 = 27
+        25% is M1/M2/M3 = 20
+        20% is M1/M2/M3 = 1A
+        17% is M1/M2/M3 = 16
+        10% is M1/M2/M3 = D
+      To figure out the correct number for a V/W/X/Y/Z variable, add up the numbers corresponding to all the status effects for a given variable. If you didn't use any statii belonging to a certain variable, that variable has value 00.
+      For example, if I want Chicken and Frog to take 1.5x physical damage, then W1 = 4 (Chicken) + 2 (Frog) = 06 and M1 = C0. Notice that I also could have used W2 and M2, but NOT BOTH W1/M1 AND W2/M2.
+      For example, if I want Blind and Confuse to take 1.33x magical damage, then Z3 = 20 (Darkness) + 10 (Confusion) =  37 and M3 = AB.
+    </Description>
+    <Location file="BATTLE_BIN" offset="11F3C4">
+      5800648C
+    </Location>
+    <Variable name="V1" file="BATTLE_BIN" default="10" offset="11F3C8"/>
+    <Location file="BATTLE_BIN" offset="11F3C9">
+      004230
+    </Location>
+    <Variable name="W1" file="BATTLE_BIN" offset="11F3CC"/>
+    <Variable name="X1" file="BATTLE_BIN" offset="11F3CD"/>
+    <Location file="BATTLE_BIN" offset="11F3CE">
+      013C
+    </Location>
+    <Variable name="Y1" file="BATTLE_BIN" default="08" offset="11F3D0"/>
+    <Variable name="Z1" file="BATTLE_BIN" offset="11F3D1"/>
+    <Location file="BATTLE_BIN" offset="11F3D2">
+      2134
+      24208100
+      25208200
+      08008010
+      00000000
+      1980043C
+      CE388294
+    </Location>
+    <Variable name="M1" file="BATTLE_BIN" default="C0" offset="11F3EC"/>
+    <Location file="BATTLE_BIN" offset="11F3ED">
+      000134
+      19004100
+      12100000
+      C2110200
+      CE3882A4
+      5C006290
+      5800648C
+    </Location>
+    <Variable name="V2" file="BATTLE_BIN" offset="11F408"/>
+    <Location file="BATTLE_BIN" offset="11F409">
+      004230
+    </Location>
+    <Variable name="W2" file="BATTLE_BIN" default="06" offset="11F40C"/>
+    <Variable name="X2" file="BATTLE_BIN" offset="11F40D"/>
+    <Location file="BATTLE_BIN" offset="11F40E">
+      013C
+    </Location>
+    <Variable name="Y2" file="BATTLE_BIN" offset="11F410"/>
+    <Variable name="Z2" file="BATTLE_BIN" offset="11F411"/>
+    <Location file="BATTLE_BIN" offset="11F412">
+      2134
+      24208100
+      25208200
+      08008010
+      00000000
+      1980043C
+      CE388294
+    </Location>
+    <Variable name="M2" file="BATTLE_BIN" default="C0" offset="11F42C"/>
+    <Location file="BATTLE_BIN" offset="11F42D">
+      000134
+      19004100
+      12100000
+      C2110200
+      CE3882A4
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      0800E003
+      00000000
+    </Location>
+    <Location file="BATTLE_BIN" offset="11F4B4">
+      5C004390
+      5800448C
+    </Location>
+    <Variable name="V3" file="BATTLE_BIN" offset="11F4BC"/>
+    <Location file="BATTLE_BIN" offset="11F4BD">
+      006330
+    </Location>
+    <Variable name="W3" file="BATTLE_BIN" default="06" offset="11F4C0"/>
+    <Variable name="X3" file="BATTLE_BIN" offset="11F4C1"/>
+    <Location file="BATTLE_BIN" offset="11F4C2">
+      013C
+    </Location>
+    <Variable name="Y3" file="BATTLE_BIN" offset="11F4C4"/>
+    <Variable name="Z3" file="BATTLE_BIN" offset="11F4C5"/>
+    <Location file="BATTLE_BIN" offset="11F4C6">
+      2134
+      24208100
+      25208300
+      07008010
+      1980033C
+      CE386294
+    </Location>
+    <Variable name="M3" file="BATTLE_BIN" default="C0" offset="11F4DC"/>
+    <Location file="BATTLE_BIN" offset="11F4DD">
+      000134
+      19004100
+      12100000
+      C2110200
+      CE3862A4
+      0800E003
+      00000000
+    </Location>
+  </Patch>
+
+  <Patch name="Potions use a fraction of maxHP">
+    <Description>
+      Potion Formula = Max(030, X * Max HP / 128)
+      Hi-Potion Formula = Max(070, Y * Max HP / 128)
+      X-Potion Formula = Max(150, Z * Max HP / 128)
+        100% is X/Y/Z = 80
+        90% is X/Y/Z = 74
+        83% is X/Y/Z = 6B
+        80% is X/Y/Z = 67
+        75% is X/Y/Z = 60
+        70% is X/Y/Z = 5A
+        66% is X/Y/Z = 56
+        60% is X/Y/Z = 4D
+        50% is X/Y/Z = 40
+        40% is X/Y/Z = 34
+        33% is X/Y/Z = 2B
+        30% is X/Y/Z = 27
+        25% is X/Y/Z = 20
+        20% is X/Y/Z = 1A
+        17% is X/Y/Z = 16
+        10% is X/Y/Z = D
+    </Description>
+    <Variable file="BATTLE_BIN" offset="EC774" name="X"/>
+    <Variable file="BATTLE_BIN" offset="EC775" name="Y"/>
+    <Variable file="BATTLE_BIN" offset="EC776" name="Z"/>
+    <Location file="BATTLE_BIN" offset="123284">DE4D0508</Location>
+    <Location file="BATTLE_BIN" offset="EC777">
+      00
+      1580033C
+      B8026334
+      000064AC
+      040065AC
+      080066AC
+      1980043C
+      DB388490
+      1980063C
+      0300852C
+      0E00A010
+      982DC68C
+      1580053C
+      2A00C694
+      7437A534
+      2128A400
+      0000A590
+      00000000
+      1800C500
+      12280000
+      C2290500
+      2B204500
+      02008010
+      00000000
+      21100500
+      0000648C
+      0400658C
+      0800668C
+      1980033C
+      902D638C
+      A3280608
+      00000000
+    </Location>
+  </Patch>
+</Patches>

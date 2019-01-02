@@ -1,0 +1,466 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Patches>
+  <Patch name="Attack Up bonus becomes X / 128">
+    <Description>
+        190% is X = F4
+        183% is X = EB
+        180% is X = E7
+        175% is X = E0
+        170% is X = DA
+        166% is X = D6
+        160% is X = CD
+        150% is X = C0
+        140% is X = B4
+        133% is X = AB (default)
+        130% is X = A7
+        125% is X = A0
+        120% is X = 9A
+        117% is X = 96
+        110% is X = 8D
+      If you want the multiplier to be less than 100%, subtract 0x80 from the above number.
+    </Description> 
+    <Variable file="BATTLE_BIN" offset="11F0BC" default="AB" name="X"/> 
+    <Location file="BATTLE_BIN" offset="11F0BD">
+      000234
+    </Location>
+    <Location file="BATTLE_BIN" offset="11F0CC">
+      00000000
+      19004300
+      12100000
+      C2110200
+      00000000
+      00000000
+    </Location>
+  </Patch>
+
+  <Patch name="Magic Attack Up bonus becomes X / 128">
+    <Description>
+        190% is X = F4
+        183% is X = EB
+        180% is X = E7
+        175% is X = E0
+        170% is X = DA
+        166% is X = D6
+        160% is X = CD
+        150% is X = C0
+        140% is X = B4
+        133% is X = AB (default)
+        130% is X = A7
+        125% is X = A0
+        120% is X = 9A
+        117% is X = 96
+        110% is X = 8D
+      If you want the multiplier to be less than 100%, subtract 0x80 from the above number.
+    </Description> 
+    <Variable file="BATTLE_BIN" offset="11F220" default="AB" name="X"/> 
+    <Location file="BATTLE_BIN" offset="11F221">
+      000234
+    </Location>
+    <Location file="BATTLE_BIN" offset="11F230">
+      00000000
+      19004300
+      12100000
+      C2110200
+      00000000
+      00000000
+    </Location>
+  </Patch>
+
+  <Patch name="Defense Up bonus becomes X / 128">
+    <Description>
+        90% is X = 74
+        83% is X = 6B
+        80% is X = 67
+        75% is X = 60
+        70% is X = 5A
+        66% is X = 56 (default)
+        60% is X = 4D
+        50% is X = 40
+        40% is X = 34
+        33% is X = 2B
+        30% is X = 27
+        25% is X = 20
+        20% is X = 1A
+        17% is X = 16
+        10% is X = 0D
+      If you want the multiplier to be greater than 100%, add 0x80 to the above number.
+    </Description> 
+    <Variable file="BATTLE_BIN" offset="11F2E8" default="56" name="X"/> 
+    <Location file="BATTLE_BIN" offset="11F2E9">
+      000234
+    </Location>
+    <Location file="BATTLE_BIN" offset="11F2F8">
+      00000000
+      19004300
+      12100000
+      C2110200
+      00000000
+      00000000
+    </Location>
+  </Patch>
+
+  <Patch name="Protect bonus becomes X / 128">
+    <Description>
+        90% is X = 74
+        83% is X = 6B
+        80% is X = 67
+        75% is X = 60
+        70% is X = 5A
+        66% is X = 56 (default)
+        60% is X = 4D
+        50% is X = 40
+        40% is X = 34
+        33% is X = 2B
+        30% is X = 27
+        25% is X = 20
+        20% is X = 1A
+        17% is X = 16
+        10% is X = 0D
+      If you want the multiplier to be greater than 100%, add 0x80 to the above number.
+    </Description> 
+    <Variable file="BATTLE_BIN" offset="11F388" default="56" name="X"/> 
+    <Location file="BATTLE_BIN" offset="11F389">
+      000234
+    </Location>
+    <Location file="BATTLE_BIN" offset="11F398">
+      00000000
+      19004300
+      12100000
+      C2110200
+      00000000
+      00000000
+    </Location>
+  </Patch>
+
+  <Patch name="Magic Defend Up bonus becomes X / 128">
+    <Description>
+        90% is X = 74
+        83% is X = 6B
+        80% is X = 67
+        75% is X = 60
+        70% is X = 5A
+        66% is X = 56 (default)
+        60% is X = 4D
+        50% is X = 40
+        40% is X = 34
+        33% is X = 2B
+        30% is X = 27
+        25% is X = 20
+        20% is X = 1A
+        17% is X = 16
+        10% is X = 0D
+      If you want the multiplier to be greater than 100%, add 0x80 to the above number.
+    </Description> 
+    <Variable file="BATTLE_BIN" offset="11F338" default="56" name="X"/> 
+    <Location file="BATTLE_BIN" offset="11F339">
+      000234
+    </Location>
+    <Location file="BATTLE_BIN" offset="11F348">
+      00000000
+      19004300
+      12100000
+      C2110200
+      00000000
+      00000000
+    </Location>
+  </Patch>
+
+  <Patch name="Shell bonus becomes X / 128">
+    <Description>
+        90% is X = 74
+        83% is X = 6B
+        80% is X = 67
+        75% is X = 60
+        70% is X = 5A
+        66% is X = 56 (default)
+        60% is X = 4D
+        50% is X = 40
+        40% is X = 34
+        33% is X = 2B
+        30% is X = 27
+        25% is X = 20
+        20% is X = 1A
+        17% is X = 16
+        10% is X = 0D
+      If you want the multiplier to be greater than 100%, add 0x80 to the above number.
+    </Description> 
+    <Variable file="BATTLE_BIN" offset="11F47C" default="56" name="X"/> 
+    <Location file="BATTLE_BIN" offset="11F47D">
+      000234
+    </Location>
+    <Location file="BATTLE_BIN" offset="11F48C">
+      00000000
+      19004300
+      12100000
+      C2110200
+      00000000
+      00000000
+    </Location>
+  </Patch>
+
+  <Patch name="Remove target's faith from spell damage calculations">
+    <Location file="BATTLE_BIN" offset="1201F8">
+      64000234
+      00000000
+    </Location>
+  </Patch>
+
+  <Patch name="Remove caster's faith from spell damage calculations">
+    <Location file="BATTLE_BIN" offset="120210">
+      64000234
+      00000000
+    </Location>
+  </Patch>
+
+  <Patch name="Faith Constant Hack">
+    <Description>
+      The new formula for calculations is (X + Caster_Faith) * (Y + Target_Faith) * Total Damage / 10000.
+    </Description> 
+    <Location file="BATTLE_BIN" offset="1201F8">
+      1980013C
+      D2382290
+    </Location>
+    <Variable file="BATTLE_BIN" offset="120204" name="X"/> 
+    <Location file="BATTLE_BIN" offset="120205">
+      004224
+    </Location>
+    <Location file="BATTLE_BIN" offset="120210">
+      D3382290
+      00000000
+    </Location>
+    <Variable file="BATTLE_BIN" offset="120218" name="Y"/> 
+    <Location file="BATTLE_BIN" offset="120219">
+      004224
+    </Location>
+  </Patch>
+  <Patch name="Weapon XA Rewrite">
+    <Description>
+        This hack rewrites weapon XA.  This means any ability can use formulas 01-07 and will do the correct amount of damage.  It also allows you to repoint the formula of any weapon type.  This hack automatically fixes FFT's random damage formula to vary between 0.5x - 1.5x that of expected damage (remember to adjust mace WP accordingly).  A side effect is that wiznaibus and witch hunt now do PA + Y rather than PA + [PA * Br / 100].
+        STAT can vary between these values:
+          23 = MA
+          24 = PA
+          25 = SP
+          26 = Br
+          30 = WP
+          31 = [PA * Br / 100]
+        CONST is set to whatever; the damage formula is STAT * CONST.
+        For all the weapon types, the following numbers correspond to the following damage formulas:
+          20 = PA * [PA * Br / 100]
+          2C = MA * WP
+          34 = PA * WP
+          3C = WP * WP
+          44 = [PA * Br / 100] * WP
+          4C = [(PA + SP) / 2] * WP
+          54 = [(PA + MA) / 2] * WP
+          5C = ([PA / 2] + {1...PA}) * WP
+          8C = Naked PA * [Naked PA * Br / 100]
+          A0 = STAT * CONST
+    </Description> 
+    <Location file="BATTLE_BIN"
+              offset="11EA9C">
+     1980033C
+D8386290
+E0FFBD27
+1800BFAF
+1400B1AF
+40180200
+21186200
+80180300
+0680013C
+21082300
+BD2E2290
+1880013C
+80100200
+21082200
+485C228C
+1980013C
+942D238C
+1000B0AF
+24006690
+38006590
+36006490
+37006390
+18008600
+12880000
+8F02103C
+285C1036
+19003002
+10880000
+02002016
+02393090
+01001134
+08004000
+00000000
+CE3824A4
+0D170608
+D03831A4
+0C170608
+CE3823A4
+0C170608
+CE3824A4
+0C170608
+CE3830A4
+0C170608
+CE3831A4
+0A170608
+21208500
+0A170608
+21208300
+A83B060C
+00000000
+18008200
+12100000
+02004104
+1980013C
+FF7F4224
+C3130200
+01004224
+42200400
+0B170608
+21208200
+942D248C
+1880023C
+30008490
+BD160608
+485C4224
+CE38
+    </Location>
+    <Variable file="BATTLE_BIN" offset="11EBA2" name="STAT"/> 
+    <Location file="BATTLE_BIN" offset="11EBA3">
+A4
+0C170608
+    </Location>
+    <Variable file="BATTLE_BIN" offset="11EBA8" name="CONST"/> 
+    <Location file="BATTLE_BIN" offset="11EBA9">
+001024
+00000000
+00000000
+00000000
+00000000
+00000000
+00000000
+00000000
+00000000
+00000000
+00000000
+00000000
+00000000
+00000000
+00000000
+00000000
+00000000
+00000000
+00000000
+00000000
+00000000
+00000000
+00000000
+00000000
+00000000
+00000000
+00000000
+00000000
+00000000
+00000000
+00000000
+00000000
+42200400
+CE3824A4
+D03830A4
+1800BF8F
+1400B18F
+1000B08F
+0800E003
+2000BD27
+    </Location>
+    <Variable file="BATTLE_BIN" offset="11EC48" default="20" name="FIST"/> 
+    <Location file="BATTLE_BIN" offset="11EC49">
+5B1880
+    </Location>
+    <Variable file="BATTLE_BIN" offset="11EC4C" default="4C" name="KNFE"/> 
+    <Location file="BATTLE_BIN" offset="11EC4D">
+5B1880
+    </Location>
+    <Variable file="BATTLE_BIN" offset="11EC50" default="4C" name="NIJT"/> 
+    <Location file="BATTLE_BIN" offset="11EC51">
+5B1880
+    </Location>
+    <Variable file="BATTLE_BIN" offset="11EC54" default="34" name="SWRD"/> 
+    <Location file="BATTLE_BIN" offset="11EC55">
+5B1880
+    </Location>
+    <Variable file="BATTLE_BIN" offset="11EC58" default="44" name="KSWD"/> 
+    <Location file="BATTLE_BIN" offset="11EC59">
+5B1880
+    </Location>
+    <Variable file="BATTLE_BIN" offset="11EC5C" default="44" name="KTNA"/> 
+    <Location file="BATTLE_BIN" offset="11EC5D">
+5B1880
+    </Location>
+    <Variable file="BATTLE_BIN" offset="11EC60" default="5C" name="AXE"/> 
+    <Location file="BATTLE_BIN" offset="11EC61">
+5B1880
+    </Location>
+    <Variable file="BATTLE_BIN" offset="11EC64" default="34" name="ROD"/> 
+    <Location file="BATTLE_BIN" offset="11EC65">
+5B1880
+    </Location>
+    <Variable file="BATTLE_BIN" offset="11EC68" default="2C" name="STAF"/> 
+    <Location file="BATTLE_BIN" offset="11EC69">
+5B1880
+    </Location>
+    <Variable file="BATTLE_BIN" offset="11EC6C" default="5C" name="FLIL"/> 
+    <Location file="BATTLE_BIN" offset="11EC6D">
+5B1880
+    </Location>
+    <Variable file="BATTLE_BIN" offset="11EC70" default="3C" name="GUN"/> 
+    <Location file="BATTLE_BIN" offset="11EC71">
+5B1880
+    </Location>
+    <Variable file="BATTLE_BIN" offset="11EC74" default="34" name="XBOW"/> 
+    <Location file="BATTLE_BIN" offset="11EC75">
+5B1880
+    </Location>
+    <Variable file="BATTLE_BIN" offset="11EC78" default="4C" name="LBOW"/> 
+    <Location file="BATTLE_BIN" offset="11EC79">
+5B1880
+    </Location>
+    <Variable file="BATTLE_BIN" offset="11EC7C" default="54" name="INST"/> 
+    <Location file="BATTLE_BIN" offset="11EC7D">
+5B1880
+    </Location>
+    <Variable file="BATTLE_BIN" offset="11EC80" default="54" name="BOOK"/> 
+    <Location file="BATTLE_BIN" offset="11EC81">
+5B1880
+    </Location>
+    <Variable file="BATTLE_BIN" offset="11EC84" default="34" name="LNCE"/> 
+    <Location file="BATTLE_BIN" offset="11EC85">
+5B1880
+    </Location>
+    <Variable file="BATTLE_BIN" offset="11EC88" default="2C" name="STIK"/> 
+    <Location file="BATTLE_BIN" offset="11EC89">
+5B1880
+    </Location>
+    <Variable file="BATTLE_BIN" offset="11EC8C" default="5C" name="BAG"/> 
+    <Location file="BATTLE_BIN" offset="11EC8D">
+5B1880
+    </Location>
+    <Variable file="BATTLE_BIN" offset="11EC90" default="54" name="VEIL"/> 
+    <Location file="BATTLE_BIN" offset="11EC91">
+5B1880
+    </Location>
+  <Location file="BATTLE_BIN"
+              offset="11F1CC">
+00000000
+    </Location>
+  <Location file="BATTLE_BIN"
+              offset="12475c">
+00000000
+00000000
+    </Location>
+  <Location file="BATTLE_BIN"
+              offset="122414">
+8117060C
+    </Location> 
+   </Patch>
+</Patches>

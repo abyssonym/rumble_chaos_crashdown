@@ -1,0 +1,1711 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Patches>
+
+
+<Patch name="(#+1%) Chance of Critical Hit">
+<Description>Example: Using 63 (decimal: 99) would be 99% + 1% resulting in 100% Critical hit rate.</Description>
+<Variable name="Critical %" file="BATTLE_BIN" offset="11F508" default="0004" bytes="2" />
+</Patch>
+
+
+<Patch name="(#+1%) Chance of Knockback for Dash/Throw Stone">
+<Description>Example: Using 63 (decimal: 99) would be 99% + 1% resulting in 100% Knockback for Dash/Throw Stone.</Description>
+<Variable name="Knockback %" file="BATTLE_BIN" offset="11F9C8" default="0004" bytes="2" />
+<Location file="BATTLE_BIN" offset="11F9CA">0534</Location>
+</Patch>
+
+
+<Patch name="(#+1%) Chance of Spell/Skill Proc (Formula 02)">
+<Description>Example: Using 63 (decimal: 99) would be 99% + 1% resulting in 100% Spell Proc Rate.</Description>
+<Variable name="Proc %" file="BATTLE_BIN" offset="11F9C8" default="0013" bytes="2" />
+</Patch>
+
+
+  <Patch name="2nd Squad is not mandatory">
+    <Description>Allows starting a battle with an empty 2nd Squad, even if you have units available.</Description>
+    <Location file="EVENT_ATTACK_OUT" offset="5994">
+      1E80043C
+    </Location>
+    <Location file="EVENT_ATTACK_OUT" offset="59A0">
+      7CCC848C
+      58D0228C
+      00000000
+      21104400
+    </Location>
+  </Patch>
+
+
+<Patch name="Activate Paletted Portraits for Special Units">
+<Description>Allows use of additional palettes on unique portraits for battles and events.</Description>
+<Location file="BATTLE_BIN" offset="1ADCC">
+00000000
+</Location>
+</Patch>
+
+
+<Patch name="Blank support ability over Short Charge adds 25% bonus skill hit">
+<Description>Abilities like talk skill, spells, physical abilities gain 25% to hit unless they are 100% to hit to start with.</Description>
+<Location file="BATTLE_BIN" offset="11F5D8">
+1980013C
+CE382294
+CE3830A4
+D03822A4
+D0382394
+CE382294
+92006492
+10008430
+03000410
+21104300
+82180200
+21106200
+902D248C
+</Location>
+</Patch>
+
+
+  <Patch name="Bonus Money = (Level+X)*Y">
+	<Variable name="X (hexademical)" file="BATTLE_BIN" offset="119DE4" bytes="2" default="0000" />
+    <Location file="BATTLE_BIN" offset="119DE6">
+      4224
+    </Location>
+    <Location file="BATTLE_BIN" offset="119DEC">
+      443822A4
+    </Location>
+	<Variable name="Y (hexademical)" file="BATTLE_BIN" offset="119EDC" bytes="2" default="0064" />
+    <Location file="BATTLE_BIN" offset="119EDE">
+      0334
+      19004300
+      12180000
+      00000000
+    </Location>
+    <Location file="BATTLE_BIN" offset="119EF4">
+      00000000
+    </Location>
+  </Patch>
+
+
+<Patch name="Brave becomes Fury (Version 1.02)">
+<Description>Fury is essentially Brave, but with Faith's aspects. The higher your Fury, the higher damage you can deal and receive.
+
+The formula added at the end of all calculations is: (40+Caster_Fury)*
+(40+Target_Fury)*Total_Damage/10000
+
+Basically 72 Fury will make your hits will be at 112% strength as well as your damage received.
+
+Fury still keeps Brave's normal effects such as Move-Find Item and chance to activate reaction abilities.
+
+Bye Bye constant damage! Zodiac compatibility doesn't affect nearly as much as this anyway.</Description>
+<Location file="BATTLE_BIN" offset="E930C">
+10270000
+1980033C
+942D628C
+982D638C
+24004290
+24006390
+28004224
+28006324
+18004300
+12100000
+1500033C
+0C0362AC
+97180608
+00000000
+250062A0
+12100000
+1500043C
+0C03848C
+18004400
+12100000
+10270434
+1A004400
+1500023C
+0C0344AC
+12100000
+65190608
+00000000
+</Location>
+<Location file="BATTLE_BIN" offset="11F254">
+C4400508
+1900013C
+942D218C
+5A00228C
+</Location>
+<Location file="BATTLE_BIN" offset="11F58C">
+D1400508
+00000000
+</Location>
+</Patch>
+
+
+  <Patch name="Can view ??? units' stats">
+    <Description>Allows viewing the stats of ??? units. Sadly, as the Unit List does not have a function to hide stats like the battle field does, you should not apply the Unit List portion of this hack if you want stats to remain completely hidden to the player. This means the ??? unit will not show up at all in the Unit List, just like in the original version. By default, this xml disables all stats hiding, so edit it as you see fit (there are plenty of comments).</Description>
+	<!-- For every section: 00 to disable and 04 to re-enable -->
+	<!-- Allow viewing ??? units' stats on the field -->
+    <Location file="BATTLE_BIN" offset="D5DF0">
+      00
+    </Location>
+	<!-- Allow viewing ??? units' stats in Unit List (THE GAME DOES NOT HIDE STATS) -->
+    <Location file="EVENT_BUNIT_OUT" offset="7E70">
+      00
+    </Location>
+	<!-- HP/MP/CT bars are coloured + filled and reveal the stats from the second window (SP/PA/MA/WP/etc.) of ??? units on the field -->
+    <Location file="BATTLE_BIN" offset="CF070">
+      00
+    </Location>
+	<!-- Reveal Brave/Faith of ??? units on the field -->
+    <Location file="BATTLE_BIN" offset="CF444">
+      00
+    </Location>
+	<!-- Reveal Lv/Exp/HP/MP/CT numbers of ??? units on the field (12042 HP will display as 042, you've been warned; only the last 2-3 digits are displayed for these numbers) -->
+    <Location file="BATTLE_BIN" offset="CE320">
+      00
+    </Location>
+  </Patch>
+
+
+  <Patch name="Cross Skip v3">
+    <Description>Holding X (Cross button), will fly you through dialog text as if you were mashing the button.</Description>
+    <Location file="BATTLE_BIN" offset="CA6C4">
+      1780023C
+      D097428C
+      004C0508
+      0480033C
+    </Location>
+    <Location file="BATTLE_BIN" offset="CA33C">
+      054C0508
+    </Location>
+    <Location file="BATTLE_BIN" offset="C8BC8">
+      1E4C0508
+      0480023C
+    </Location>
+    <Location file="BATTLE_BIN" offset="CB6F0">
+      0E4C0508
+      032C0500
+      40000831
+      02000015
+      25400000
+      A800A897
+      1780013C
+      D4DA37A4
+      D6DA3EA4
+      D8DA30A4
+      E0DA22A4
+      E2DA23A4
+    </Location>
+    <Location file="EVENT_ETC_OUT" offset="210">
+      124C050C
+      1780013C
+    </Location>
+    <Location file="EVENT_ETC_OUT" offset="258">
+      124C050C
+      1780013C
+    </Location>
+    <Location file="EVENT_ETC_OUT" offset="2A0">
+      124C050C
+      1780013C
+    </Location>
+    <Location file="EVENT_ETC_OUT" offset="2E4">
+      124C050C
+      1780013C
+    </Location>
+    <Location file="EVENT_ETC_OUT" offset="320">
+      124C050C
+      1780013C
+    </Location>
+    <Location file="BATTLE_BIN" offset="EC000">
+      4459638C
+      20014230
+      40006330
+      B5C50408
+      25104300
+      0480023C
+      4459428C
+      6400278D
+      40004230
+      02004010
+      FC00E230
+      03004734
+      D1C40408
+      00000000
+      0480083C
+      4459088D
+      BEC90408
+      00000000
+      54E4238C
+      00000000
+      07006014
+      0480023C
+      4459428C
+      00000000
+      40004230
+      02004010
+      00000000
+      FF7F1026
+      0800E003
+      3840228C
+      4459428C
+      00000000
+      40004230
+      04004010
+      1680023C
+      25A80000
+      1780013C
+      04A420A4
+      F4BE0408
+      885F428C
+    </Location>
+  </Patch>
+
+
+<Patch name="Custom Palette for Special Units and Generic Humans">
+<Description>Allows use of additional palettes on unique and generic sprites for battles and events.</Description>
+<Location file="BATTLE_BIN" offset="20AE4">
+00000000
+26004228
+</Location>
+</Patch>
+
+
+<Patch name="Custom Palette for Special Units, Generic Humans and Generic Monsters">
+<Description>Allows use of additional palettes on unique, generic and monster sprites for battles and events.</Description>
+<Location file="BATTLE_BIN" offset="20AE4">
+FFFF4230
+FFFF422C
+</Location>
+</Patch>
+
+
+<Patch name="Disable the game music">
+<Description>Disables all in-game music.</Description>
+<Location file="SCUS_942_21" offset="33DF4">
+01000234
+</Location>
+<Location file="SCUS_942_21" offset="33E90">
+01000234
+</Location>
+<Location file="SCUS_942_21" offset="34010">
+01000234
+</Location>
+</Patch>
+
+
+<Patch name="Divide Bonus Money by 2">
+<Description>Divide Bonus Money received at the end of a battle by 2.</Description>
+<Location file="BATTLE_BIN" offset="119EF4">
+40180300
+</Location>
+</Patch>
+
+
+<Patch name="Divide Gained EXP in 2 (Version 1)">
+<Description>Divines EXP gained in half and also breaks minimal 1 Exp gain on success.
+
+NOTE: BUGGY; Exp gain works fine but amount gained with the Display Exp and JP gain option, it calculates normally and doesn't halve.</Description>
+<Location file="BATTLE_BIN" offset="1178AC">
+42182300
+21184300
+00016228
+00000000
+00000000
+</Location>
+</Patch>
+
+
+<Patch name="Equip Change Fix">
+    <Description>Allows changing your Right Hand/Left Hand equipments without consuming your Act.</Description>
+    <Location file="BATTLE_BIN" offset="EC344">
+      0000A6AF
+      0400A7AF
+      02000624
+      1F80073C
+      E492E78C
+      1E80053C
+      E487A524
+      0400E724
+      5400E394
+      0000A284
+      0200E724
+      0200A524
+      05004314
+      01000334
+      0500C22C
+      F8FF4014
+      0100C624
+      00000334
+      1580023C
+      04D3428C
+      C0010534
+      1800A200
+      12280000
+      1980013C
+      CC082124
+      21082500
+      880123A0
+      1580013C
+      01000534
+      2318A300
+      F83323A0
+      0000A68F
+      0400A78F
+      72D40108
+      0800BD27
+      F83380A0
+      0300A010
+      01000534
+      C6E30408
+      1001A5AF
+      02004314
+      1001A3AF
+      1001A0AF
+      C6E30408
+      00000000
+      00000000
+    </Location>
+    <Location file="BATTLE_BIN" offset="E1C0">
+      D14C0508
+      F8FFBD27
+    </Location>
+    <Location file="BATTLE_BIN" offset="D1F0C">
+      1580043C
+      F44C0508
+      F8338590
+    </Location>
+  </Patch>
+
+
+<Patch name="Event Instruction Upgrade v1.13"><Description>
+      Upgrades InflictStatus(), Allows editing more variables and Adds many instructions to use in events, such as: BlockLoop(), LUI(), SET(), Random(), LoadAddress(), UnitAddress(), WorldUnitAddress(), SaveAddress(), UpdateUnit(), MinMax() and Routine(). Automatically recalculates the text offset when necessary removing the need to include a Text() offset for savestate eventing.
+    </Description><Location file="BATTLE_BIN" offset="EB4D0">
+      00068228
+      0B004010
+      00FC8224
+      00014330
+      FF004230
+      83100200
+      80100200
+      02006014
+      0680033C
+      4C026324
+      94946324
+      E1280508
+      21806200
+      000A8228
+      07004010
+      00FA8224
+      43110200
+      80100200
+      0680033C
+      14946324
+      E1280508
+      21806200
+      000B8228
+      07004010
+      00F68224
+      43100200
+      80100200
+      0580033C
+      C8796324
+      E1280508
+      21806200
+      800B8228
+      06004010
+      00F58224
+      80100200
+      1680033C
+      F45E6324
+      E1280508
+      21806200
+      5632050C
+      00000000
+      E1280508
+      00000000
+      04004010
+      00068228
+      07008230
+      F8280508
+      80800200
+      04004010
+      000A8228
+      03008230
+      F8280508
+      C0800200
+      03004010
+      000B8228
+      F8280508
+      1F009030
+      04004010
+      800B8228
+      01008230
+      F8280508
+      00810200
+      03004010
+      00000000
+      F8280508
+      FFFF1024
+      F4280508
+      00000000
+      03004014
+      000A622A
+      0800E003
+      FFFF0424
+      03004014
+      0006622A
+      0800E003
+      FFFF0434
+      03004014
+      0004622A
+      0800E003
+      01000434
+      03004014
+      6003622A
+      0800E003
+      FF000434
+      02004014
+      01000434
+      0F000434
+      0800E003
+      00000000
+      05004014
+      0004622A
+      03004010
+      00000000
+      75280508
+      01000234
+      7E280508
+      00000000
+      BF000234
+      0B008216
+      C1000234
+      00000000
+      00000000
+      C388000C
+      7F004432
+      0580013C
+      80100400
+      21082200
+      1C7723AC
+      C9170508
+      00000000
+      00000434
+      04008212
+      C4000234
+      3A008216
+      C2000234
+      01000434
+      03002392
+      0580013C
+      7F006330
+      80180300
+      21082300
+      1C77238C
+      FFFF0224
+      03004314
+      00000000
+      C9170508
+      00000000
+      02002292
+      00000000
+      00120200
+      21184300
+      01002292
+      00000000
+      21084300
+      04002392
+      00000000
+      02006014
+      05006228
+      01000334
+      02004014
+      00000000
+      04000334
+      10008014
+      25206000
+      25100000
+      FFFF2124
+      21082400
+      00002390
+      FFFF8424
+      00120200
+      25104300
+      FBFF801C
+      FFFF2124
+      00002392
+      0580013C
+      80180300
+      21082300
+      C9170508
+      1C7722AC
+      00002392
+      0580023C
+      7F006330
+      80180300
+      21104300
+      1C77428C
+      FFFF8424
+      000022A0
+      02120200
+      FCFF801C
+      01002124
+      C9170508
+      00000000
+      25400000
+      18008212
+      C3000234
+      13008216
+      C5000234
+      14000434
+      0580013C
+      747F2124
+      00002284
+      01002392
+      08004004
+      FF004230
+      18005210
+      FFFF8424
+      04004010
+      CE002294
+      00000000
+      13005210
+      00000000
+      F4FF801C
+      00012124
+      074A0508
+      25080000
+      21008216
+      C6000234
+      01000834
+      15000434
+      1980013C
+      CC082124
+      61012290
+      01002392
+      05005210
+      FFFF8424
+      FBFF801C
+      C0012124
+      074A0508
+      25080000
+      07000015
+      00000000
+      7F006230
+      80100200
+      0580033C
+      21184300
+      C9170508
+      1C7761AC
+      02006830
+      08000011
+      00000000
+      1A80013C
+      14000334
+      22206400
+      21082400
+      04000234
+      65FD22A0
+      00000000
+      C9170508
+      00000000
+      1D008216
+      CF000234
+      0580013C
+      7F004232
+      80100200
+      21082200
+      1C77228C
+      01002892
+      03002392
+      01000431
+      08008014
+      02000831
+      02002492
+      001A0300
+      21186400
+      22204300
+      02008104
+      00000000
+      25106000
+      08000015
+      05002392
+      04002492
+      001A0300
+      21186400
+      22206200
+      02008104
+      00000000
+      25106000
+      C9170508
+      1C7722AC
+      3A008216
+      00000000
+      BCFFBD27
+      1400A5AF
+      1800A6AF
+      1C00A7AF
+      2000A8AF
+      2400A9AF
+      2800AAAF
+      2C00ABAF
+      3000ACAF
+      3400ADAF
+      3800AEAF
+      3C00AFAF
+      4000B0AF
+      20100000
+      03002392
+      02002492
+      001E0300
+      25104300
+      00240400
+      25104400
+      01002392
+      00002492
+      001A0300
+      25104300
+      25104400
+      0580013C
+      1C772124
+      0C00238C
+      1000248C
+      1400258C
+      1800268C
+      1C00278C
+      2000288C
+      2400298C
+      28002A8C
+      2C002B8C
+      30002C8C
+      34002D8C
+      38002E8C
+      3C002F8C
+      4000308C
+      09F84000
+      00000000
+      0000A58F
+      0400A68F
+      0800A78F
+      0C00A88F
+      1000A98F
+      1400AA8F
+      1800AB8F
+      1C00AC8F
+      2000AD8F
+      2400AE8F
+      2800AF8F
+      2C00B08F
+      C9170508
+      4400BD27
+      510F0508
+      C0000234
+      03004216
+      AE00422A
+      6E280508
+      21800000
+      03004010
+      B000422A
+      6E280508
+      00841100
+      03004010
+      B200422A
+      6E280508
+      21802002
+      48280508
+      00000000
+      03004216
+      04000534
+      F0230508
+      05000534
+      33004516
+      00000000
+      DCFFBD27
+      10002BAC
+      14002CAC
+      18002DAC
+      1C002EAC
+      20002FAC
+      25580000
+      01000C34
+      25680000
+      A7010F92
+      25700000
+      24208F01
+      05008010
+      2528A001
+      21202002
+      01000634
+      4024050C
+      01000734
+      01006B25
+      01000C34
+      0800642D
+      07006531
+      0460AC00
+      F3FF8014
+      0100AD25
+      25580000
+      0500C429
+      05008010
+      0100CE25
+      21780E02
+      A701EF91
+      934A0508
+      00000000
+      10002B8C
+      14002C8C
+      18002D8C
+      1C002E8C
+      20002F8C
+      2400BD27
+      1780023C
+      783C428C
+      04000334
+      21105400
+      B10343A0
+      0980023C
+      E4BD4224
+      1780013C
+      A83C22AC
+      2E240508
+      21206002
+      09240508
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      2F000234
+      36004314
+      00000000
+      01000292
+      1580013C
+      C2180200
+      07004530
+      21082300
+      F02A2390
+      01000434
+      0420A400
+      24288300
+      0580063C
+      80100200
+      2130C200
+      1C77C28C
+      0600A010
+      00000000
+      0C004014
+      00000000
+      26186500
+      60FB0408
+      F02A23A0
+      25186400
+      00000492
+      00000000
+      0200852C
+      0300A014
+      00000000
+      25108000
+      FFFF4224
+      00000492
+      03004014
+      01008530
+      60FB0408
+      00000000
+      F02A23A0
+      02008010
+      00000000
+      FFFF4224
+      1C77C2AC
+      03000282
+      02000392
+      00120200
+      25104300
+      05004014
+      80220A00
+      1780013C
+      21082400
+      67FB0408
+      6C98328C
+      02004004
+      21904202
+      05005226
+      67FB0408
+      00000000
+      36FB0408
+      6F000234
+      0A004014
+      21082200
+      0580093C
+      BCA62925
+      00002A8D
+      F2F2083C
+      F2F20835
+      03004811
+      21204901
+      000028AD
+      8C3F24AC
+      10CA0408
+      00000000
+      
+      
+    </Location><Location file="BATTLE_BIN" offset="CB838">
+      FA4A0508
+      1780013C
+      
+      
+    </Location><Location file="BATTLE_BIN" offset="D7CD0">
+      C04A0508
+      00004392
+      
+      
+    </Location><Location file="BATTLE_BIN" offset="DCD3C">
+      95490508
+      21984000
+      
+      
+    </Location><Location file="BATTLE_BIN" offset="E31CC">
+      8D490508
+      00000000
+      
+      
+    </Location><Location file="BATTLE_BIN" offset="E337C">
+      34490508
+      00000000
+      
+      
+    </Location><Location file="BATTLE_BIN" offset="E33C8">
+      5F490508
+      00000000
+      5632050C
+      00000000
+      00000000
+      00000000
+      
+      
+    </Location><Location file="BATTLE_BIN" offset="E3098">
+      000B622A
+      7849050C
+      FFFF0424
+      00000000
+      
+    </Location><Location file="BATTLE_BIN" offset="E30E0">
+      000B622A
+      7849050C
+      FFFF0424
+      00000000
+      
+    </Location><Location file="BATTLE_BIN" offset="E3280">
+      000B622A
+      7849050C
+      FFFF0424
+      00000000
+      
+      
+    </Location><Location file="BATTLE_BIN" offset="DCD5C">
+      54FF8226
+    </Location><Location file="BATTLE_BIN" offset="DCD70">
+      1300422C
+      
+    </Location><Location file="BATTLE_BIN" offset="E1FB8">
+      824A0508
+      00000000
+      
+      
+    </Location><Location file="BATTLE_BIN" offset="E619F">
+      04
+    </Location><Location file="BATTLE_BIN" offset="E621C">
+      04040404
+    </Location><Location file="BATTLE_BIN" offset="E622F">
+      01
+    </Location><Location file="BATTLE_BIN" offset="E6231">
+      050202050206
+    </Location><Location file="BATTLE_BIN" offset="E623F">
+      04
+
+    </Location></Patch>
+
+
+<Patch name="Formula 1E (Truth Skillset) becomes Dmg_(MA*Y) #Hit(Rdm{1,X})">
+<Description>Formula 1E - Dmg_((MA+Y)*MA/2) #Hit(Rdm(1,X)) becomes Formula 1E - Dmg_(MA*Y) #Hit(Rdm{1,X})
+</Description>
+<Location file="BATTLE_BIN" offset="11ECE8">
+21106000
+00000000
+</Location>
+</Patch>
+
+
+<Patch name="Formula 59 becomes &quot;Phoenix&quot; formula">
+<Description>Ally: Heal_(Y)% Hit_F(MA+X)% NE / Foe: Dmg_F(MA*Z) ME NS</Description>
+<Location file="BATTLE_BIN" offset="EA800">
+E8FFBD27
+1000BFAF
+1980013C
+942D228C
+982D238C
+05004290
+05006390
+30004230
+30006330
+13004314
+00000000
+6017060C
+00000000
+FF17060C
+00000000
+0022060C
+00000000
+1F004014
+00000000
+372B060C
+00000000
+1B004010
+00000000
+8919060C
+00000000
+D41C060C
+00000000
+31460508
+00000000
+6E21060C
+00000000
+11004014
+00000000
+2517060C
+00000000
+26000334
+1980013C
+FF17060C
+D03823A4
+D121060C
+00000000
+DF21060C
+00000000
+05004014
+00000000
+541C060C
+00000000
+C721060C
+00000000
+1000BF8F
+1800BD27
+0800E003
+00000000
+</Location>
+/* Change the offset= to the formula ID of your choice; browse http://ffhacktics.com/wiki/Formula_Table and use the relevant BATTLE.BIN Address */
+<Location file="BATTLE_BIN" offset="128774">
+00181580
+</Location>
+<Variable file="BATTLE_BIN" offset="EA88C" default="26" name="Z (Attack Power)"/>
+</Patch>
+
+
+<Patch name="Force Recover HP on Crystal">
+<Description>Recover HP/MP will automatically selected upon stepping on a crystal. You will not be able to learn abilities from crystals.
+</Description>
+<Location file="BATTLE_BIN" offset="AFC8">
+FCC70108
+</Location>
+</Patch>
+
+
+  <Patch name="Frameskipper v1.1">
+    <Description>When pressing the designed controller input combinations, the frame limiter will be switched on/off. (Default: L2+Square = on / R2+Square = off)
+The last option is: "Turn off frameskip as soon as I stop holding the ON: Button Combination".
+
+0x8000  Left
+0x4000  Down
+0x2000  Right
+0x1000  Up
+0x0800  Start
+0x0400  R3
+0x0200  L3
+0x0100  Select
+0x0080  Square
+0x0040  Cross
+0x0020  Circle
+0x0010  Triangle
+0x0008  R1
+0x0004  L1
+0x0002  R2
+0x0001  L2</Description>
+    <Location file="SCUS_942_21" offset="E564">
+      0680023C
+      00704294
+      A5A10008
+      88880534
+    </Location>
+    <Location file="SCUS_942_21" offset="18E94">
+      0C00A214
+      448A0534
+      0980053C
+      0861A58C
+      00000000
+      1F00A014
+      0580053C
+      AC78A58C
+      00000000
+      1B00A014
+      0480053C
+      B9A10008
+      4459A58C
+      1700A214
+      0380053C
+      BC28A58C
+      00000000
+      1300A014
+      1A80053C
+      04A2A58C
+      0380013C
+      82000334
+      24106500
+      02004314
+      01000334
+      3C8723AC
+      81000334
+      24106500
+      02004314
+      00000000
+      3C8720AC
+      3C87228C
+      00000000
+      03004014
+      00000000
+      5F770008
+      00000000
+      0380023C
+      B817428C
+      00000000
+      5D770008
+      2A104400
+      01000000
+    </Location>
+    <Variable name="ON: Button Combination" file="SCUS_942_21" offset="18EFC" bytes="2" default="0081" />
+    <Variable name="OFF: Button Combination" file="SCUS_942_21" offset="18EE8" bytes="2" default="0082" />
+    <Variable name="0 = Hold ON to Frameskip" file="SCUS_942_21" offset="18EF0" bytes="4" default="14430002" />
+  </Patch>
+
+
+<Patch name="Global C-Ev. (Version 2)">
+<Description>All units will have 100% of their C-Evade calculated for the front, 50% for the sides and 25% for the back.
+</Description>
+<Location file="BATTLE_BIN" offset="E948C">
+1980013C
+E1382490
+42200400
+01001434
+02005410
+00000000
+42200400
+E13824A0
+00001434
+C4150608
+00000000
+</Location>
+<Location file="BATTLE_BIN" offset="11E708">
+23410508
+00000000
+</Location>
+</Patch>
+
+  <Patch name="Incremental Jump Range">
+    <Description>Instead of choosing the highest value of the learned jump ability for the horizontal/vertical ranges, instead they are added all together, meaning no one skill is ever going to be useless; it will always count towards your total horizontal/vertical range.
+You could have Horizontal +2, Horizontal +1, Horizontal + 1, together would be the equivalent of Horizontal +4.
+
+Vertical Numbers are times two, because in hex, 0.5 height = 1 hex. So, entering 0014 (0x0014), would be the equivalent of 10 height (decimal).</Description>
+    <Variable name="Minimum Horizontal" file="BATTLE_BIN" offset="112DD0" default="0001" bytes="2"/>
+    <Variable name="Minimum Vertical x 2" file="BATTLE_BIN" offset="112E28" default="0002" bytes="2"/>
+    <Variable name="Master Horizontal" file="BATTLE_BIN" offset="112E2C" default="0008" bytes="2"/>
+    <Variable name="Master Vertical x 2" file="BATTLE_BIN" offset="112E30" default="0010" bytes="2"/>
+    <Location file="BATTLE_BIN" offset="112EE0">
+      40280300
+      2180B000
+      21A05400
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+    </Location>
+  </Patch>
+
+
+<Patch name="Item required to use skills using the 'Materia Blade' boolean">
+<Description>Use the Item ID you want to use the 'Materia Blade' boolean.</Description>
+<Variable name="Item ID" file="SCUS_942_21" offset="4CE24" default="20" />
+</Patch>
+
+
+  <Patch name="Monster Skill is disabled">
+    <Description>All monsters can use their 4 skills as if Monster Skill never existed. Also frees space from 0x80182438 to 0x80182660 (BATTLE.BIN).</Description>
+    <Location file="BATTLE_BIN" offset="135C00">
+      80000234
+    </Location>
+    <Location file="BATTLE_BIN" offset="1345D8">
+      80000234
+    </Location>
+    <Location file="BATTLE_BIN" offset="11B430">
+      0800E003
+      01000234
+    </Location>
+    <Location file="BATTLE_BIN" offset="133960">
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+    </Location>
+  </Patch>
+
+
+  <Patch name="Move-Find Item is Player only">
+    <Description>Only a unit from the player's team can pick up items through Move-Find Item.</Description>
+    <Location file="BATTLE_BIN" offset="1190B8">
+      00004490
+      05004392
+      08001010
+      00000000
+      01008230
+      05004010
+      30006330
+      03006014
+      00000000
+      3D000608
+      04003136
+      02008230
+    </Location>
+  </Patch>
+
+
+<Patch name="Number of Maximum palettes that can be used">
+<Description>Allows you to increase the maximum amount of useable palettes to 8.
+
+NOTE: A crystal from palette 6 will crash the game and 6-8 use a glitchy palette for treasure/crystal/frog/chicken.</Description>
+<Location file="BATTLE_BIN" offset="20B0C">
+08
+</Location>
+</Patch>
+
+
+<Patch name="Propositions Hack 2.1">
+<Description>Proposition Hack v2 with Gil Cost and the ability to abandon marks. By Xifanie (a bit of help from Pride's original hack)
+
+This hack involves a few more steps than most and it should really only be used if you know what you are doing. This is the hack that is used for the 'Marks' System in Jot5.
+
+This will allow you to unlock a Proposition based on Story Progress rather than Shop Progress. It also changes how propositions work. 
+
+First you will want to go to the propositions tab in FFTP. Since this hack changes Propositions to use Story Progress you'll have to either count out the entries to find the correct number or you can rename your shop progress to also include story progress, as I have in the picture here: https://dl.dropboxusercontent.com/u/53561892/Xif%20ASM%20Description%20Images/Prop%20Hack%20Image%201.png
+Once this is setup, you can check your game and upon reaching the set story progress, the Proposition should unlock in the Bar as normal. You will NOT be prompted to send out units or select an amount of days for the job. Instead you will be told the job details as normal (These are edited in section 2 of WLDMES.BIN) and you can choose to accept or decline. If you decline the listing remains posted. If you accept then the listing disappears and the variable for the Proposition is set to 2.
+The variables for Propositions with this hack work as follows:
+
+0 = Repeat 
+2 = Started, can call back
+4 = Completed
+
+The next thing you would do would be to edit your worldmap conditions to include something like this on the location where you want the Mark/Proposition Event to take place:
+010066030200190013010100
+
+What this breaks down to is: IF - Variable 366 = 2 - Run Event 113 - Agressively
+
+NOTE: Variable 366 is the Variable for Envoy ship, Falcon one of the vanilla propositions, and is just an example here. Same with event 113, as it is what I chose to use for this example. Also, the 0100 - Agressively is when you step on a dot and it takes you to a battle, it does the swirl image thing, in comparison to having this set to 0200 - Calmly, which would be the fade out you'd get if you were instead being taken to a non battle cutscene.
+
+So now, in this example, once you accept the job and walk onto the location you put the code on in the worldmap, the battle/scene will start. 
+
+VERY IMPORTANT: At the end of the scene or battle you also need to either change the Propositions variable to either 0 or 4. If you set it to 0, the Proposition will appear back in the Bar and can be repeated. If you set it to 4, the Proposition will be flagged as completed and a bravestory entry will be added to the bravestory. Make sure you don't leave the variable as 2, because the battle will repeat everytime you try to leave the dot on the map. Here's an example of what you'd want at the end of your event to mark the proposition as complete:
+ZERO(x0366)
+ADD(x0366,x0004)
+
+You can also cancel a Proposition in case you want to pass a spot on the map due to a Proposition battle being too difficult or just wanting to put it off for later. Cancelled jobs will reappear the next time you enter the bar.
+</Description>
+    <Location file="WORLD_WLDCORE_BIN" offset="D788">
+      0580013C
+      E0FFBD27
+      0000A3AF
+      0400A4AF
+      0800A5AF
+      0C00A6AF
+      1000A7AF
+      1400A8AF
+      1800A9AF
+      1C00AAAF
+      EC7E2124
+      08000A34
+      00002290
+      01002590
+      02004330
+      0E006010
+      C2300500
+      80300600
+      000020A0
+      0F000834
+      0700A330
+      80180300
+      04406800
+      0580023C
+      78794224
+      21104600
+      0000438C
+      27400001
+      24400301
+      000048AC
+      FFFF4A25
+      ECFF4015
+      09002124
+      0580013C
+      78792124
+      25100000
+      0C000734
+      25500000
+      0000258C
+      00000934
+      0F000634
+      02000334
+      04302601
+      04182301
+      2440A300
+      11000315
+      0580033C
+      F8FF4824
+      03000005
+      EC7E6324
+      28D20108
+      08004234
+      C0400200
+      21186800
+      21186200
+      01000834
+      000068A0
+      01006AA0
+      06000834
+      020060A0
+      FEFF0015
+      FFFF0825
+      01004224
+      04002925
+      2000232D
+      E6FF6014
+      01004A25
+      FFFFE724
+      E1FFE014
+      04002124
+      0580013C
+      0000A38F
+      0400A48F
+      0800A58F
+      0C00A68F
+      1000A78F
+      1400A88F
+      1800A98F
+      1C00AA8F
+      2000BD27
+      15D30108
+      E87C22A0
+    </Location>
+    <Location file="WORLD_WLDCORE_BIN" offset="DC48">
+      E2D10108
+      0400BFAF
+      00000000
+    </Location>
+    <Location file="WORLD_WLDCORE_BIN" offset="CD54">
+      00000000
+    </Location>
+    <Location file="WORLD_WLDCORE_BIN" offset="CD60">
+      6ABC030C
+      2C000434
+      0D80053C
+      8009A38C
+      00000000
+      23104300
+      1E004004
+      0580013C
+      CC7722AC
+      B0000434
+      0D80013C
+      AC0922AC
+      0A80043C
+      F0F28494
+      5F030334
+      21208300
+      97BC030C
+      02000534
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      97000334
+      7FCF0108
+      14B80634
+      05000334
+      11B80634
+      19000534
+      0E000434
+      C2FF030C
+      21380000
+      03000234
+      0C0042AE
+      4C43020C
+      25206000
+    </Location>
+    <Location file="WORLD_WLDCORE_BIN" offset="CE60">
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+    </Location>
+    <Location file="WORLD_WLDCORE_BIN" offset="2A34">
+      6E000434
+    </Location>
+    <Location file="WORLD_WLDCORE_BIN" offset="1A88C">
+      25880000
+    </Location>
+    <Location file="WORLD_WLDCORE_BIN" offset="1D950">
+      25880000
+    </Location>
+    <Location file="WORLD_WLDCORE_BIN" offset="1EAC4">
+      25380000
+    </Location>
+  </Patch>
+
+
+<Patch name="Raise Palette Limit">
+<Description>Allows use of all 8 palettes on Spritesheets.
+
+NOTE: A crystal from palette 6 will crash the game and 6-8 use a glitchy palette for treasure/crystal/frog/chicken.
+</Description>
+<Location file="BATTLE_BIN" offset="E92E0">
+0A00033C
+00000F34
+7CB260AC
+04006324
+1400E929
+FCFF0914
+0100EF25
+31D10508
+00000000
+0500DE92
+1900043C
+CC088424
+C0011034
+18000702
+12800000
+21200402
+5800848C
+0300103C
+40011026
+24200402
+9000352A
+03001514
+05001534
+1A00F502
+10B80000
+02000410
+1A00F502
+10B80000
+64070208
+00000000
+</Location>
+<Location file="BATTLE_BIN" offset="10D4C0">
+B8400508
+</Location>
+<Location file="BATTLE_BIN" offset="1AD88">
+C1400508
+</Location>
+</Patch>
+
+
+<Patch name="Ramza (unit ID 01,02 and 03) can join as a Guest.">
+<Description>Allows Ramza to join as a guest under normal guest joining conditions.</Description>
+<Location file="EVENT_REQUIRE_OUT" offset="5878">
+0100422C
+</Location>
+</Patch>
+
+
+<Patch name="Remove forced slowdown for Math Skill (Skillset ID 0x15)">
+<Description>Removes the slowdown associated with skillset x15, which is the Math Skillset in Vanilla.</Description>
+<Location file="BATTLE_BIN" offset="115F74">
+00000000
+</Location>
+</Patch>
+
+
+<Patch name="Removes permanent brave alteration. (version 2.0)">
+<Description>Brave alterations both positive and negative are not retained after the battle ends.</Description>
+<Location file="EVENT_REQUIRE_OUT" offset="5044">
+2300E490
+</Location>
+</Patch>
+
+
+<Patch name="Removes permanent faith alteration. (version 2.0)">
+<Description>Faith alterations both positive and negative are not retained after the battle ends.</Description>
+<Location file="EVENT_REQUIRE_OUT" offset="5080">
+2500E490
+</Location>
+</Patch>
+
+
+  <Patch name="Rumors use proposition space">
+    <Description>Rumors use proposition completion notes slots based on town ID</Description>
+    <Location file="WORLD_WLDCORE_BIN" offset="ADE0">
+      24390508
+      0580043C
+    </Location>
+    <Location file="WORLD_WORLD_BIN" offset="6E490">
+      E077848C
+      00000000
+      F1A2010C
+      10008424
+      7AC70108
+      00000000
+    </Location>
+  </Patch>
+
+
+<Patch name="Selling items at Any Shop costs 1/4 normal price">
+<Description>Sell items to the store at 1/4 the retail price.</Description>
+<Location file="WORLD_WORLD_BIN" offset="04374c">82</Location>
+</Patch>
+
+
+<Patch name="Sets the title screens default option from New Game to Continue">
+<Location file="OPEN_OPEN_BIN" offset="00003490">
+0880023C
+40534124
+21082300
+01000434
+000024AC
+40534124
+</Location>
+</Patch>
+
+
+  <Patch name="Smart Encounters">
+    <Description>100% random encounter on destination, 0% otherwise. So you ONLY get random encounters when you want them.</Description>
+    <Location file="WORLD_WLDCORE_BIN" offset="28188">
+      0D80033C
+      800B628C
+      00000000
+      7C0B638C
+      00000000
+      00000000
+      00000000
+      00000000
+      00000000
+      2D004314
+    </Location>
+  </Patch>
+
+
+<Patch name="Spell quotes always pop up">
+<Description>Spell quotes will always pop up on spells that have quotes.</Description>
+<Location file="BATTLE_BIN" offset="E34C4">
+00000234
+</Location>
+<Location file="BATTLE_BIN" offset="DA82C">
+00000334
+</Location>
+</Patch>
+
+
+<Patch name="Stat gain/break cap + Maintenance prevents stat break">
+<Description>For example, a lower limit of 1/3 and a upper limit of 1/4 for someone with 18PA, would be:
+lower cap: 18PA - (18PA * 1/3) = 12PA
+upper cap: 18PA + (18PA * 1/4) = 22PA
+This hack takes full consideration of equipment.
+</Description>
+<Location file="BATTLE_BIN" offset="EDB8C">
+77777777
+77777777
+77777777
+77777777
+77777777
+984B6DAC
+9C4B6EAC
+1980033C
+CC086324
+2218A300
+C0010434
+1A006400
+10300000
+D0FFC724
+0300EA2C
+2230A600
+03000210
+00000000
+FC520508
+21400901
+9100CB90
+04006B31
+02000B14
+00000000
+22400901
+3A000A10
+00000000
+2150C700
+36004B91
+30004A91
+22706A01
+0300CA90
+30000D34
+1800AA01
+12500000
+06800C3C
+21604C01
+03000714
+01000D34
+0300C624
+02008C25
+0300A715
+00000000
+0600C624
+04008C25
+CA108A91
+7800CC90
+7900CD90
+006A0D00
+2160AC01
+7A00CD90
+006C0D00
+2160AC01
+18004C01
+12600000
+19000B3C
+1A008B01
+12600000
+2538C001
+21708E01
+</Location>
+<Variable name="Lower Limit Multiplier" file="BATTLE_BIN" offset="EDC7C" default="0001" bytes="2" />
+<Location file="BATTLE_BIN" offset="EDC7E">0A34</Location>
+<Variable name="Lower Limit Divider" file="BATTLE_BIN" offset="EDC80" default="0003" bytes="2" />
+<Location file="BATTLE_BIN" offset="EDC7E">0C34
+18004E01
+12500000
+1A004C01
+12500000
+2250CA01
+22504701
+</Location>
+<Variable name="Upper Limit Multiplier" file="BATTLE_BIN" offset="EDC9C" default="0001" bytes="2" />
+<Location file="BATTLE_BIN" offset="EDC9E">0A34</Location>
+<Variable name="Upper Limit Divider" file="BATTLE_BIN" offset="EDCA0" default="0004" bytes="2" />
+<Location file="BATTLE_BIN" offset="EDCA2">0C34
+18006E01
+12580000
+1A006C01
+12580000
+2158CB01
+22586701
+2A680A01
+02000D10
+00000000
+25404001
+2A686801
+02000D10
+00000000
+25406001
+1580033C
+8C4B6A8C
+904B6B8C
+944B6C8C
+984B6D8C
+9C4B6E8C
+63000634
+6B350608
+01000734
+</Location>
+
+<Location file="BATTLE_BIN" offset="126598">
+1580033C
+8C4B6AAC
+904B6BAC
+E8520508
+944B6CAC
+</Location>
+</Patch>
+
+
+  <Patch name="Undead Revival Chance">
+    <Description>Chance that undead units will revive once their death counter reaches 0 and 100CT. The chance formula is: (X - 32768) / 32767; meaning that the range is from 0x0000 (0 or 0%) down to 0x8000 (-32768 or 100%). In vanilla, the undead have 50% chance to revive. This hack's default value is 100% revival rate.
+
+Examples:
+0% revive: 0000
+5% revive: F999
+10% revive: F333
+25% revive: E000
+33.3% revive: D555
+50% revive: C000
+75% revive: A000
+100% revive: 8000</Description>
+	<Variable name="Revival Chance" file="BATTLE_BIN" offset="11C178" bytes="2" default="8000" />
+    <Location file="BATTLE_BIN" offset="11C17A">
+      C224
+      10004104
+    </Location>
+  </Patch>
+
+
+<Patch name="Weapon Strike Fix (Version 1)">
+<Description>In FFTP, If the Blank Box under Hit Allies are checked for that ability as well as 'Weapon Strike' The ability will ignore the weapon's elemental and only take elemental damage from the ability. Else, it will stack the elemental damage from bothe the weapon and the ability.
+</Description>
+<Location file="BATTLE_BIN" offset="E92AC">
+1980103C
+F7380482
+04390582
+F4380682
+2000C630
+0200C01C
+00000000
+25208500
+043904A2
+E8FFBD27
+1000BFAF
+F81B0608
+00000000
+</Location>
+<Location file="BATTLE_BIN" offset="11FFD8">
+AB400508
+00000000
+</Location>
+</Patch>
+
+</Patches>

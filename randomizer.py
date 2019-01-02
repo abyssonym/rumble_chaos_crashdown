@@ -15,6 +15,8 @@ from randomtools.tablereader import (
     TableObject, set_global_table_filename, set_global_output_filename,
     set_table_specs, tblpath, mutate_normal)
 from randomtools.uniso import remove_sector_metadata, inject_logical_sectors
+from xml_patch_parser import get_patchdicts
+from xml_patch_patcher import patch_patch
 
 
 NAMESFILE = path.join(tblpath, "generic_names.txt")
@@ -31,6 +33,53 @@ MONSTER_NAMES = [line.strip() for line in open(MONSTER_NAMES_FILE).readlines()
                  if line.strip()]
 
 MUTATED_SKILLSETS = False
+
+
+def get_patches():
+    try:
+        f = open("patches.cfg")
+    except IOError:
+        print "WARNING: patches.cfg file not found."
+        return []
+
+    xmlfilenames = defaultdict(set)
+    varvals = defaultdict(set)
+    xmlfilename, patchname = None, None
+    for line in f:
+        line = line.rstrip()
+        if line and line[0] != '#':
+            while '  ' in line:
+                line = line.replace('  ', ' ')
+            if line[0] == ' ':
+                variable, value = line.strip().split()
+                value = int(value)
+                varvals[xmlfilename, patchname] = variable, value
+                continue
+            xmlfilename, patchname = line.split(' ', 1)
+            xmlfilenames[xmlfilename].add(patchname)
+
+    patches = []
+    for xmlfilename in sorted(xmlfilenames):
+        try:
+            my_patches = get_patchdicts(path.join('xml_patches', xmlfilename))
+        except IOError:
+            raise Exception("ERROR: file %s not in xml_patches directory."
+                            % xmlfilename)
+        for name in sorted(xmlfilenames[xmlfilename]):
+            for p in my_patches:
+                if p['name'] == name:
+                    if (xmlfilename, name) in varvals:
+                        variable, value = varvals[xmlfilename, name]
+                        if 'varvals' not in p:
+                            p['varvals'] = {}
+                        p['varvals'][variable] = value
+                    patches.append(p)
+                    break
+            else:
+                raise Exception("ERROR: unknown patch %s %s"
+                                % (xmlfilename, name))
+
+    return patches
 
 
 def mutate_index(index, length, continuation=None,
@@ -219,7 +268,7 @@ def set_difficulty_factors(value):
         boostd["difficulty_factor"] = value
         boostd["common_item"] = max(2.0 - (0.5 * value), 0.5)
         boostd["trophy"] = max(1.5 - (0.5 * value), 0.25)
-        boostd["default_stat"] = 1.2 ** value
+        boostd["default_stat"] = 1.0
         boostd["level_stat"] = 0.6 * value
         boostd["lucavi_stat"] = 0.75 * value
         boostd["equipment"] = 1.1 ** value
@@ -1801,9 +1850,6 @@ class JobObject(TableObject):
             setattr(u, attr, value)
 
     def get_appropriate_boost(self):
-        if self.index in [1, 2, 3, 0xD]:
-            return 1.0
-
         if self.is_lucavi:
             boost = boostd["lucavi_stat"]
         else:
@@ -1814,6 +1860,8 @@ class JobObject(TableObject):
             units = [u for u in get_units() if u.job == self.index
                      and u.get_bit("enemy_team") and not u.level_normalized
                      and 0x180 <= u.map_id <= 0x1D5]
+            if self.index in [1, 2, 3]:
+                assert not units
             if not units:
                 return boostd["default_stat"]
             units = sorted(units, key=lambda u: u.level)
@@ -4557,28 +4605,6 @@ def setup_fiesta(filename):
             u.righthand = 0x49
 
 
-def disable_random_battles(filename):
-    if JAPANESE_MODE:
-        #  0xa2fcc78
-        raise NotImplementedError
-    f = open(filename, 'r+b')
-    '''
-    f.seek(0xa44bf0a)
-    f.write(chr(0))
-    '''
-    # credit to Xifanie of ffhacktics for this "Smart Encounters" patch
-    # http://ffhacktics.com/smf/index.php?topic=953.msg189610#msg189610
-    f.seek(0xa44c988)
-    f.write("".join([chr(b) for b in [
-        0x0D, 0x80, 0x03, 0x3c, 0x80, 0x0b, 0x62, 0x8c,
-        0x00, 0x00, 0x00, 0x00, 0x7c, 0x0b, 0x63, 0x8c,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x2d, 0x00, 0x43, 0x14,
-        ]]))
-    f.close()
-
-
 def free_soldier_office(filename):
     if JAPANESE_MODE:
         raise NotImplementedError
@@ -4781,6 +4807,7 @@ def randomize():
     global JAPANESE_MODE, JOBLEVEL_JP
     print ('You are using the FFT RUMBLE CHAOS CRASHDOWN randomizer '
            'version "%s".' % VERSION)
+
     flags, seed = None, None
     if len(argv) >= 2:
         sourcefile = argv[1]
@@ -4890,6 +4917,7 @@ def randomize():
     if not flags:
         flags = lowercase
 
+    patches = get_patches()
     print "COPYING ROM IMAGE"
     copyfile(sourcefile, newsource)
     sourcefile = newsource
@@ -4899,6 +4927,10 @@ def randomize():
         remove_sector_metadata(sourcefile, TEMPFILE)
     else:
         copyfile(sourcefile, TEMPFILE)
+
+    if not JAPANESE_MODE:
+        for p in patches:
+            patch_patch(TEMPFILE, p)
 
     set_global_table_filename(TEMPFILE)
     set_global_output_filename(TEMPFILE)
@@ -5083,7 +5115,6 @@ def randomize():
                 u.set_bit("control", True)
 
         try:
-            disable_random_battles(TEMPFILE)
             free_soldier_office(TEMPFILE)
         except NotImplementedError:
             pass
@@ -5095,8 +5126,6 @@ def randomize():
         for u in UnitObject:
             if u.get_bit("enemy_team"):
                 u.level = 1
-
-    DOUBLE_SUPER = set(SUPER_LEVEL_BOOSTED) & set(SUPER_SPECIAL)
 
     print "WRITING MUTATED DATA"
     for ao in all_objects:
@@ -5110,13 +5139,22 @@ def randomize():
         diffstr = diffstr[:9] + "?"
     rewrite_header(TEMPFILE, "FFT RCC %s %s %s" % (VERSION, seed, diffstr))
 
+    if not JAPANESE_MODE:
+        for p in patches:
+            patch_patch(TEMPFILE, p, verify=True)
+
     assert filesize in RAW_SIZES + ISO_SIZES
     if filesize in ISO_SIZES:
         inject_logical_sectors(TEMPFILE, sourcefile)
     else:
         copyfile(TEMPFILE, sourcefile)
 
-    remove(TEMPFILE)
+    try:
+        remove(TEMPFILE)
+    except WindowsError:
+        f = open(TEMPFILE, 'w')
+        f.truncate(0)
+        f.close()
     print "Output file has hash: %s" % get_md5_hash(sourcefile)
 
     if len(argv) <= 2:

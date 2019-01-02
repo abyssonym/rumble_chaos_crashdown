@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Patches>
+ 
+  <Patch name="Charge CT = CT - MA">
+    <Description>Charge speed scales with unit MA. Made by TFM</Description>
+    <Location file="BATTLE_BIN" offset="e9378">
+      00000000
+      0C004390
+      05004290
+      37007292
+      40005730
+      0500E012
+      00000000
+      22187200
+      02006104
+      00000000
+      21180000
+      14F20508
+      00000000
+    </Location>
+    <Location file="BATTLE_BIN" offset="e93d0">
+      05008390
+      0C008290
+      40006430
+      0E008010
+      00000000
+      B000A48F
+      C0011034
+      18009000
+      12200000
+      1980103C
+      CC081036
+      21209000
+      37008490
+      00000000
+      22104400
+      02004104
+      00000000
+      21100000
+      94060608
+      00000000
+    </Location>
+    <Location file="BATTLE_BIN" offset="115848">
+      df400508
+      00000000
+    </Location>
+    <Location file="BATTLE_BIN" offset="11aa48">
+      f4400508
+      00000000
+    </Location>
+  </Patch>
+
+  <Patch name="XX status use Wall CT">
+    <Description>
+      Made by RFH
+      Wall CT is always 0. The CT of the new status is adjustable in Wall CT in FFTPatcher
+
+      Status number:
+
+      00 Blank Status
+      01 Crystal
+      02 Dead
+      03 Undead
+      04 Charging
+      05 Jump
+      06 Defending
+      07 Performing
+      08 Petrify
+      09 Invite
+      0A Darkness
+      0B Confusion
+      0C Silence
+      0D Blood Suck
+      0E Dark / Evil Loocking
+      0F Treasure
+    </Description>
+    <Location file="BATTLE_BIN" offset="12693c">
+      BC770508
+      00000000
+      00000000
+      00000000
+    </Location>
+    <Location file="BATTLE_BIN" offset="f6ef0">
+      07000234
+      07004410
+      21100000
+      02008104
+      21108000
+      07008224
+      C3100200
+      53360608
+      00000000
+    </Location>
+      <Variable file="BATTLE_BIN" offset="f6f14" default="00" name="XX% Chance"/>
+    <Location file="BATTLE_BIN" offset="f6f15">
+      000534
+      01000834
+      1980073C
+      982DE78C
+      0700A330
+      2128E800
+      BB01A290
+      07306900
+      5A360608
+      00000000
+    </Location>
+  </Patch>
+
+  <Patch name="Formula 8 inflicts 100% Status">
+    <Description>Formula 8 inflicts a Status 100% of the time with All or Nothing flagged on the status effect.</Description>
+    <Location file="BATTLE_BIN" offset="121DD4">
+      00000000
+    </Location>
+  </Patch>
+
+  <Patch name="Katana Break Chance">
+    <Description>Chance for a katana to break during draw out is XX%</Description>
+    <Variable file="BATTLE_BIN" offset="120984" default="63" name="XX% Chance"/>
+    <Location file="BATTLE_BIN" offset="120985">
+      000524
+    </Location>
+  </Patch>
+  <Patch name="No Spillover JP">
+    <Description>No Spillover JP</Description>
+    <Location file="BATTLE_BIN" offset="117980">
+      00000000
+    </Location>
+  </Patch>
+  <Patch name="Punch Art formulas use Naked PA">
+    <Description>Naked PA is the PA of a naked unit.  This does not affect monsters, but it does weaken the power of human units.</Description>
+    <Location file="BATTLE_BIN" offset="11ED0C">
+      30
+    </Location>
+    <Location file="BATTLE_BIN" offset="11ED18">
+      30
+    </Location>
+  </Patch>
+  <Patch name="Units start with 0 MP">
+    <Description>Units start with 0 MP</Description>
+    <Location file="SCUS_942_21" offset="4D102">
+      80
+    </Location>
+  </Patch>
+  <Patch name="Regain 10% of Max MP after each turn">
+    <Description>Regain 10% of Max MP after each turn</Description>
+    <Location file="BATTLE_BIN" offset="F6EBC">
+      2E000296
+      9919033C
+      09004224
+      9A996334
+      18004300
+      1980033C
+      902D638C
+      10100000
+      0A0062A4
+      10000234
+      250062A0
+      FD350608
+      5B000392
+    </Location>
+    <Location file="BATTLE_BIN" offset="1267EC">
+      AF770508
+      00000000
+    </Location>
+  </Patch>
+  
+  <Patch name="Remove forced slowdown for Math Skill (Skillset ID 0x15)">
+    <Location file="BATTLE_BIN" offset="115F74">
+      00000000
+    </Location>
+  </Patch>
+  <Patch name="Abilities in Math skill skillset can be reflected">
+    <Location file="BATTLE_BIN" offset="125ff4">
+      00000000
+    </Location>
+  </Patch>
+</Patches>

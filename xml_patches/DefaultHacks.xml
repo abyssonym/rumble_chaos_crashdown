@@ -1,0 +1,396 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Patches>
+  <Patch name="Death Sentence - Ignore Cancel:Dead">
+    <Location file="BATTLE_BIN"
+              offset="11c240">
+      10 00 42 30
+      05 00 40 14
+      20 00 02 34
+      28 00 00 a6
+    </Location>
+  </Patch>
+
+  <Patch name="Increase Jump damage by 3/2 regardless of weapon">
+    <Location file="BATTLE_BIN"
+              offset="11eec2">
+      63
+    </Location>
+  </Patch>
+
+  <Patch name="No starting items">
+    <Location file="SCUS_942_21"
+              offset="3322c">
+      aa 0a 01 08
+    </Location>
+  </Patch>
+
+  <Patch name="Broken / stolen items can be bought back at Fur Shop">
+    <Location file="BATTLE_BIN"
+              offset="126470">
+      22 4e 05 08
+    </Location>
+    <Location file="BATTLE_BIN"
+              offset="0ec888">
+      1980043C
+      982D848C
+      BA018490
+      02210400
+      0F008014
+      00000000
+      0D00A010
+      FF000434
+      0B00A410
+      00000000
+      0580043C
+      94948434
+      21208500
+      00008290
+      0001432C
+      02006014
+      00000000
+      FE000234
+      01004224
+      000082A0
+      1980023C
+      902D428C
+      1D350608
+      00000000
+    </Location>
+  </Patch>
+  <Patch name="AI attacks transparent unit">
+    <Location file="BATTLE_BIN" offset="12fd60">00</Location>
+  </Patch>
+  <Patch name="Transparent loses 100% accuracy bonus">
+    <Location file="BATTLE_BIN" offset="11e4d0">00</Location>
+  </Patch>
+  <Patch name="No Random Battles">
+    <Location file="WORLD_WLDCORE_BIN" offset="02770a">00</Location>
+  </Patch>
+  <Patch name="Defending reduces physical damage by 25%">
+    <Location file="BATTLE_BIN" offset="11f378">4b 4d 05 08</Location>
+    <Location file="BATTLE_BIN" offset="11e48a">42</Location>
+    <Location file="BATTLE_BIN" offset="0ec52c">
+      21204000
+      58008390
+      02006330
+      03006014
+      5B008290
+      E0180608
+      00000000
+      CE382384
+      21106000
+      40100200
+      21104300
+      82100200
+      CE3822A4
+      982D228C
+      5B004290
+      E0180608
+      00000000
+    </Location>
+  </Patch>
+  <Patch name="Wall reduces physical damage by 99%, duration : 1 turn">
+    <Location file="BATTLE_BIN" offset="124ae2">42</Location>
+    <Location file="BATTLE_BIN" offset="11f3bc">d24d0508</Location>
+    <Location file="BATTLE_BIN" offset="1267f0">d94d0508</Location>
+    <Location file="BATTLE_BIN" offset="0ec748">
+      5B006290
+      01004230
+      02004010
+      1980043C
+      CE3880A0
+      F0180608
+      00000000
+    </Location>
+    <Location file="BATTLE_BIN" offset="0ec764">
+      01000234
+      640002A2
+      FD350608
+      00000000
+    </Location>
+  </Patch>
+  <Patch name="Float weak against Wind; Oil weak against Fire">
+    <Location file="BATTLE_BIN" offset="11f464">B74D0508</Location>
+    <Location file="BATTLE_BIN" offset="0ec6dc">
+      982D438C
+      5A006390
+      40006430
+      05008014
+      80006430
+      09008014
+      00000000
+      CF4D0508
+      00000000
+      F7384490
+      10008430
+      09008014
+      00000000
+      CF4D0508
+      00000000
+      F7384490
+      80008430
+      03008014
+      00000000
+      CF4D0508
+      00000000
+      CE384384
+      40180300
+      CE3843A4
+      982D428C
+      1B190608
+      00000000
+    </Location>
+  </Patch>
+  <Patch name="JP scroll glitch fix">
+    <Location file="WORLD_WORLD_BIN" offset="03facc">D5010508</Location>
+    <Location file="WORLD_WORLD_BIN" offset="060754">
+      BE00A294
+      2B202202
+      03008014
+      98000434
+      B67E0408
+      00000000
+      B57E0408
+      00000000
+    </Location>
+  </Patch>
+  <Patch name="Every monster is mountable">
+    <Location file="BATTLE_BIN" offset="10d3e4">30</Location>
+  </Patch>
+  <Patch name="No monster breeding">
+    <Location file="WORLD_WORLD_BIN" offset="045b6e">42</Location>
+  </Patch>
+  <Patch name="Mighty Sword ignores equipment presence and hits monster">
+    <Location file="BATTLE_BIN" offset="120a2c">FE</Location>
+    <Location file="BATTLE_BIN" offset="120a8c">FE</Location>
+    <Location file="BATTLE_BIN" offset="1209ee">02</Location>
+  </Patch>
+  <Patch name="Selling items at Fur Shop costs 1/4 normal price">
+    <Location file="WORLD_WORLD_BIN" offset="04374c">82</Location>
+  </Patch>
+  <Patch name="Buying items at Fur Shop costs 1 x normal price">
+    <Location file="WORLD_WORLD_BIN" offset="057A04">03</Location>
+  </Patch>
+  <Patch name="Formula 4E Dmg_(MA*Y) Hit(100)% becomes 4E Dmg_(MA*Y) Hit(MA+X)%">
+    <Location file="BATTLE_BIN" offset="11f578">314d0508</Location>
+    <Location file="BATTLE_BIN" offset="0ec4c4">
+      F9382290
+      21104300
+      902D238C
+      2A0062A4
+      60190608
+      00000000
+    </Location>
+  </Patch>
+  <Patch name="Poison damage from 1/8 * MaxHP to 1/4 * CurrentHP">
+    <Location file="BATTLE_BIN" offset="126800">28</Location>
+    <Location file="BATTLE_BIN" offset="12680c">82</Location>
+  </Patch>
+  <Patch name="Poison damage from 1/8 * MaxHP to 1/8 * Min(999,MaxHP)">
+    <Location file="BATTLE_BIN" offset="126804">054e0508</Location>
+    <Location file="BATTLE_BIN" offset="126808">00000000</Location>
+    <Location file="BATTLE_BIN" offset="0ec814">
+      E803432C
+      02006014
+      00000000
+      E7030234
+      1980033C
+      902D638C
+      03360608
+      00000000
+    </Location>
+  </Patch>
+  <Patch name="Regen heal from 1/8 * MaxHP to 1/8 * Min(999,MaxHP)">
+    <Location file="BATTLE_BIN" offset="12682c">0D4E0508</Location>
+    <Location file="BATTLE_BIN" offset="126830">00000000</Location>
+    <Location file="BATTLE_BIN" offset="0ec834">
+      E803432C
+      02006014
+      00000000
+      E7030234
+      1980033C
+      902D638C
+      0D360608
+      00000000
+    </Location>
+  </Patch>
+  <Patch name="Soldier Office can rename any units (including humans and special characters)">
+    <Location file="WORLD_WORLD_BIN" offset="041205">15</Location>
+  </Patch>
+
+
+  <!--
+
+  Cannot recruit any soldier from Soldier Office
+  WORLD.BIN
+  0x584C6 change 0x43 to 0x03
+
+  Blade Grasp trigger : sword attack only
+  BATTLE.BIN
+  0x126054 change F6384290 to 5C4D0508
+  0x12605C change 0x10 to 0x20
+
+  0xEC570
+  D8384390
+  40200300
+  21208300
+  80200400
+  0680053C
+  2128A400
+  BD2EA590
+  FDFFA524
+  0100A52C
+  0300A014
+  F3384290
+  17340608
+  00000224
+  17340608
+  00000000
+  
+Item innate all v1.1
+BATTLE.BIN
+0x11A4F0 change FF000234 to 374D0508
+
+0xEC4DC
+12006290
+FAFF4224
+06004010
+13006290
+FAFF4224
+03004010
+06000234
+000002A2
+01001026
+FF000234
+3D050608
+00000000 
+
+Equip Change innate all
+BATTLE.BIN
+0x11A4DE change 0x40 to 0x20
+
+Defend innate all v1.1
+BATTLE.BIN
+0x11A4CA change 0x40 to 0x20
+0x1324D2 change 0x62 to 0x42
+
+Defend Up innate all
+BATTLE.BIN
+0x11F2E6 change 0x40 to 0x20
+
+Magic Defend Up innate all
+BATTLE.BIN
+0x11F336 change 0x40 to 0x20
+
+Monster Skill innate all
+BATTLE.BIN
+0x11B5DE change 0x40 to 0x20
+
+Secret Hunt innate all
+BATTLE.BIN
+0x120D8E change 0x40 to 0x20
+
+Move Find Item innate all v1.1
+BATTLE.BIN
+0x1190B8 change 08000012 to 1C4D0508
+
+0xEC470
+1B004392
+07006010
+06004392
+42190300
+01006330
+03006014
+00000000
+2F000608
+00000000
+37000608
+00000000
+
+Secret Hunt ability isn't needed to enter Fur Shop
+WORLD.BIN
+0x57166 change 0x40 to 0x20
+
+Require Sword - Require Knight's Sword
+SCUS_942.21
+0x4CE68 change 0xFD to 0xFC
+0x4CE6C change 0x02 to 0x01
+
+Require Sword - Require Ninja Blade / Sword / Knight's Sword / Katana
+SCUS_942.21
+0x4CE68 change 0xFD to 0xFE
+0x4CE6C change 0x02 to 0x04
+
+Undead units receive 25% max HP damage from Phoenix Down
+BATTLE.BIN
+0x123334-0x123337 change 00000000 to 82100200
+
+Undead units ignore Phoenix Down
+BATTLE.BIN
+0x123D22 change 0x42 to 0x02
+
+Equip Crossbow - Equip Crossbow + Bow
+SCUS_942.21
+0x4CB08 change 0x10 to 0x18
+
+Equip Crossbow - Equip Crossbow + Bow + Gun
+SCUS_942.21
+0x4CB08 change 0x10 to 0x38
+
+Equip Gun - Equip Pole (Stick) + Bag + Cloth
+SCUS_942.21
+0x4CB54 change 0x4B to 0x4C
+0x4CB5C change 0x20 to 0xE0
+0x4CB60 change 0x4B to 0x4C
+
+Equip Gun - Equip Robe
+SCUS_942.21
+0x4CB54 change 0x4B to 0x4D
+0x4CB5C change 0x20 to 0x40
+0x4CB60 change 0x4B to 0x4D
+
+Equip Sword - Equip Sword + Knight's Sword
+SCUS_942.21
+0x4CAD0 change 0x10 to 0x18
+
+Equip Sword - Equip Sword + Knight's Sword + Spear
+SCUS_942.21
+0x4CACB change 0x90 to 0x94
+0x4CAD0 change 0x10 to 0x18
+0x4CAD1 change 0x00 to 0x01
+0x4CAD7 change 0xA0 to 0xA4
+
+Equip Spear - Equip Rod + Staff + Instrument + Dictionary
+SCUS_942.21
+0x4CB1C change 0x4B to 0x4A
+0x4CB1F change 0x90 to 0x94
+0x4CB25 change 0x00 to 0x86
+0x4CB28 change 0x4B to 0x4A
+0x4CB2B change 0xA0 to 0xA4
+
+Equip Knife - Equip Cloth(Dancer's Weapon)
+SCUS_942.21
+0x4CAE4 change 0x4A to 0x4C
+0x4CAEC change 0x04 to 0x20
+0x4CAF0 change 0x4A to 0x4C
+
+Equip Knife - Katana + Ninja Blade
+SCUS_942.21
+0x4CAEC change 0x04 to 0x24
+
+Equip Axe - Equip Axe + Flail
+SCUS_942.21
+0x4CB3B change 0x90 to 0x94
+0x4CB41 change 0x00 to 0x40
+0x4CB47 change 0xA0 to 0xA4
+
+Equip Shield - Equip Rod + Staff
+SCUS_942.21
+0x4CAAC change 0x4C to 0x4A
+0x4CAAF change 0x90 to 0x94
+0x4CAB4 change 0x10 to 0x01
+0x4CAB5 change 0x00 to 0x80
+0x4CAB8 change 0x4C to 0x4A
+0x4CABB change 0xA0 to 0xA4 
+-->
+</Patches>
