@@ -1,4 +1,5 @@
 from shutil import copyfile
+import json
 import os
 from os import remove, path
 import sys
@@ -26,6 +27,7 @@ MAPMOVESFILE = path.join(tblpath, "map_movements.txt")
 CONDITIONALSFILE = path.join(tblpath, "conditionals.dat")
 ITEM_NAMES_FILE = path.join(tblpath, "item_names.txt")
 MONSTER_NAMES_FILE = path.join(tblpath, "monster_names.txt")
+UNIT_RANKING_CACHE_FILE = path.join(tblpath, '_unit_ranking_cache.json')
 
 ITEM_NAMES = [line.strip() for line in open(ITEM_NAMES_FILE).readlines()
               if line.strip()]
@@ -2970,6 +2972,21 @@ def make_rankings():
     if rankdict is not None:
         return dict(rankdict)
 
+    rankdict = {}
+
+    try:
+        f = open(UNIT_RANKING_CACHE_FILE)
+        print "Loading unit ranking data from cache."
+        tempdict = json.loads(f.read())
+        for key, value in tempdict.items():
+            a, b = key.split('/')
+            newkey = (a, int(b))
+            rankdict[newkey] = value
+        f.close()
+        return make_rankings()
+    except IOError:
+        pass
+
     print "Analyzing and ranking unit data."
     units = get_units()
     units = [u for u in units if u.graphic != 0]
@@ -3028,7 +3045,6 @@ def make_rankings():
         "head", "body", "accessory", "job", "secondary", "reaction", "support",
         "movement"]
     unrankable_values = [0, 0xFE, 0xFF]
-    rankdict = {}
     for j in good_jobs:
         rankdict["job", j.index] = j.rankval
     for i in xrange(100):
@@ -3101,6 +3117,16 @@ def make_rankings():
             index = min(int(index), len(secranks)-2)
             secrank = (secranks[index] + secranks[index+1]) / 2
             rankdict[key] = secrank
+
+    tempdict = {}
+    for key, value in sorted(rankdict.items()):
+        a, b = key
+        newkey = '{0}/{1}'.format(a, b)
+        tempdict[newkey] = value
+
+    f = open(UNIT_RANKING_CACHE_FILE, 'w+')
+    f.write(json.dumps(tempdict))
+    f.close()
 
     return make_rankings()
 
