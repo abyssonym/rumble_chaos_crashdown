@@ -25,9 +25,11 @@ MESSAGESFILE = path.join(tblpath, "message_pointers.txt")
 MESHESFILE = path.join(tblpath, "mesh_pointers.txt")
 MAPMOVESFILE = path.join(tblpath, "map_movements.txt")
 CONDITIONALSFILE = path.join(tblpath, "conditionals.dat")
+WORLD_CONDITIONALS_FILE = path.join(tblpath, "world_conditionals.dat")
 ITEM_NAMES_FILE = path.join(tblpath, "item_names.txt")
 MONSTER_NAMES_FILE = path.join(tblpath, "monster_names.txt")
 UNIT_RANKING_CACHE_FILE = path.join(tblpath, '_unit_ranking_cache.json')
+NEW_MUROND_EVENT_FILE = path.join(tblpath, 'entrance_murond_new.dat')
 
 ITEM_NAMES = [line.strip() for line in open(ITEM_NAMES_FILE).readlines()
               if line.strip()]
@@ -4324,6 +4326,47 @@ def randomize_ending(outfile):
     UnitObject.get(0x1348).graphic = priest
 
 
+def randomize_overworld(outfile):
+    if JAPANESE_MODE:
+        raise NotImplementedError
+    else:
+        pointer = 0xa454a34
+        event_pointers = [0x98258a,
+                          0x99b96d,
+                          0x9a7b69, 0x9abb69, 0x9adb69,
+                          0x9af993,
+                          0x9b793a,
+                          0x9bfb88,
+                          ]
+    f = open(outfile, 'r+b')
+    f.seek(pointer)
+    g = open(WORLD_CONDITIONALS_FILE, 'rb')
+    f.write(g.read())
+    g.close()
+
+    event_data = [
+        '\xbe\x6e\x00''\xb0\x6e\x00\x2a\x00''\xb0\x31\x00\x1e\x00''\xf2\xf2''\xdb',
+        '\xbe\x55\x00''\xbe\x6e\x00''\xb0\x6e\x00\x36\x00''\xf2\xf2\xf2\xf2''\xdb',
+        '\xbe\x55\x00''\xbe\x6e\x00''\xb0\x6e\x00\x37\x00''\xf2\xf2\xf2\xf2''\xdb',
+        '\xbe\x55\x00''\xbe\x6e\x00''\xb0\x6e\x00\x37\x00''\xf2\xf2\xf2\xf2''\xdb',
+        '\xbe\x55\x00''\xbe\x6e\x00''\xb0\x6e\x00\x37\x00''\xf2\xf2\xf2\xf2''\xdb',
+        '\xbe\x55\x00''\xbe\x6e\x00''\xb0\x6e\x00\x38\x00''\xf2\xf2\xf2\xf2''\xdb',
+        '\xbe\x55\x00''\xbe\x6e\x00''\xb0\x6e\x00\x39\x00''\xf2\xf2\xf2\xf2''\xdb',
+        '\xbe\x55\x00''\xbe\x6e\x00''\xb0\x6e\x00\x3a\x00''\xf2\xf2\xf2\xf2''\xdb',
+        ]
+    assert len(event_pointers) == len(event_data)
+    for ep, ed in zip(event_pointers, event_data):
+        f.seek(ep)
+        f.write(ed)
+
+    g = open(NEW_MUROND_EVENT_FILE, 'rb')
+    data = g.read()
+    g.close()
+    f.seek(0x9a7804)
+    f.write(data)
+    f.close()
+
+
 def restore_warjilis(outfile, before=0xAB, new_entd=0x1DC,
                      map_id=42, monsters=False):
     if JAPANESE_MODE:
@@ -5046,6 +5089,11 @@ def randomize():
         for e in EncounterObject.every:
             e.randomize_weather()
 
+    try:
+        randomize_overworld(TEMPFILE)
+    except NotImplementedError:
+        print "Warning: Overworld mod failed."
+
     if 'z' in flags and 'f' in flags:
         random.seed(seed)
         encs = EncounterObject.get_replaceable_maps()
@@ -5152,6 +5200,8 @@ def randomize():
         for u in UnitObject:
             if u.get_bit("enemy_team"):
                 u.level = 1
+                if not u.has_special_graphic:
+                    u.job = 0x1c  # delita's sis
 
     print "WRITING MUTATED DATA"
     for ao in all_objects:
