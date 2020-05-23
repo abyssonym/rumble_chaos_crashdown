@@ -18,3 +18,4 @@ MoveFindObject          move_find_table.txt         282e74  512
 FormationObject         formation_table.txt         4d3bd4  768
 EncounterObject         encounter_table.txt         4d8938  512
 UnitObject              unit_table.txt              75e0800 8192
+PropositionObject       proposition_table.txt       a45ab80 96

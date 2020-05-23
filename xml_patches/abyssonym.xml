@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Patches>
+  <Patch name="Fur Shop unlocked from start">
+    <Location file="EVENT_TEST_EVT"
+              offset="1039d">
+        BE 57 00
+        BC 90 00 01 00
+    </Location>
+  </Patch>
+
+  <Patch name="Propositions unlocked from start">
+    <Location file="EVENT_TEST_EVT"
+              offset="10510">
+        BE 57 00
+        BC 91 00 01 00
+    </Location>
+  </Patch>
+</Patches>

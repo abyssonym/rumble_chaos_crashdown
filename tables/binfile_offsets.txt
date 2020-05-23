@@ -5,6 +5,7 @@ EVENT_ATTACK_OUT    event/attack.out    4c8000
 EVENT_ETC_OUT       event/etc.out       508000
 EVENT_EQUIP_OUT     event/equip.out     528000
 EVENT_BUNIT_OUT     event/bunit.out     588000
+EVENT_TEST_EVT      event/test.evt      73d800
 WORLD_WLDCORE_BIN   world/wldcore.bin   a424800
 WORLD_WORLD_BIN     world/world.bin     a492800
 OPEN_OPEN_BIN       open/open.bin       a7f8000

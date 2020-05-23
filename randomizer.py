@@ -2853,6 +2853,12 @@ class JobReqObject(TableObject):
         super(JobReqObject, self).write_data(filename, pointer=pointer)
 
 
+class PropositionObject(TableObject):
+    def clean(self):
+        if 1 <= self.unlocked <= 5:
+            self.unlocked = 1
+
+
 def get_units(filename=None):
     return UnitObject.every
 
@@ -5170,6 +5176,9 @@ def randomize():
 
     for u in UnitObject.every:
         u.clean()
+
+    for p in PropositionObject.every:
+        p.clean()
 
     if 'o' in flags:
         try:

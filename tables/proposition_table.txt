@@ -1,0 +1,3 @@
+unknown,21,str
+unlocked,1
+unknown2,1
