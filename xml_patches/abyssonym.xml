@@ -15,4 +15,37 @@
         BC 91 00 01 00
     </Location>
   </Patch>
+
+  <Patch name="Double earned JP">
+    <Location file="BATTLE_BIN"
+              offset="117954">
+        40 88 11 00
+        05 00 42 92
+        21 80 00 00
+        30 00 53 30
+        12 15 00 08
+    </Location>
+  </Patch>
+
+  <Patch name="4x earned JP">
+    <Location file="BATTLE_BIN"
+              offset="117954">
+        80 88 11 00
+        05 00 42 92
+        21 80 00 00
+        30 00 53 30
+        12 15 00 08
+    </Location>
+  </Patch>
+
+  <Patch name="8x earned JP">
+    <Location file="BATTLE_BIN"
+              offset="117954">
+        c0 88 11 00
+        05 00 42 92
+        21 80 00 00
+        30 00 53 30
+        12 15 00 08
+    </Location>
+  </Patch>
 </Patches>

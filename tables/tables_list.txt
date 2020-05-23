@@ -19,3 +19,5 @@ FormationObject         formation_table.txt         4d3bd4  768
 EncounterObject         encounter_table.txt         4d8938  512
 UnitObject              unit_table.txt              75e0800 8192
 PropositionObject       proposition_table.txt       a45ab80 96
+PropositionJPObject     proposition_jp_table.txt    a45b5b4 8
+PropositionGilObject    proposition_gil_table.txt   a45b5c4 8

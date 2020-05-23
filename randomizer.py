@@ -14,7 +14,7 @@ from randomtools.utils import (
     read_multi, write_multi, classproperty, utilrandom as random)
 from randomtools.tablereader import (
     TableObject, set_global_table_filename, set_global_output_filename,
-    set_table_specs, tblpath, mutate_normal)
+    set_table_specs, tblpath, mutate_normal, close_file)
 from randomtools.uniso import remove_sector_metadata, inject_logical_sectors
 from xml_patch_parser import get_patchdicts
 from xml_patch_patcher import patch_patch
@@ -2859,6 +2859,11 @@ class PropositionObject(TableObject):
             self.unlocked = 1
 
 
+class PropositionJPObject(TableObject):
+    def clean(self):
+        self.jp = self.old_data['jp'] * 2
+
+
 def get_units(filename=None):
     return UnitObject.every
 
@@ -5177,7 +5182,7 @@ def randomize():
     for u in UnitObject.every:
         u.clean()
 
-    for p in PropositionObject.every:
+    for p in PropositionObject.every + PropositionJPObject.every:
         p.clean()
 
     if 'o' in flags:
@@ -5227,6 +5232,8 @@ def randomize():
     if not JAPANESE_MODE:
         for p in patches:
             patch_patch(TEMPFILE, p, verify=True)
+
+    close_file(TEMPFILE)
 
     assert filesize in RAW_SIZES + ISO_SIZES
     if filesize in ISO_SIZES:
