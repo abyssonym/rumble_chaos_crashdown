@@ -1790,6 +1790,39 @@ class JobObject(TableObject):
         return None
 
     @property
+    def profile(self):
+        if not self.is_generic:
+            raise NotImplementedError
+
+        generics = [j for j in JobObject if j.is_generic]
+        assert self in generics
+
+        s = '/={0:=<19}=\\\n'.format(self.name.upper())
+        s += ('| {0:3} | {1:5} | {2:5} |\n'.format('', 'BASE', 'GROW'))
+        s += ('|-----+-------+-------|\n')
+        stats = ['hp', 'mp', 'pa', 'ma', 'spd']
+        for stat in stats:
+            mult_attr = '{0}mult'.format(stat)
+            grow_attr = '{0}growth'.format(stat)
+
+            f = lambda j: getattr(j, mult_attr)
+            g = lambda j: 255 - getattr(j, grow_attr)
+
+            mult_index = sorted(
+                generics, key=lambda j: (f(j), g(j))).index(self)
+            mult_rank = int(round((4*mult_index / float(len(generics)-1)))) + 1
+            assert 1 <= mult_rank <= 5
+            grow_index = sorted(
+                generics, key=lambda j: (g(j), f(j))).index(self)
+            grow_rank = int(round((4*grow_index / float(len(generics)-1)))) + 1
+            assert 1 <= grow_rank <= 5
+            s += '| {0:>3} | {1:5} | {2:5} |\n'.format(
+                stat.upper(), '*'*mult_rank, '*'*grow_rank)
+        s += '\\=====================/\n'
+
+        return s.strip()
+
+    @property
     def jobreq(self):
         return JobReqObject.get(self.index)
 
@@ -4772,6 +4805,15 @@ def get_jobtree_str():
     return treestr
 
 
+def get_profiles_str():
+    generics = sorted([j for j in JobObject.every if j.is_generic],
+                      key=lambda j: j.name)
+    s = ''
+    for j in generics:
+        s += j.profile + '\n\n'
+    return s.strip()
+
+
 def get_poach_str():
     s = ("SECRET HUNT LIST\n"
          "Secret Hunt is always a Thief ability.\n")
@@ -5074,6 +5116,11 @@ def randomize():
         # do after randomizing skillsets
         random.seed(seed)
         mutate_job_stats()
+
+        s = get_profiles_str()
+        f = open(logfile, "a+")
+        f.write(s + "\n\n")
+        f.close()
 
     if 'm' in flags:
         # before units
