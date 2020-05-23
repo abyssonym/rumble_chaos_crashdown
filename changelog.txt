@@ -1,5 +1,24 @@
 Changelog - FFT RUMBLE CHAOS CRASHDOWN Randomizer
 
+Version 27: RUDVICH
+This version has no new randomization features. However, there are various QoL updates.
+- An xml patching system was implemented with support for a large library of FFHacktics patches. See "patches.cfg" and the "xml_patches" directory for details.
+    The following patches are enabled by default:
+        Smart encounters (click a green dot to initiate a "random" encounter)
+        Soldier Office can rename any unit.
+        Special characters can do propositions.
+        Enable propositions from the start.
+        Enable Fur Shop from the start.
+        Secret Hunt isn't needed to enter the Fur Shop.
+        Mighty Sword can target monsters and other unequipped units.
+        JP earned from battle is doubled.
+- Additionally, certain Chapter 2 propositions have been bumped to Chapter 1, and JP earned from propositions is doubled.
+- Generic Job stats are displayed in the spoiler file, including base and growth stats ranked on a 5-star scale.
+- Some event logic was altered to make a couple difficulty choke points more tolerable.
+- Unit rankings are now cached to make the randomizer a little quicker.
+
+On a more personal note, I'm planning to roll out a couple of other projects before I come back to this, but I'm hoping to push a bigger update someday. That is to say, this isn't the update that FFT RCC deserves, but it's the update that it needs right now. I haven't given up on porting the whole thing over to Python 3, making the logic cleaner, and adding more tunable features. I want to eventually integrate abstractions for world map and event data into the randomizer itself, instead of throwing hexcode patches around everywhere. So, watch this space.
+
 Version 26: DYCEDARG
 - More Altimath rebalancing.
 - Removed most shop and menu music from the random music pool.
@@ -33,8 +52,8 @@ Version 23: ALGUS
 
 Version 22: ALMA
 - The 'y' and 'w' randomization flags have been added. (contributed by Ryason55)
-	'y' - Randomize ability and weapon status effects
-	'w' - Randomize weapon and item stats.
+    'y' - Randomize ability and weapon status effects
+    'w' - Randomize weapon and item stats.
 - Generic unit names were updated.
 - Minor balance changes and bugfixes.
 
