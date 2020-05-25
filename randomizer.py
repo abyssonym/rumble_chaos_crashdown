@@ -4926,6 +4926,15 @@ def generate_balmafula():
         setattr(arc_witch, attr, getattr(JobObject.get(index), attr))
 
 
+def generate_cue_file(filename):
+    cue_filename = '.'.join(filename.split('.')[:-1] + ['cue'])
+    f = open(cue_filename, 'w+')
+    f.write('FILE {0} BINARY\n\n'
+            'TRACK 01 MODE2/2352\n\n'
+            'INDEX 01 00:00:00\n'.format(filename))
+    f.close()
+
+
 def randomize():
     global JAPANESE_MODE, JOBLEVEL_JP
     print ('You are using the FFT RUMBLE CHAOS CRASHDOWN randomizer '
@@ -5288,6 +5297,11 @@ def randomize():
         inject_logical_sectors(TEMPFILE, sourcefile)
     else:
         copyfile(TEMPFILE, sourcefile)
+
+    try:
+        generate_cue_file(sourcefile)
+    except:
+        pass
 
     try:
         remove(TEMPFILE)
