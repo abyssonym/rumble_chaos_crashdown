@@ -3366,6 +3366,7 @@ def mutate_job_level(filename):
         else:
             maximum = 800
             diff = randint(diff, int(diff*boostd["jp"]))
+        diff = min(diff, maximum)
         diff = mutate_normal(diff, minimum=0, maximum=maximum)
         diff = int(round(diff*2, -2)) / 2
         new_joblevel_jp.append(new_joblevel_jp[-1] + diff)
