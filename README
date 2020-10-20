@@ -9,7 +9,7 @@ Running the randomizer:
     Windows users may use the executable file, "fft_rcc.exe". Other users, please run "randomizer.py" using Python version 2.7.
     Command line arguments:
         python randomizer.py <ISO_FILENAME> <FLAGS>.<SEED> <CHAOS MULTIPLIER>
-    Windows, macOS, and linux users may also install docker and use "sh randomize-seed.sh", which will output an OpenEmu-ready .bin and .cue file
+    Windows, macOS, and linux users may also install docker and use "sh docker-randomize-seed.sh", which will output an OpenEmu-ready .bin and .cue file
         your input directory should contain a file called "fft.bin" (you can probably safely just rename your .iso file to fft.bin)
 
 Source ISO file:
