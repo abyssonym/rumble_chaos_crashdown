@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # randomize
-python /rumble_chaos_crashdown/randomizer.py /input/fft.bin $flags.$seed $chaos
+python /rumble_chaos_crashdown/randomizer.py /input/$filename
 
 # rename .iso to .bin for OpenEmu
  for file in *.iso
