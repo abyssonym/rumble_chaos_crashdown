@@ -6,12 +6,13 @@ Contact:    https://twitter.com/abyssonym
 
 --- HOW TO USE ---
 Running the randomizer:
-    Windows users may use the executable file, "fft_rcc.exe". Other users, please run "randomizer.py" using Python version 2.7.
-    Command line arguments:
-        python randomizer.py <ISO_FILENAME> <FLAGS>.<SEED> <CHAOS MULTIPLIER>
-    Windows, macOS, and linux users may also install docker and use "sh docker-randomize-seed.sh", which will output an OpenEmu-ready .bin and .cue file
-        your input directory should contain a file called "fft.bin" (you can probably safely just rename your .iso file to fft.bin)
-
+    Windows users may use the executable file, `fft_rcc.exe`. Other users, please run `randomizer.py` using Python version 2.7.
+    Python command line arguments:
+        `python randomizer.py <ISO_FILENAME> <FLAGS>.<SEED> <CHAOS MULTIPLIER>`
+    Windows, macOS, and *nix users (who may already be using Python 3 or higher) may also install `docker` and run `sh docker-randomize-seed.sh`, which will output an OpenEmu-ready .bin and .cue file
+    Docker command line arguments:
+        `sh docker-randomize-seed.sh <ISO_FILENAME> <INPUT_DIRECTORY> <OUTPUT_DIRECTORY> <FLAGS> <SEED> <CHAOS>`
+    
 Source ISO file:
     The randomizer will ask for a filename. Place your Final Fantasy Tactics ISO in the same directory as "fft_rcc.exe" and input the name of the file. You must include the file extension (ex: fft.img). Please note that the randomizer needs 1 GB of free space to create the randomized ISO. The ISOs used for testing have the following hashes:
     MD5 - b156ba386436d20fd5ed8d37bab6b624
@@ -21,6 +22,7 @@ Source ISO file:
             8ab1b7b1
             a6361fd1 (J)
     If your file is about 517 MB then it's probably correct. The Japanese version is the Square Millennium Collection edition (1.1). This is the version more commonly used by Japanese hackers. The original Japanese version will not work.
+    The Docker image will check this for you automatically.
 
 Flags:
     Input the following flags to customize your RUMBLE CHAOS CRASHDOWN experience.
